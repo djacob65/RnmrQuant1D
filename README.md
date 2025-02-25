@@ -49,8 +49,8 @@ The source code is currently hosted on another repository with private access fo
 ### Funded by:
 
 * Agence Nationale de la Recherche - [ANR-21-CE21-0014](https://anr.fr/Project-ANR-21-CE21-0014)
-* UMR BFP Bordeaux
-* UR BIA Nantes
+* UMR INRAE BFP Bordeaux
+* UR INRAE BIA Nantes
 
 ### License
 
