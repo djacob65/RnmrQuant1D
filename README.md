@@ -44,3 +44,15 @@ See the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page for more
 
 The source code is currently hosted on another repository with private access for sharing to authorized members. When the embargo period is over, the source code will be available here. Thank you for your understanding.
 
+------
+
+### Funded by:
+
+* Agence Nationale de la Recherche - [ANR-21-CE21-0014](https://anr.fr/Project-ANR-21-CE21-0014)
+* UMR BFP Bordeaux
+* UR BIA Nantes
+
+### License
+
+GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007 - See the included LICENSE file.
+
