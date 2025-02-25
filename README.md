@@ -1,9 +1,9 @@
 # RnmrQuant1D
 Package dedicated to quantification from 1D NMR spectra, including peak fitting and calibration using standard spectra.
 
-<br>
-
 See the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page for more details
+
+------
 
 ### Installation
 
