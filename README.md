@@ -39,7 +39,7 @@ See the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page for more
 
 ### Note
 
-The source code is currently hosted on another repository with private access for sharing to authorized members. When the embargo period is over, the source code will be available here. Thank you for your understanding.
+The source code is currently hosted on a [bitbucket repository](https://bitbucket.org/daniel_jacob/rnmrquant1d/) with private access for sharing to authorized members. When the embargo period is over, the source code will be available here. Thank you for your understanding.
 
 <br>
 
