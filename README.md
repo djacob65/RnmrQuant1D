@@ -7,7 +7,7 @@ Check out the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page fo
 
 ### Installation
 
-1. **R version >= 4.3.0** - Rtools >=4.3 required for Windows - Recommanded : RStudio
+1. **R version >= 4.3.0** - [Rtools](https://cran.r-project.org/bin/windows/Rtools/rtools44/rtools.html) >=4.3 required for Windows - Recommanded : [RStudio](https://posit.co/download/rstudio-desktop/)
 
 2. **Rnmr1D (>= 1.6.0)**
 
