@@ -11,7 +11,7 @@ Maintainer: Daniel Jacob <daniel.jacob@inrae.fr>
 Description: Package dedicated to quantification from 1D NMR spectra
     including peak fitting and calibration using standard spectra.
 Depends: R (>= 3.6.0)
-License: GPL (>= 3)
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 Imports: R6, Rnmr1D (>= 1.6.0), foreach (>= 1.5.2), doParallel (>= 1.0.17), magrittr (>= 2.0.3), DT (>= 0.29), plotly (>= 4.8.0), openxlsx (>= 4.2.0),  webshot2 (>= 0.1.1)
 Suggests: knitr,
