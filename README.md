@@ -51,8 +51,8 @@ The source code is currently hosted on a [bitbucket repository](https://bitbucke
 ### Funded by:
 
 * Agence Nationale de la Recherche - [ANR-21-CE21-0014](https://anr.fr/Project-ANR-21-CE21-0014)
-* UMR INRAE BFP Bordeaux
-* UR INRAE BIA Nantes
+* [UMR INRAE BFP Bordeaux](https://eng-bfp.bordeaux-aquitaine.hub.inrae.fr/)
+* [UR INRAE BIA Nantes](https://eng-ur-bia.angers-nantes.hub.inrae.fr/)
 
 ### License
 
