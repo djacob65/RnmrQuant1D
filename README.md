@@ -43,7 +43,7 @@ The source code is currently hosted on a [bitbucket repository](https://bitbucke
 
 <br>
 
-![image](https://github.com/user-attachments/assets/8b19fe92-82a6-4105-bc99-19d6122f16e5)
+![image](https://github.com/user-attachments/assets/e3642da6-1ec2-4968-9682-84cf38f83119)
 
 
 ------
