@@ -24,8 +24,8 @@ Check out the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page fo
 
 * Packages to be installed
   ```r
-  Rnmr1D (>= 1.6.0), openxlsx (>= 4.2.0), data.table (>= 1.15.2), reshape2 (>= 1.4.4),  digest (>= 0.6.35), 
-  jsonlite (>= 1.8.8),  repr (>= 1.1.6), webshot2 (>= 0.1.1),  DT (>= 0.29), repr (>= 1.1.6), magrittr (>= 2.0.3)
+  Rnmr1D (>= 1.6.0), foreach (>= 1.5.2), doParallel (>= 1.0.17), magrittr (>= 2.0.3), 
+  DT (>= 0.29), plotly (>= 4.8.0), openxlsx (>= 4.2.0),  webshot2 (>= 0.1.1)
   ```
 
 * Installation of the R package
