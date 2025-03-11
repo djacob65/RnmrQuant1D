@@ -16,7 +16,7 @@ Check out the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page fo
   Rcpp (>= 0.12.7), base64enc (>= 0.1), MASS(>= 7.3), Matrix, methods, scales, doParallel (>= 1.0.11), 
   foreach (>= 1.4.4), igraph (>= 1.2.1), impute (>= 1.54.0)(*) , MassSpecWavelet (>= 1.46.0)(*), 
   ptw (>= 1.9), signal (>= 0.7), XML (>= 3.98), ggplot2 (>= 3.0.0), plotly (>= 4.8.0), plyr (>= 1.8.4), 
-  minqa (>= 1.2.4)
+  minqa (>= 1.2.4), speaq (>= 2.7.0)
   ```
     * (*) packages deposited in Bioconductor
 
