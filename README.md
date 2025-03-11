@@ -37,17 +37,6 @@ Check out the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page fo
 
 ------
 
-### Note
-
-The source code is currently hosted on a [bitbucket repository](https://bitbucket.org/daniel_jacob/rnmrquant1d/) with private access for sharing to authorized members. When the embargo period is over, the source code will be available here. Thank you for your understanding.
-
-<br>
-
-![image](https://github.com/user-attachments/assets/e3642da6-1ec2-4968-9682-84cf38f83119)
-
-
-------
-
 ### Funded by:
 
 * Agence Nationale de la Recherche - [ANR-21-CE21-0014](https://anr.fr/Project-ANR-21-CE21-0014)
@@ -57,4 +46,3 @@ The source code is currently hosted on a [bitbucket repository](https://bitbucke
 ### License
 
 GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007 - See the included LICENSE file.
-
