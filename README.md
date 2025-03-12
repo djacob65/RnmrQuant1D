@@ -36,6 +36,7 @@ Visit the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page for a 
 
   ```
 
+* See [Installation test](https://github.com/djacob65/RnmrQuant1D/wiki/A4%E2%80%90Installation%E2%80%90test) performed on [Google Collab](https://colab.research.google.com/).
 ------
 
 ### Funded by:
