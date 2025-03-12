@@ -30,8 +30,9 @@ Visit the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page for a 
 
 * Installation of the R package
   ```r
-  require(devtools)
-  install_github("djacob65/RnmrQuant1D", dependencies = TRUE)
+if (!require("devtools"))
+    install.packages("devtools", repos="https://cran.rstudio.com")
+  devtools::install_github("djacob65/RnmrQuant1D", dependencies = TRUE)
 
   ```
 
