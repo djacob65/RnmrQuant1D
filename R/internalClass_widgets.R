@@ -12,7 +12,7 @@ internalClass$set("public", "saveWidgetFix", function(widget,file, ...)
 	outDir<-dirname(file)
 	file<-basename(file)
 	setwd(outDir);
-	DT::saveWidget(widget,file=file, ...)
+	tryCatch(DT::saveWidget(widget,file=file, ...), error=function(e){})
 	setwd(wd);
 })
 
@@ -74,7 +74,7 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp')
 		IMGhtml <- file.path(tmpdir,paste0(IMGname, ".html"))
 		saveWidgetFix(m, IMGhtml)
 		IMGfile <- file.path(tmpdir,paste0(IMGname, ".",type))
-		webshot2::webshot(IMGhtml, IMGfile)
+		tryCatch(webshot2::webshot(IMGhtml, IMGfile), error=function(e){})
 		if (type == "png") IRdisplay::display_png(file=IMGfile)
 		if (type == "jpeg") IRdisplay::display_jpeg(file=IMGfile)
 		if (type == "svg") IRdisplay::display_svg(file=IMGfile)
