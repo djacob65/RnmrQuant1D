@@ -286,12 +286,12 @@ internalClass$set("public", "get_output_results", function()
 	cmpdlist <- quantpars$cmpdlist
 	zones <- quantpars$zones
 	if (!is.null(cmpdlist)) {
-		profil_quantif <- PROFILE$quantif[ PROFILE$quantif$compound %in% cmpdlist, , drop=T ]
+		profil_quantif <- PROFILE$quantif[ PROFILE$quantif$compound %in% cmpdlist, , drop=F ]
 	} else {
-		profil_quantif <- PROFILE$quantif[ PROFILE$quantif$zone %in% zones, , drop=T ]
+		profil_quantif <- PROFILE$quantif[ PROFILE$quantif$zone %in% zones, , drop=F ]
 	}
 	out$profil_quantif <- profil_quantif
-	out$profil_fitting <- PROFILE$fitting[PROFILE$fitting$zone %in% unique(profil_quantif$zone), , drop=T ]
+	out$profil_fitting <- PROFILE$fitting[PROFILE$fitting$zone %in% unique(profil_quantif$zone), , drop=F ]
 	out$profil_compound <- PROFILE$compound[PROFILE$compound$name %in% unique(profil_quantif$compound), ]
 	out
 })
