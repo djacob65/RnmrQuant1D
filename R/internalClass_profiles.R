@@ -103,7 +103,7 @@ internalClass$set("public", "readProfile", function(PROFILE)
 
 	if (!is.null(fitting)) {
 		fitting <- numformat( data.frame(fitting, stringsAsFactors = FALSE), c(1:2,4:8) )
-		colnames(fitting) <- c('ppm1','ppm2','obl','qbl','asym','etamin','addpeaks','zone')
+		colnames(fitting) <- c('ppm1','ppm2','obl','qbl','asym','etamin','filters','zone')
 	}
 
 	if (!is.null(quantif)) {

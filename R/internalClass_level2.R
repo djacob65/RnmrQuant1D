@@ -27,7 +27,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	if (verbose)  cat("\n================================================\n")
 	if (verbose) cat('Sequence:',SEQUENCE,"\n")
 	if (verbose) cat('Parameters: ratioPN =', Opars$ratioPN,', asymetric =',Opars$oasym,', lowPeaks =',Opars$lowPeaks, ', oblset =',obl,"\n")
-	if (verbose) cat('filterset =',paste(filter,collapse=','),"\n")
+	if (verbose) cat('filter =',paste(filters$main,collapse=','),"\n")
 
 	# Deconvolution / Quantification
 	spectra <- get_list_spectrum(QSDIR, samplename)
@@ -88,7 +88,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 			if (verbose) cat(cmpd,": PPM range = [", ppmrange[1],',',ppmrange[2],"]","\n")
 			if (verbose) cat("Max Spec  = ", max(spec$int[getseq(spec,ppmrange)]),"\n")
 			if (deconv) {
-				modelF <- Rnmr1D::LSDeconv(spec, ppmrange, Opars, filter, obl, verbose = (verbose>1))
+				modelF <- Rnmr1D::LSDeconv(spec, ppmrange, Opars, filters$main, obl, verbose = (verbose>1))
 				if (is.null(modelF) || nrow(modelF$peaks)<1) next
 				if (verbose) cat(cmpd,": Nb Peaks =",nrow(modelF$peaks)," -  R2 =",round(modelF$R2,4),"\n")
 				Peaks <- rbind(Peaks, modelF$peaks)
@@ -185,7 +185,7 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 	t <- system.time({
 		spec <- applyPeakFitting(spec, opars=opars.loc, zones=zones, ncpu=ncpu, verbose=verbose)
 	})
-	if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
+	if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n\n")
 
 	Mquant <- SNR <- peaklist <- NULL
 	if (! is.null(spec$fit$peaks)) {
@@ -202,6 +202,7 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 		SNR <- matrix(Q$quantification[, 5], ncol=1)
 		rownames(Mquant) <- rownames(SNR) <- Q$peaklist[,1]
 		colnames(Mquant) <- colnames(SNR) <- samplename
+		if (verbose) { print(Mquant); cat("\n") }
 	}
 	if (verbose)  cat("\n-----------------\n\n")
 
@@ -220,11 +221,13 @@ internalClass$set("private", "absSampleQuantification", function(spec, fP, quant
 	# Compute the absolute quantification for each compound
 	M <- NULL
 	Kref <- fP$mean*fP$fK
+	if (verbose) cat("Kref =",Kref,", K1 =",K1,", K2 =",K2,", Fdilution =",fdil,"\n")
 	for (k in 1:nrow(quantMat)) {
 		cmpd <- rownames(quantMat)[k]
 		NH <- sum(PROFILE$quantif[ PROFILE$quantif$compound==cmpd, ]$np)
 		MW <- PROFILE$compound[PROFILE$compound$name==cmpd, ]$mw
 		Ix <- (quantMat[k,1]/fdil)*(MW/NH)*K1*K2/Kref
+		if (verbose) cat(k,"-",cmpd,": Ix =",Ix,"\n")
 		M <- rbind(M, Ix)
 	}
 	rownames(M) <- rownames(quantMat)

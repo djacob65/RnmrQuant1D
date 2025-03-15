@@ -52,25 +52,24 @@ internalClass$set("private", "applyBLcorrection", function(spec, verbose=1)
 	spec
 })
 
-internalClass$set("private", "applyPeakFitting", function(spec, opars=NULL, filterset=NULL, zones=NULL, ncpu=2, verbose=1)
+internalClass$set("private", "applyPeakFitting", function(spec, opars=NULL, zones=NULL, ncpu=2, verbose=1)
 {
 	if (is.null(opars)) opars <- self$opars
-	if (is.null(filterset)) filterset <- self$filterset
 	specfit <- NULL
 	if (ncpu>1) {
-		specfit <- applyPeakFitting2(spec, opars, filterset, zones, ncpu=ncpu, verbose=verbose)
+		specfit <- applyPeakFitting2(spec, opars, zones, ncpu=ncpu, verbose=verbose)
 	} else {
-		specfit <- applyPeakFitting1(spec, opars, filterset, zones, verbose=verbose)
+		specfit <- applyPeakFitting1(spec, opars, zones, verbose=verbose)
 	}
 	specfit
 })
 
-internalClass$set("private", "applyPeakFitting1", function(spec, opars, filterset, zones=NULL, verbose=1)
+internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NULL, verbose=1)
 {
 	if (verbose) {
 		cat("-------------------\n")
 		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
-		cat('filterset =',paste(filterset,collapse=','),"\n"); cat('Peak fitting = Internal method',"\n")
+		cat('filter =',paste(filters$main,collapse=','),"\n"); cat('Peak fitting = Internal method',"\n")
 		cat("-------------------\n")
 	}
 
@@ -99,8 +98,9 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, filterse
 		opars.loc$asymmax <- pkfit$asym[k]
 		opars.loc$pvoigt <- ifelse(pkfit$etamin[k]<1, 1, 0)
 		opars.loc$etamin <- pkfit$etamin[k]
-		opars.loc$addpeaks <- ifelse(pkfit$addpeaks[k]>0, 1, 0)
+		opars.loc$addpeaks <- ifelse(is.null(opars$peaks), 1, 0)
 		opars.loc$qbl <- pkfit$qbl[k]
+		filters <- filtersets[[min(length(filtersets), round(abs(pkfit$filters[k])))]]
 		if (grepl(',',pkfit$obl[k])) {
 			obl <- strtoi(simplify2array(strsplit(pkfit$obl[k],',')))
 		} else {
@@ -119,7 +119,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, filterse
 	# Carry out the peak fitting
 		opars.save <- opars.loc
 		t <- system.time({
-			model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filterset, obl, verbose = verbose)
+			model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
 		})
 		if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
 
@@ -128,7 +128,8 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, filterse
 		if (is.null(model) || (!is.null(model) && model$R2<opars.loc$R2limit)) {
 			t<-system.time({
 				opars.loc$peaks <- NULL
-				model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, allFilterset[! allFilterset %in% filterset], obl, verbose = verbose)
+				others_filters <- filters$others[! filters$others %in% filters$main]
+				model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
 				if ( (is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2>model$R2) )
 						model <- model2
 			})
@@ -188,12 +189,12 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, filterse
 	spec
 })
 
-internalClass$set("private", "applyPeakFitting2", function(spec, opars, filterset, zones=NULL, ncpu=2, verbose=1)
+internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NULL, ncpu=2, verbose=1)
 {
 	if (verbose) {
 		cat("-------------------\n")
 		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
-		cat('filterset =',paste(filterset,collapse=','),"\n")
+		cat('filter =',paste(filters$main,collapse=','),"\n")
 		cat("NCPU =",ncpu,"\n")
 		cat("-------------------\n")
 	}
@@ -246,8 +247,9 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, filterse
 		opars.loc$asymmax <- pkfit$asym[k]
 		opars.loc$pvoigt <- ifelse(pkfit$etamin[k]<1, 1, 0)
 		opars.loc$etamin <- pkfit$etamin[k]
-		opars.loc$addpeaks <- ifelse(pkfit$addpeaks[k]>0, 1, 0)
+		opars.loc$addpeaks <- ifelse(is.null(opars$peaks), 1, 0)
 		opars.loc$qbl <- pkfit$qbl[k]
+		filters <- rq1d$filtersets[[min(length(rq1d$filtersets), round(abs(pkfit$filters[k])))]]
 		if (grepl(',',pkfit$obl[k])) {
 			obl <- strtoi(simplify2array(strsplit(pkfit$obl[k],',')))
 		} else {
@@ -268,7 +270,7 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, filterse
 	# Carry out the peak fitting
 		opars.save <- opars.loc
 		t <- system.time({
-			model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filterset, obl, verbose = verbose)
+			model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
 		})
 		if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
 
@@ -277,7 +279,8 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, filterse
 		if (is.null(model) || (!is.null(model) && model$R2<opars.loc$R2limit)) {
 			t<-system.time({
 				opars.loc$peaks <- NULL
-				model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, rq1d$allFilterset[! rq1d$allFilterset %in% filterset], obl, verbose = verbose)
+				others_filters <- filters$others[! filters$others %in% filters$main]
+				model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
 				if ( (is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2>model$R2) )
 						model <- model2
 			})

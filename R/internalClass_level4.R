@@ -62,7 +62,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		# Peak fitting
 		Opars <- rq1d$opars
 		Opars$peaks <- NULL
-		spec <- priv$applyPeakFitting(spec, Opars, rq1d$filterset, zones=zones, ncpu=1, verbose=verbose)
+		spec <- priv$applyPeakFitting(spec, Opars, zones=zones, ncpu=1, verbose=verbose)
 
 		# Quantification
 		if (!is.null(spec$fit$peaks)) {
@@ -314,7 +314,7 @@ internalClass$set("public", "get_spectra_data", function()
 		if (sample == 'RQ1D' || !dir.exists(DIR)) next
 		load(file = paste0(file.path(RDATADIR,sample),'.RData'))
 		PL <- spec$peaklist
-		if (!is.null(quantParams$cmpdlist)) PL <- PL[PL[,1] %in% quantParams$cmpdlist, ]
+		if (!is.null(quantParams$cmpdlist)) PL <- PL[PL[,1] %in% quantParams$cmpdlist, , drop=F]
 		n <- nrow(PL)
 		M <- matrix(rep(0,n*4), nrow=n, ncol=4)
 		M[,1:2] <- cbind(rep(SAMPLES[spec$sampleidx,1],n), rep(SAMPLES[spec$sampleidx,2],n))
@@ -322,7 +322,7 @@ internalClass$set("public", "get_spectra_data", function()
 		res$peaklist <<- rbind(res$peaklist, M)
 		res$infos <<- rbind(res$infos, spec$fit$infos)
 		specList[[spec$sampleidx]] <<- spec
-		pkfit <- PROFILE$fitting[PROFILE$fitting$zone %in% quantParams$zones, ]
+		pkfit <- PROFILE$fitting[PROFILE$fitting$zone %in% quantParams$zones, , drop=F]
         ppm_range <<- c( min(pkfit$ppm1), max(pkfit$ppm2))
 	}
 })

@@ -22,8 +22,8 @@ internalClass <- R6Class("internalClass",
 		procParams   = list(),
 		opars        = list(),
 		SCALE_INT    = 1e4,
-		allFilterset = c('daub8', 'symlet8', 'smooth1'),
-		filterset    = c('daub8'),
+		filters      = list(),
+		filtersets   = list(),
 		PPM_NOISE    = c(10.2,10.5), # ppm range corresponding to noise, and this, for all spectra
 		TSPwidthMax  = 1,
 		oblset       = 0,
@@ -88,6 +88,12 @@ internalClass <- R6Class("internalClass",
 			procParams$MVPZTSP <<- TRUE
 			procParams$MVPZFAC <<- 10
 			procParams$DHZPZRANGE <<- 323
+
+			# Filters
+			filters1 <- list(main=c('daub8'), others=c('daub8', 'symlet8', 'smooth1'))
+			filters2 <- list(main=c('smooth1'), others=c('smooth2', 'smooth3'))
+			filtersets <<- list(filters1,filters2)
+			filters  <<- filters1
 
 			# Deconvolution Parameters
 			opars <<- list(ratioPN=1, oneblk=1, pvoigt=1, oeta=1, oasym=1, asymmax=250, spcv=0.001, d2cv=0.05,
