@@ -69,7 +69,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 	if (verbose) {
 		cat("-------------------\n")
 		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
-		cat('filter =',paste(filters$main,collapse=','),"\n"); cat('Peak fitting = Internal method',"\n")
+		cat('Peak fitting = Internal method',"\n")
 		cat("-------------------\n")
 	}
 
@@ -106,7 +106,9 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		} else {
 			obl <- strtoi(pkfit$obl[k])
 		}
-		cat('Parameters: asymetric =',opars.loc$oasym,', addPeaks =',opars.loc$addPeaks,', qbl =',opars.loc$qbl,', oblset =',pkfit$obl[k], "\n")
+		if (verbose) cat('Parameters: addPeaks =',opars.loc$addPeaks,', qbl =',opars.loc$qbl,', oblset =',pkfit$obl[k], "\n")
+		if (verbose) cat('Parameters: asymmax =',opars.loc$asymmax,', etamin =',opars.loc$etamin, "\n")
+		if (verbose) cat('filter =',paste(filters$main,collapse=','),"\n"); 
 
 		if (opars.loc$qbl) {
 			spec$int <- spec$intcorr;
@@ -194,7 +196,6 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	if (verbose) {
 		cat("-------------------\n")
 		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
-		cat('filter =',paste(filters$main,collapse=','),"\n")
 		cat("NCPU =",ncpu,"\n")
 		cat("-------------------\n")
 	}
@@ -255,8 +256,9 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		} else {
 			obl <- strtoi(pkfit$obl[k])
 		}
-		if (verbose) cat('Parameters: asymetric =',opars.loc$oasym,', addPeaks =',opars.loc$addPeaks,', qbl =',opars.loc$qbl,', oblset =',pkfit$obl[k], "\n")
+		if (verbose) cat('Parameters: addPeaks =',opars.loc$addPeaks,', qbl =',opars.loc$qbl,', oblset =',pkfit$obl[k], "\n")
 		if (verbose) cat('Parameters: asymmax =',opars.loc$asymmax,', etamin =',opars.loc$etamin, "\n")
+		if (verbose) cat('filter =',paste(filters$main,collapse=','),"\n")
 
 	# Baseline correction - qNMR method
 		if (opars.loc$qbl) {

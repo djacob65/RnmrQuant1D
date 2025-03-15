@@ -471,13 +471,9 @@ internalClass$set("private", "find_peaks_rule_r5", function(spec, peaks, ppm0, J
 					find_pattern_d (spec, P1, ppm0+dppm0, J, sel, ratio=2, full=T) )
 		g <- unique(g)
 		if (is.null(g) || nrow(g)<2) break
-cat("1: nrow(g)=",nrow(g),"\n")
 		if (nrow(g)>0) g <- g[ as.numeric(g[,4])>(ppm1-dppm) & as.numeric(g[,4])<(ppm2+dppm), , drop=F]
-cat("2: nrow(g)=",nrow(g),"\n")
 		if (nrow(g)>1) g <- g[ order(as.numeric(g[,5]), decreasing=T),  ]
-cat("3: nrow(g)=",nrow(g),"\n")
 		if (nrow(g)>0) groups <- g[1, c(1:2)]
-cat("4: length(groups)=",length(groups),"\n")
 		break
 	}
 	groups
