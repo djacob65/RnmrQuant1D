@@ -1,5 +1,5 @@
 #=====================================================================
-# Some functions using QC-QS for calibration
+# User functions for calibration using QC-QS
 #=====================================================================
 
 internalClass$set("public", "get_response_factors", function(sampletype,  samplename, thresfP=5, deconv=TRUE, verbose=1)
@@ -95,7 +95,7 @@ internalClass$set("public", "plot_QC_estimation", function(QCest)
 })
 
 #=====================================================================
-# Some functions using integration and SNR tables
+# User functions using integration and SNR tables
 #=====================================================================
 
 # Get the integration matrix
@@ -266,7 +266,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 })
 
 #=====================================================================
-# Some functions for Visualisation
+# User functions for Spectra Visualisation
 #=====================================================================
 
 # View spectra along with models & compounds
@@ -326,7 +326,6 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 				idpeaks <- sort(as.numeric(unlist(strsplit(strlist,","))))
 				PLk <- spec$fit$peaks[idpeaks, , drop=F]
 				if (nrow(PLk)==0) next
-				#Z <- PROFILE$quantif[PROFILE$quantif$compound==cmpdlist[k,1], ]$zone
 				ppm_zone <- as.numeric(PROFILE$fitting[PROFILE$fitting$zone==fit$zone, 1:2])
 				iseq <- getseq(spec, ppm_zone)
 				V <- simplify2array(lapply(1:nrow(PLk), function(i) {

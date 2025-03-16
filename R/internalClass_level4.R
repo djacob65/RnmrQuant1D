@@ -1,5 +1,5 @@
 #=====================================================================
-# Some functions for Integration computing
+#  User function  for Integration computing
 #=====================================================================
 
 internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
@@ -108,7 +108,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 
 
 #=====================================================================
-# Some functions for quantification computing
+# User functions for quantification computing
 #=====================================================================
 
 internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=TRUE, verbose=1)
@@ -480,7 +480,7 @@ internalClass$set("public", "save_Results", function(file, filelist=NULL)
 })
 
 #=====================================================================
-# Some functions for Spectra visualisation
+# User functions for Spectra visualisation
 #=====================================================================
 
 internalClass$set("public", "plot_spectra", function(id, compound, ...)

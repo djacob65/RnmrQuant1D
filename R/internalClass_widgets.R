@@ -1,5 +1,5 @@
 #=====================================================================
-# Plots / DT
+# Plotly / DT outputs
 #=====================================================================
 
 internalClass$set("public", "saveWidgetFix", function(widget,file, ...)

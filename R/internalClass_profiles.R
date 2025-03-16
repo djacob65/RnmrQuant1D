@@ -5,15 +5,12 @@
 #   'exclude'  : zones to be excluded for all processing steps,
 #   'zeroneg'  : zones to zero before the baseline correction,
 #   'baseline' : zones for baseline correction along with their airPLS parameters (lambda & order)
-# --- Quantification profiles ---
 #   'fitting'  : zones for deconvolution (peak fitting) along with their parameters
-#                * obl : polynomial order for a local baseline correction optimized at the same time that the peak fitting (default:0)
-#                * asym : allows asymetric peaks (default:0)
-#                * zone : defines a zone id for better selection
-#   'reference'  : zone for deconvolution corresponding the reference peak and assigned to a compound name
+#      * obl : polynomial order for a local baseline correction optimized at the same time that the peak fitting (default:0)
+#      * asym : allows asymetric peaks (default:0)
+#      * zone : defines a zone id for better selection
 #   'quantif'  : zones to be quantified and assigned to a compound name
 #   'compound' : list of compounds along with their features (Mw, Np, Pattern)
-# --- profiles for QS/QS ---
 #=====================================================================
 
 internalClass$set("public", "readProfile", function(PROFILE)
