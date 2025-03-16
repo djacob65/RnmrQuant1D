@@ -90,7 +90,7 @@ internalClass <- R6Class("internalClass",
 			procParams$DHZPZRANGE <<- 323
 
 			# Filters
-			filters1 <- list(main=c('daub8'), others=c('daub8', 'symlet8', 'smooth1'))
+			filters1 <- list(main=c('daub8'), others=c('symlet8', 'smooth1'))
 			filters2 <- list(main=c('smooth1'), others=c('smooth2', 'smooth3'))
 			filtersets <<- list(filters1,filters2)
 			filters  <<- filters1
