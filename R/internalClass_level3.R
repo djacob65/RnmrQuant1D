@@ -1,4 +1,30 @@
 #=====================================================================
+# User function to generate the sample table
+#=====================================================================
+
+# Get the sample table under RAWDIR
+internalClass$set("public", "get_samples_table", function(sequence=NULL, infos=FALSE)
+{
+	tbl <- get_list_spectrum(RAWDIR, get_list_samples(RAWDIR))
+	seq <- ifelse(is.null(sequence), self$SEQUENCE, sequence)
+	tbl <- tbl[ tbl[,3] %in% seq, ]
+	tbl <- cbind(tbl[,1], sapply(1:nrow(tbl), function(x) { paste(tbl[x,1:2], collapse='-') }), tbl[,2:3])
+	tbl <- cbind(tbl[,1:3], rep(0,nrow(tbl)), tbl[,4])
+	colnames(tbl) <- c('Spectrum', 'Samplecode', 'EXPNO', 'PROCNO', 'PULSE')
+	if (infos) {
+		M <- NULL
+		for (i in 1:nrow(tbl)) {
+			ACQDIR <- file.path(RAWDIR,tbl[i,1],tbl[i,3])
+			spec <- applyReadSpectrum(ACQDIR, verbose=0)
+			M <- rbind(M,c(get_TSP_width(spec),spec$acq$PULSEWIDTH, spec$acq$NUMBEROFSCANS, spec$acq$SW, spec$proc$SI))	
+		}
+		colnames(M) <- c('TMSPWIDTH', 'PULSEWIDTH', 'NUMBEROFSCANS', 'SW', 'SI')
+		tbl <- cbind(tbl,M)
+	}
+	tbl
+})
+
+#=====================================================================
 # User functions for calibration using QC-QS
 #=====================================================================
 

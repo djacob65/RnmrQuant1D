@@ -41,11 +41,17 @@ internalClass$set("public", "check_samples", function(verbose=FALSE)
 	# Check if the samples table has at least NCMIN columns and a 'F_dilition' columns
 	NCMIN <- 4
 	if (!ncol(SAMPLES)>=NCMIN)
-		stop_quietly(paste0("Error: the sample table must have at least ",NCMIN," columns : Spectrum, Samplecode, ",FDILfield,"\n"))
+		stop_quietly(paste0("Error: the sample table must have at least ",NCMIN," columns : Spectrum, Samplecode, ",FDILfield))
+
+	# Check if the sample names in the sample table match the same expno as found previously
+	V1 <- simplify2array(lapply(1:nrow(M1b), function(k){paste0(M1b[k,1],'-',M1b[k,2])}))
+	V2 <- simplify2array(lapply(1:nrow(SAMPLES), function(k){paste0(SAMPLES[k,1],'-',SAMPLES[k,3])}))
+	if (sum(V2 %in% V1) != nrow(SAMPLES))
+		stop_quietly(paste0("Error: Some EXPNO numbers in the sample table  do not match the provided sequence"))
 
 	# Check if the samples table has a 'F_dilition' columns
 	if (! FDILfield %in% colnames(SAMPLES))
-		stop_quietly(paste0("Error: the sample table must have a columns named '",FDILfield,"'\n"))
+		stop_quietly(paste0("Error: the sample table must have a columns named '",FDILfield))
 	if (verbose) cat(paste0("OK: the sample table has at least ",NCMIN," columns with one named '", FDILfield, "'\n"))
 })
 
@@ -70,17 +76,17 @@ internalClass$set("public", "check_calibration", function(QC=NULL, QS=NULL, sequ
 	# Check if RAWDIR contain some Bruker spectra acquired with the request sequence
 	M2b <- M2[ M2[,3] == sequence, ,drop=F]
 	if (nrow(M2b)==0)
-		stop_quietly(paste0("Error: ", QSDIR, " must contain some Bruker spectra acquired with a ",sequence," sequence\n"))
+		stop_quietly(paste0("Error: ", QSDIR, " must contain some Bruker spectra acquired with a ",sequence," sequence"))
 
 	if (verbose) cat(paste0("OK: ", QSDIR, " contains some Bruker spectra acquired with a ",sequence," sequence\n"))
 
 	# Check if the CALIBRATION table has a rigth column names
 	if (sum(colnames(CALIBRATION) %in% c('Type','Compound','MW','NH','MC','PPM1','PPM2'))!=7)
-		stop_quietly(paste0("Error: ", "the standard profile must contain 7 columns named : 'Type','Compound','MW','NH','MC','PPM1','PPM2'\n"))
+		stop_quietly(paste0("Error: ", "the standard profile must contain 7 columns named : 'Type','Compound','MW','NH','MC','PPM1','PPM2'"))
 
 	# Check if the Type column contains only 'QC' and 'QS'
 	if (sum(CALIBRATION$Type %in% c(QCtype,QStype)) != nrow(CALIBRATION))
-		stop_quietly(paste0("Error: ", "the Type column of the standard profile must contain only 'QC' and 'QS'\n"))
+		stop_quietly(paste0("Error: ", "the Type column of the standard profile must contain only 'QC' and 'QS'"))
 
 	if (verbose) cat(paste0("OK: the standard profile format seems correct\n"))
 
@@ -108,26 +114,26 @@ internalClass$set("public", "check_profile", function(verbose=FALSE)
 
 	# Check if PROFILE has the right sections : preprocess,  fiiting, quantif & compound
 	if (is.null(PROFILE$preprocess))
-		stop_quietly(paste0("Error: there no 'preprocess' section define in the quantification profile\n"))
+		stop_quietly(paste0("Error: there no 'preprocess' section define in the quantification profile"))
 	if (is.null(PROFILE$fitting))
-		stop_quietly(paste0("Error: there no 'fitting' section define in the quantification profile\n"))
+		stop_quietly(paste0("Error: there no 'fitting' section define in the quantification profile"))
 	if (is.null(PROFILE$quantif))
-		stop_quietly(paste0("Error: there no 'quantif' section define in the quantification profile\n"))
+		stop_quietly(paste0("Error: there no 'quantif' section define in the quantification profile"))
 	if (is.null(PROFILE$compound))
-		stop_quietly(paste0("Error: there no 'compound' section define in the quantification profile\n"))
+		stop_quietly(paste0("Error: there no 'compound' section define in the quantification profile"))
 
 	# Check if all quantif zone match with a fitting zone
 	L <- PROFILE$quantif$zone %in% PROFILE$fitting$zone
 	if (length(L) != sum(L)) {
 		bad <- paste(PROFILE$quantif$zone[which(L==FALSE)],sep=',')
-		stop_quietly(paste0("Error: there some 'quantif' zones (",bad,") that do not match with a fitting zone in the uantification profile\n"))
+		stop_quietly(paste0("Error: there some 'quantif' zones (",bad,") that do not match with a fitting zone in the uantification profile"))
 	}
 
 	# Check if all quantif compound match with a compound line
 	L <-  PROFILE$quantif$compound %in% PROFILE$compound$name
 	if (length(L) != sum(L)) {
 		bad <- paste(PROFILE$quantif$compound[which(L==FALSE)],sep=',')
-		stop_quietly(paste0("Error: there some 'quantif' compounds (",bad,") that do not match with a compound defined in the 'compound' lines in the quantification profile\n"))
+		stop_quietly(paste0("Error: there some 'quantif' compounds (",bad,") that do not match with a compound defined in the 'compound' lines in the quantification profile"))
 	}
 
 	# Check if all ppm range in the fitting section are positive
@@ -135,7 +141,7 @@ internalClass$set("public", "check_profile", function(verbose=FALSE)
 	if (length(L)) {
 		bad <- paste(PROFILE$fitting$zone[L],sep=',')
 		stop_quietly(paste0("Error: there some 'fitting' zones (",bad,") with wrong ppm range in the quantification 
-		profile\n"))
+		profile"))
 	}
 
 	# Check if all ppm range in the quantif section are positive
@@ -144,7 +150,7 @@ internalClass$set("public", "check_profile", function(verbose=FALSE)
 		L <- which((M[,2] - M[,1])<0)
 		if (length(L)) {
 			bad <- paste(PROFILE$quantif$compound[L],sep=',')
-			stop_quietly(paste0("Error: there some 'quantif' compounds (",bad,") with wrong ppm range in the quantification profile\n"))
+			stop_quietly(paste0("Error: there some 'quantif' compounds (",bad,") with wrong ppm range in the quantification profile"))
 		}
 	}
 
@@ -153,7 +159,7 @@ internalClass$set("public", "check_profile", function(verbose=FALSE)
 	L<- unique(PROFILE$quantif$pattern) %in% patterns
 	if (length(L) != sum(L)) {
 		bad <- paste(unique(PROFILE$quantif$pattern)[which(L==FALSE)],sep=',')
-		stop_quietly(paste0("Error: there some pattern in the 'quantif' lines (",bad,") that do not match with a recognized pattern in the quantification profile\n"))
+		stop_quietly(paste0("Error: there some pattern in the 'quantif' lines (",bad,") that do not match with a recognized pattern in the quantification profile"))
 	}
 
 	if (verbose) cat(paste0("OK: the quantification profile format seems correct\n"))

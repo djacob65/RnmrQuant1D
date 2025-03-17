@@ -219,7 +219,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	res$proctype <<- 'quantification'
 })
 
-internalClass$set("private", "get_quantif_for_all_samples", function()
+internalClass$set("private", "get_results_for_all_samples", function()
 {
 	if (! dir.exists(RDATADIR) )
 		stop_quietly(paste0("ERROR : the directory '",RDATADIR,"' does not exist !\n"))
@@ -263,7 +263,7 @@ internalClass$set("private", "get_quantif_for_all_samples", function()
 
 internalClass$set("public", "get_output_results", function()
 {
-	out <- get_quantif_for_all_samples()
+	out <- get_results_for_all_samples()
 	colnames(out$Int) <- colnames(out$SNR) <- colnames(out$quantif) <-
 			sapply(colnames(out$quantif), function(x) gsub('-','_',gsub(' ','_',x)))
 	out$Int <- get_NumMat(out$Int, rownames=FALSE)

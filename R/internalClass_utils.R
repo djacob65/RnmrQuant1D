@@ -2,6 +2,24 @@
 # Miscellaneous
 #=====================================================================
 
+# Stop quietly
+internalClass$set("private", "stop_quietly", function(msg='Stopped!')
+{
+	rlang::inform(msg)
+	rlang::interrupt()
+})
+
+# Get matrix as numeric
+internalClass$set("private", "get_NumMat", function(M, rownames=TRUE)
+{
+	M1 <- data.frame(matrix(as.numeric(M), nrow=nrow(M), ncol=ncol(M)))
+	colnames(M1) <- colnames(M)
+	if (rownames)
+		rownames(M1) <- rownames(M)
+	M1
+})
+
+# Get processing parameters from PROFILE
 internalClass$set("private", "get_procParams", function(profile=NULL)
 {
 	if (!is.null(profile) && !is.null(profile$preprocess)) {
@@ -9,7 +27,9 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 		procParams$ZFFAC <<- profile$preprocess$ZFFAC
 		if (profile$preprocess$ZFFAC==0) procParams$ZEROFILLING <<- FALSE
 		if (!is.null(profile$preprocess$MVPZTSP)) {
-			procParams$MVPZTSP <<- profile$preprocess$MVPZTSP
+			procParams$MVPZTSP <<- ifelse( profile$preprocess$MVPZTSP != 0, 1, 0)
+			#procParams$MVPZFAC <<- profile$preprocess$MVPZTSP
+			procParams$MVPZFAC <<- ifelse( SEQUENCE=='noesy', 10, 1 )
 		}
 		if (!is.null(profile$preprocess$DHZPZRANGE)) {
 			procParams$DHZPZRANGE <<- profile$preprocess$DHZPZRANGE
@@ -23,6 +43,10 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 	procParams
 })
 
+#=====================================================================
+# Some functions about spectra under RAWDIR
+#=====================================================================
+
 # Get list of samples under RAWDIR
 internalClass$set("private", "get_list_samples", function(DIR=NULL)
 {
@@ -30,7 +54,7 @@ internalClass$set("private", "get_list_samples", function(DIR=NULL)
 	unlist(lapply(list.files(DIR), function(d) { if (dir.exists(file.path(DIR,d))) d }))
 })
 
-# Get list of spectra for each samples under RAWDIR
+# Get matrix of spectra for each samples under DIR
 internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 {
 	M <- NULL
@@ -54,26 +78,9 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 	M
 })
 
-internalClass$set("public", "get_samples_table", function(sequence=NULL, infos=FALSE)
-{
-	tbl <- get_list_spectrum(RAWDIR, get_list_samples(RAWDIR))
-	seq <- ifelse(is.null(sequence), self$SEQUENCE, sequence)
-	tbl <- tbl[ tbl[,3] %in% seq, ]
-	tbl <- cbind(tbl[,1], sapply(1:nrow(tbl), function(x) { paste(tbl[x,1:2], collapse='-') }), tbl[,2:3])
-	tbl <- cbind(tbl[,1:3], rep(0,nrow(tbl)), tbl[,4])
-	colnames(tbl) <- c('Spectrum', 'Samplecode', 'EXPNO', 'PROCNO', 'PULSE')
-	if (infos) {
-		M <- NULL
-		for (i in 1:nrow(tbl)) {
-			ACQDIR <- file.path(RAWDIR,tbl[i,1],tbl[i,3])
-			spec <- applyReadSpectrum(ACQDIR, verbose=0)
-			M <- rbind(M,c(get_TSP_width(spec),spec$acq$PULSEWIDTH, spec$acq$NUMBEROFSCANS, spec$acq$SW, spec$proc$SI))	
-		}
-		colnames(M) <- c('TMSPWIDTH', 'PULSEWIDTH', 'NUMBEROFSCANS', 'SW', 'SI')
-		tbl <- cbind(tbl,M)
-	}
-	tbl
-})
+#=====================================================================
+# Some functions about spectral information
+#=====================================================================
 
 internalClass$set("private", "get_TSP_width", function(spec)
 {
@@ -106,16 +113,6 @@ internalClass$set("private", "get_Vnoise", function(spec, ppm_noise)
 	Vnoise
 })
 
-
-internalClass$set("private", "get_NumMat", function(M, rownames=TRUE)
-{
-	M1 <- data.frame(matrix(as.numeric(M), nrow=nrow(M), ncol=ncol(M)))
-	colnames(M1) <- colnames(M)
-	if (rownames)
-		rownames(M1) <- rownames(M)
-	M1
-})
-
 # get the index sequence corresponding to the ppm range
 internalClass$set("private", "getseq", function(spec, ppm, mode='seq')
 {
@@ -125,6 +122,10 @@ internalClass$set("private", "getseq", function(spec, ppm, mode='seq')
 		c(which(spec$ppm>=ppm[1])[1],length(which(spec$ppm<=ppm[2])))
 	}
 })
+
+#=====================================================================
+# Some processing functions
+#=====================================================================
 
 internalClass$set("private", "zerosSpec", function(spec, ppmranges)
 {
@@ -206,11 +207,3 @@ internalClass$set("private", "filterSpectrum", function(spec, filter)
 	}
 	specInt
 })
-
-# Stop quietly
-internalClass$set("private", "stop_quietly", function(msg='Stopped!')
-{
-	rlang::inform(msg)
-	rlang::interrupt()
-})
-
