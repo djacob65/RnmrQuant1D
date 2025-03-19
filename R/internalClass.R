@@ -36,7 +36,7 @@ internalClass <- R6Class("internalClass",
 		FIELD        = "unknown",
 
 	# Instrument sequence
-		SEQUENCE     = "unknown",
+		SEQUENCE     = "noesy",
 
 	# Sample Type
 		TYPE         = "unknown",

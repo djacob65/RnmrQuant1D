@@ -28,8 +28,6 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 		if (profile$preprocess$ZFFAC==0) procParams$ZEROFILLING <<- FALSE
 		if (!is.null(profile$preprocess$MVPZTSP)) {
 			procParams$MVPZTSP <<- ifelse( profile$preprocess$MVPZTSP != 0, 1, 0)
-			#procParams$MVPZFAC <<- profile$preprocess$MVPZTSP
-			procParams$MVPZFAC <<- ifelse( SEQUENCE=='noesy', 10, 1 )
 		}
 		if (!is.null(profile$preprocess$DHZPZRANGE)) {
 			procParams$DHZPZRANGE <<- profile$preprocess$DHZPZRANGE
@@ -68,7 +66,7 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 			ACQ <- readLines(ACQFILE)
 			Pstr <- Rnmr1D:::.bruker.get_param(ACQ,"PULPROG",type="string")
 			PULSE <- NULL
-			if (length(grep('^zg$',Pstr))) PULSE <- 'zg'
+			if (length(grep('^zg[0-9]{0,2}$',Pstr))) PULSE <- 'zg'
 			if (length(grep('^zgpr',Pstr))) PULSE <- 'zgpr'
 			if (length(grep('^noesy',Pstr))) PULSE <- 'noesy'
 			if (is.null(PULSE)) next

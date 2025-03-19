@@ -2,6 +2,13 @@
 # Some functions for checking directories / data required
 # =====================================================================
 
+internalClass$set("private", "check_sequence", function()
+{
+	# Check if the sequence is recognized
+	if (! SEQUENCE %in% c('zg','zgpr', 'noesy'))
+		stop_quietly(paste0("Error: ", SEQUENCE, "is not valid. Only 'zg','zgpr', 'noesy' are recognized."))
+})
+
 internalClass$set("public", "check_samples", function(verbose=FALSE)
 {
 	# Check if RAWDIR exist
@@ -18,9 +25,8 @@ internalClass$set("public", "check_samples", function(verbose=FALSE)
 	if (is.null(M1))
 		stop_quietly(paste0("Error: ", RAWDIR, " must contain some Bruker spectra."))
 
-	# Check if sequence is known
-	if (! SEQUENCE %in% c('zg', 'zgpr','noesy'))
-		stop_quietly(paste0("Error: ", SEQUENCE, " is unknown."))
+	# Check if the sequence is recognized
+	check_sequence()
 
 	# Check if RAWDIR contain some Bruker spectra acquired with the request sequence
 	M1b <- M1[ M1[,3] == SEQUENCE, ,drop=F]
@@ -58,6 +64,9 @@ internalClass$set("public", "check_samples", function(verbose=FALSE)
 internalClass$set("public", "check_calibration", function(QC=NULL, QS=NULL, sequence=NULL, verbose=FALSE)
 {
 	if (is.null(sequence)) sequence <- SEQUENCE
+
+	# Check if the sequence is recognized
+	check_sequence()
 
  	# Check if QSDIR exist
 	if (!dir.exists(QSDIR))
@@ -108,7 +117,7 @@ internalClass$set("public", "check_calibration", function(QC=NULL, QS=NULL, sequ
 
 })
 
-internalClass$set("public", "check_profile", function(verbose=FALSE)
+internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 {
 	# Note: We assume that the quantification profile can be read without error by the readProfile method
 
@@ -126,14 +135,18 @@ internalClass$set("public", "check_profile", function(verbose=FALSE)
 	L <- PROFILE$quantif$zone %in% PROFILE$fitting$zone
 	if (length(L) != sum(L)) {
 		bad <- paste(PROFILE$quantif$zone[which(L==FALSE)],sep=',')
-		stop_quietly(paste0("Error: there some 'quantif' zones (",bad,") that do not match with a fitting zone in the uantification profile"))
+		stop_quietly(paste0("Error: there some 'quantif' zones (",bad,") that do not match with a fitting zone in the quantification profile"))
 	}
+
+	# Check if the requested zones are defined in the profile
+	#if (!is.null(zones) && sum(zones %in% PROFILE$fitting$zone)<length(zones))
+	#	stop_quietly(paste0("Error: The zone(s) '",paste0(zones,collapse=','),"'  do not correspond to those defined in the quantification profile"))
 
 	# Check if all quantif compound match with a compound line
 	L <-  PROFILE$quantif$compound %in% PROFILE$compound$name
 	if (length(L) != sum(L)) {
 		bad <- paste(PROFILE$quantif$compound[which(L==FALSE)],sep=',')
-		stop_quietly(paste0("Error: there some 'quantif' compounds (",bad,") that do not match with a compound defined in the 'compound' lines in the quantification profile"))
+		stop_quietly(paste0("Error: there some 'quantif' compounds (",bad,") that do not match with a compound defined in the 'compound' section in the quantification profile"))
 	}
 
 	# Check if all ppm range in the fitting section are positive

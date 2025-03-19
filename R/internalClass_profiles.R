@@ -1,32 +1,42 @@
 #=====================================================================
 # Read the different sections defining the profile, namely :
-# --- All profiles ---
 #   'preprocess' : parameters for preprocessing (LB, ZFFAC, PHC0)
 #   'exclude'  : zones to be excluded for all processing steps,
 #   'zeroneg'  : zones to zero before the baseline correction,
 #   'baseline' : zones for baseline correction along with their airPLS parameters (lambda & order)
 #   'fitting'  : zones for deconvolution (peak fitting) along with their parameters
 #      * obl : polynomial order for a local baseline correction optimized at the same time that the peak fitting (default:0)
+#      * qbl : indicates if a q-NMR baseline correction will be applied before deconvolution
 #      * asym : allows asymetric peaks (default:0)
+#      * filters : indicates what type of filters will be applied on spectra
+#      * addpeaks : indicates if peaks will be added after a first deconvolution to fill the "holes"
 #      * zone : defines a zone id for better selection
 #   'quantif'  : zones to be quantified and assigned to a compound name
+#      * compound : compound name
+#      * pattern : pattern for the peak seach 
+#      * P1, P2, P3 : parameters relatives to pattern
+#      * zone : defines a zone id corresponding to a fitting zone
 #   'compound' : list of compounds along with their features (Mw, Np, Pattern)
 #=====================================================================
 
 internalClass$set("public", "readProfile", function(PROFILE)
 {
+	# Check if the profile file exists
 	if (!file.exists(PROFILE))
-		 stop("You must specified an existing profile")
+		 stop("You must specify an existing profile")
 
+	# Try to read the profile file, stop execution if an error occurs
 	CMDTEXT <- tryCatch({
-		# Read the profile file
-		readLines(PROFILE)
+		readLines(PROFILE)  # Read file contents
 	},
 	error=function(cond) {
 		stop(cond)
 	})
-	CMD <- CMDTEXT[ grep( "^[^(\t,#) ]", CMDTEXT ) ]
 
+	# Filter out lines that start with tabs, commas, hash (#), or spaces
+	CMD <- CMDTEXT[ grep( "^[^(\t,#,\n) ]", CMDTEXT ) ]
+
+	# Initialize variables to store different types of profile data
 	preprocess <- NULL
 	exclude_zones <- NULL
 	zeroneg <- NULL
@@ -35,86 +45,149 @@ internalClass$set("public", "readProfile", function(PROFILE)
 	quantif <- NULL
 	compound <- NULL
 
-	while ( length(CMD)>0 ) {
+	# Process each command line in CMD
+	while ( length(CMD) > 0 ) {
 		cmdLine <- CMD[1]
-		cmdPars <- unlist(strsplit(cmdLine[1],"\t"))
-		type <- cmdPars[1]
+		cmdPars <- unlist(strsplit(cmdLine[1],"\t"))  # Split line into parameters
+		type <- cmdPars[1]  # Get command type
+
+		# Process different command types
 		repeat {
-			if (type == 'preprocess' && length(cmdPars)>3) {
+			if (type == 'preprocess' && length(cmdPars) > 3) {
+				# Extract preprocessing parameters
 				preprocess <- list(LB=as.numeric(cmdPars[2]), ZFFAC=as.numeric(cmdPars[3]), PHC0=as.numeric(cmdPars[4]))
-				if (length(cmdPars)>4) preprocess$MVPZTSP <- as.numeric(cmdPars[5])
-				if (length(cmdPars)>4) preprocess$DHZPZRANGE <- as.numeric(cmdPars[6])
+				if (length(cmdPars) > 4) preprocess$MVPZTSP <- as.numeric(cmdPars[5])
+				if (length(cmdPars) > 5) preprocess$DHZPZRANGE <- as.numeric(cmdPars[6])
+				CMD <- CMD[-1]  # Remove processed line
+				break
+			}
+			if (type == 'exclude' && length(cmdPars) > 2) {
+				# Store exclusion zones
+				exclude_zones <- rbind(exclude_zones, cmdPars[2:3])
 				CMD <- CMD[-1]
 				break
 			}
-			if (type == 'exclude' && length(cmdPars)>2) {
-				exclude_zones <- rbind( exclude_zones, cmdPars[2:3])
+			if (type == 'zeroneg' && length(cmdPars) > 2) {
+				# Store zero-negative zones
+				zeroneg <- rbind(zeroneg, cmdPars[2:3])
 				CMD <- CMD[-1]
 				break
 			}
-			if (type == 'zeroneg' && length(cmdPars)>2) {
-				zeroneg <- rbind( zeroneg, cmdPars[2:3])
+			if (type == 'baseline' && length(cmdPars) > 5) {
+				# Store baseline correction parameters
+				baseline <- rbind(baseline, cmdPars[2:6])
 				CMD <- CMD[-1]
 				break
 			}
-			if (type == 'baseline' && length(cmdPars)>5) {
-				baseline <- rbind( baseline, cmdPars[2:6])
+			if (type == 'fitting') {
+				if (length(cmdPars) < 10)
+					stop_quietly("Error: the 'fitting' section must have 10 columns in the quantification profile")
+				# Store peak fitting parameters
+				fitting <- rbind(fitting, cmdPars[2:10])
 				CMD <- CMD[-1]
 				break
 			}
-			if (type == 'fitting' && length(cmdPars)>8) {
-				fitting <- rbind( fitting, cmdPars[2:9] )
+			if (type == 'quantif') {
+				if (length(cmdPars) < 9)
+					stop_quietly("Error: the 'quantif' section must have 9 columns in the quantification profile")
+				# Store quantification parameters
+				quantif <- rbind(quantif, cmdPars[2:9])
 				CMD <- CMD[-1]
 				break
 			}
-			if (type == 'quantif' && length(cmdPars)>8) {
-				quantif <- rbind( quantif, cmdPars[2:9] )
+			if (type == 'compound') {
+				if (length(cmdPars) < 3)
+					stop_quietly("Error: the 'compound' section must have 3 columns in the quantification profile")
+				# Store compound information
+				compound <- rbind(compound, cmdPars[2:3])
 				CMD <- CMD[-1]
 				break
 			}
-			if (type == 'compound' && length(cmdPars)>2) {
-				compound <- rbind( compound, cmdPars[2:3] )
-				CMD <- CMD[-1]
-				break
-			}
+			CMD <- CMD[-1]
 			break
 		}
 	}
 
-	numformat <- function(df, cols) { for (i in cols) df[,i] <- as.numeric(df[,i]); df }
+	# Helper function to convert specified columns to numeric
+	numformat <- function(df, cols) {
+		for (i in cols) df[,i] <- as.numeric(df[,i]) 
+		df 
+	}
 
+	# Convert and assign column names to processed data
 	if (!is.null(exclude_zones)) {
-		exclude_zones <- numformat( data.frame(exclude_zones, stringsAsFactors = FALSE), 1:2 )
-		colnames(exclude_zones) <- c('ppm1','ppm2')
+		exclude_zones <- numformat(data.frame(exclude_zones, stringsAsFactors = FALSE), 1:2)
+		colnames(exclude_zones) <- c('ppm1', 'ppm2')
 	}
 
 	if (!is.null(zeroneg)) {
-		zeroneg <- numformat( data.frame(zeroneg, stringsAsFactors = FALSE), 1:2 )
-		colnames(zeroneg) <- c('ppm1','ppm2')
+		zeroneg <- numformat(data.frame(zeroneg, stringsAsFactors = FALSE), 1:2)
+		colnames(zeroneg) <- c('ppm1', 'ppm2')
 	}
 
 	if (!is.null(baseline)) {
-		baseline <- numformat( data.frame(baseline, stringsAsFactors = FALSE), 1:5 )
-		colnames(baseline) <- c('ppm1','ppm2','lambda','order', 'smooth')
+		baseline <- numformat(data.frame(baseline, stringsAsFactors = FALSE), 1:5)
+		colnames(baseline) <- c('ppm1', 'ppm2', 'lambda', 'order', 'smooth')
 	}
 
 	if (!is.null(fitting)) {
-		fitting <- numformat( data.frame(fitting, stringsAsFactors = FALSE), c(1:2,4:8) )
-		colnames(fitting) <- c('ppm1','ppm2','obl','qbl','asym','etamin','filters','zone')
+		fitting <- numformat(data.frame(fitting, stringsAsFactors = FALSE), c(1:2,4:9))
+		colnames(fitting) <- c('ppm1', 'ppm2', 'obl', 'qbl', 'asym', 'etamin', 'filters', 'addpeaks', 'zone')
 	}
 
 	if (!is.null(quantif)) {
-		quantif <- numformat( data.frame(quantif, stringsAsFactors = FALSE), c(3,6:8) )
+		quantif <- numformat(data.frame(quantif, stringsAsFactors = FALSE), c(3,6:8))
 		colnames(quantif) <- c('compound', 'pattern', 'P1', 'P2', 'P3', 'np', 'factor', 'zone')
 	}
 
 	if (!is.null(compound)) {
-		compound <- numformat( data.frame(compound, stringsAsFactors = FALSE), 2 )
-		colnames(compound) <- c('name','mw')
+		compound <- numformat(data.frame(compound, stringsAsFactors = FALSE), 2)
+		colnames(compound) <- c('name', 'mw')
 	}
 
+	# Return processed profile data as a list
 	list(preprocess=preprocess, exclude_zones=exclude_zones, zeroneg=zeroneg, baseline=baseline,
 		 fitting=fitting, quantif=quantif, compound=compound)
+})
+
+internalClass$set("public", "reorderProfile", function()
+{
+	fitting <- PROFILE$fitting
+	quantif <- PROFILE$quantif
+	fitting <- fitting[order(fitting$ppm1), ]
+	quantif$zone <- simplify2array(lapply(quantif$zone, function(k){which(k==fitting$zone)}))
+	fitting$zone <- 1:nrow(fitting)
+	quantif <- quantif[order(quantif$zone), ]
+	PROFILE$fitting <<- fitting
+	PROFILE$quantif <<- quantif
+})
+
+internalClass$set("public", "saveProfile", function(PROFILE)
+{
+	V <- cbind('preprocess', t(rq1d$PROFILE$preprocess))
+	colnames(V)[1] <- '#TYPE'
+	write.table(V, PROFILE, append = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+	
+	V <- "\n\n"
+	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+	V <- cbind(rep('fitting',nrow(rq1d$PROFILE$fitting)), rq1d$PROFILE$fitting)
+	colnames(V)[1] <- '#TYPE'
+	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+
+	V <- "\n\n"
+	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+
+	V <- cbind(rep('quantif',nrow(rq1d$PROFILE$quantif)), rq1d$PROFILE$quantif)
+	colnames(V)[1] <- '#TYPE'
+	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+
+	V <- "\n\n"
+	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+
+	V <- cbind(rep('compound',nrow(rq1d$PROFILE$compound)), rq1d$PROFILE$compound)
+	colnames(V)[1] <- '#TYPE'
+	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+
 })
 
 # Get quantif parameters as a list for a given zone
@@ -141,3 +214,4 @@ internalClass$set("private", "get_quantif_cmpds", function(profil, zone)
 	}
 	cmpds
 })
+

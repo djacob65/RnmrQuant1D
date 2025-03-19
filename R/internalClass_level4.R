@@ -4,6 +4,10 @@
 
 internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 {
+
+	# Check the quantification profile
+	check_profile(zones)
+
 	pkfit <- PROFILE$fitting
 	if (!is.null(zones)) pkfit <- pkfit[ pkfit$zone %in% zones, , drop=F]
 	ppm_range <<- c(min(pkfit[,1]), max(pkfit[,2]))
@@ -139,6 +143,8 @@ internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=T
 internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones=NULL, ncpu=2, reset=FALSE, CR=FALSE, verbose=1)
 {
 	check_all()
+	if (is.null(cmpdlist) && ! is.null(zones)) check_profile(zones)
+
 	if (verbose) cat("Do quantification ... \n")
 	if (verbose && CR) cat("\n")
 
