@@ -118,10 +118,11 @@ public = list(
 #' @description
 #' Checks if the quantification profile is OK
 #' @param self The RnmrQuant1D instance 
+#' @param zones specifies the zone(s) to be checked
 #' @param verbose Display the success message if TRUE
 #' @return nothing
-	check_profile = function(verbose=FALSE) {
-		super$check_profile(verbose)
+	check_profile = function(zones=NULL, verbose=FALSE) {
+		super$check_profile(zones, verbose)
 	},
 
 #' @description

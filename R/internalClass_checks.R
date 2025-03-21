@@ -139,8 +139,14 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 	}
 
 	# Check if the requested zones are defined in the profile
-	#if (!is.null(zones) && sum(zones %in% PROFILE$fitting$zone)<length(zones))
-	#	stop_quietly(paste0("Error: The zone(s) '",paste0(zones,collapse=','),"'  do not correspond to those defined in the quantification profile"))
+	if (!is.null(zones) && sum(zones %in% PROFILE$fitting$zone)<length(zones))
+		stop_quietly(paste0("Error: The zone(s) '",paste0(zones,collapse=','),"'  do not correspond to those defined in the quantification profile"))
+
+	# Check that no zone is included in another
+	fit <- PROFILE$fitting
+	L <- simplify2array(lapply(1:nrow(fit), function(k){sum(fit$ppm1[k]>fit$ppm1 & fit$ppm2[k]<fit$ppm2)}))
+	if (sum(L)>0)
+		stop_quietly(paste0("Error: The zone(s) '",paste0(which(L>0),collapse=','),"' is (are) included in another in the quantification profile"))
 
 	# Check if all quantif compound match with a compound line
 	L <-  PROFILE$quantif$compound %in% PROFILE$compound$name

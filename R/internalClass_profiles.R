@@ -61,18 +61,21 @@ internalClass$set("public", "readProfile", function(PROFILE)
 				CMD <- CMD[-1]  # Remove processed line
 				break
 			}
+			# Obsolete : this section will not be supported in the futur
 			if (type == 'exclude' && length(cmdPars) > 2) {
 				# Store exclusion zones
 				exclude_zones <- rbind(exclude_zones, cmdPars[2:3])
 				CMD <- CMD[-1]
 				break
 			}
+			# Obsolete : this section will not be supported in the futur
 			if (type == 'zeroneg' && length(cmdPars) > 2) {
 				# Store zero-negative zones
 				zeroneg <- rbind(zeroneg, cmdPars[2:3])
 				CMD <- CMD[-1]
 				break
 			}
+			# Obsolete : this section will not be supported in the futur
 			if (type == 'baseline' && length(cmdPars) > 5) {
 				# Store baseline correction parameters
 				baseline <- rbind(baseline, cmdPars[2:6])
@@ -150,6 +153,7 @@ internalClass$set("public", "readProfile", function(PROFILE)
 		 fitting=fitting, quantif=quantif, compound=compound)
 })
 
+# Orders the zones according to the ppm scale then renumbers the zones in both fitting and quantification section
 internalClass$set("public", "reorderProfile", function()
 {
 	fitting <- PROFILE$fitting
@@ -162,6 +166,7 @@ internalClass$set("public", "reorderProfile", function()
 	PROFILE$quantif <<- quantif
 })
 
+# Save the current quantification profile in an external file
 internalClass$set("public", "saveProfile", function(PROFILE)
 {
 	V <- cbind('preprocess', t(rq1d$PROFILE$preprocess))
