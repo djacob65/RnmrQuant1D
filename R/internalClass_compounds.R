@@ -25,14 +25,14 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 		dppm <- NULL
 		if (pattern == 'r1')	V <- rbind( V, c(ppm0, J) )
 		if (pattern == 'r2')	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 'r3')	dppm <- 1.5*J
-		if (pattern == 'r4')	dppm <- 1.5*J
-		if (pattern == 'r5')	dppm <- 1.5*J
-		if (pattern == 'r6')	dppm <- 1.5*J
+		if (pattern == 'r3')	dppm <- J/SFO1
+		if (pattern == 'r4')	dppm <- J/SFO1
+		if (pattern == 'r5')	dppm <- J/SFO1
+		if (pattern == 'r6')	dppm <- J/SFO1
 		if (pattern == 'r7')	V <- rbind( V, c(ppm0, J) )
 		if (pattern == 'r8')	V <- rbind( V, c(ppm0, J) )
 		if (pattern == 'r9')	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 'r10')	dppm <- 1.5*J
+		if (pattern == 'r10')	dppm <- J/SFO1
 		if (pattern == 'r11')	V <- rbind( V, c(ppm0, J) )
 		if (pattern == 'b')	 	V <- rbind( V, c(ppm0, J) )
 		if (pattern == 's')		dppm <- 1.5*J

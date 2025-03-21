@@ -148,8 +148,17 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 	if (sum(L)>0)
 		stop_quietly(paste0("Error: The zone(s) '",paste0(which(L>0),collapse=','),"' is (are) included in another in the quantification profile"))
 
+	# Check if the ppm ranges in the quantif section are included in the ppm ranges defined in the fitting section
+	Q <- cbind( PROFILE$quantif, get_quantif_ppmrange() )
+	L <- simplify2array(lapply(fit$zone, function(k) {
+			QZ <- Q[Q$zone==fit$zone[k], , drop=F]
+			sum(QZ$ppm1>fit$ppm1[k] & QZ$ppm2<fit$ppm2[k])==nrow(QZ)
+	}))
+	if (sum(L)<nrow(fit))
+		stop_quietly(paste0("Error: The ppm ranges in the quantif section are not included in those defined in the fitting section for zone(s) '",paste0(which(!L),collapse=','),"'"))
+
 	# Check if all quantif compound match with a compound line
-	L <-  PROFILE$quantif$compound %in% PROFILE$compound$name
+	L <- PROFILE$quantif$compound %in% PROFILE$compound$name
 	if (length(L) != sum(L)) {
 		bad <- paste(PROFILE$quantif$compound[which(L==FALSE)],sep=',')
 		stop_quietly(paste0("Error: there some 'quantif' compounds (",bad,") that do not match with a compound defined in the 'compound' section in the quantification profile"))
