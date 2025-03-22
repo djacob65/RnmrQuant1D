@@ -205,9 +205,12 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 				spec$sampleidx <- sampleid[k]
 				spec$peaklist <- spec$Q$peaklist
 				spec$Q <- NULL
-				if (!is.null(cmpdlist)) quantMat <- quantMat[rownames(quantMat) %in% cmpdlist,,drop=F]
-				if (!is.null(cmpdlist)) SNR <- SNR[rownames(SNR) %in% cmpdlist,,drop=F]
-				absQuantMat <- absSampleQuantification(spec, fP, quantMat, fdil=fdil[k], verbose=1)
+				absQuantMat <- NULL
+				if (!is.null(quantMat)) {
+					if (!is.null(cmpdlist)) quantMat <- quantMat[rownames(quantMat) %in% cmpdlist,,drop=F]
+					if (!is.null(cmpdlist)) SNR <- SNR[rownames(SNR) %in% cmpdlist,,drop=F]
+					absQuantMat <- absSampleQuantification(spec, fP, quantMat, fdil=fdil[k], verbose=1)
+				}
 				rm(out)
 				sink()
 			})
@@ -237,6 +240,7 @@ internalClass$set("private", "get_results_for_all_samples", function()
 	Msnr <- Mint <- Mquant <- NULL
 	samplenames <- sampleinfos <- sampletypes <- fitinfos <- NULL
 	cmpdlist <- NULL
+	SN1 <- SN2 <- NULL
 	repeat {
 		if (length(Rdata)<1) break
 		for (sample in Rdata) {
@@ -247,15 +251,40 @@ internalClass$set("private", "get_results_for_all_samples", function()
 			infos <- c(spec$TSPwidth, spec$acq$PULSEWIDTH, spec$acq$NUMBEROFSCANS, spec$acq$SW, spec$proc$SI)
 			sampleinfos <- rbind(sampleinfos, infos)
 			sampletypes <- c(sampletypes, quantParams[['type']])
-			Mint <- rbind(Mint, t(quantMat))
-			Msnr <- rbind(Msnr, t(SNR))
-			Mquant <- rbind(Mquant, t(absQuantMat))
 			fitinfos <- rbind(fitinfos, cbind(rep(quantParams[['samplename']], nrow(spec$fit$infos)),spec$fit$infos))
-			cmpdlist <- rownames(quantMat)
+			if (!is.null(quantMat)) {
+				Mint <- rbind(Mint, t(quantMat))
+				Msnr <- rbind(Msnr, t(SNR))
+				Mquant <- rbind(Mquant, t(absQuantMat))
+				cmpdlist <- rownames(quantMat)
+				SN1 <- c(SN1, sample)
+			} else {
+				SN2 <- c(SN2, sample)
+			}
+		}
+
+		# Add missing samples if needed
+		if (!is.null(SN2)) {
+			M <- matrix(rep(NA,length(SN2)*ncol(Mquant)), nrow=length(SN2), ncol=ncol(Mquant))
+			Mquant <- rbind(Mquant, M)
+			Mint <- rbind(Mint, M)
+			Msnr <- rbind(Msnr, M)
 		}
 		Mquant <- matrix(as.numeric(Mquant), nrow=nrow(Mquant))
-		rownames(Mint) <- rownames(Msnr) <- rownames(Mquant) <- samplenames
+
+		# Add rownames and colnames
+		SN <- c(SN1, SN2)
+		rownames(Mint) <- rownames(Msnr) <- rownames(Mquant) <- SN
 		colnames(Mint) <- colnames(Msnr) <- colnames(Mquant) <- cmpdlist
+
+		# Reorder samples if needed
+		if (!is.null(SN2)) {
+			V <- simplify2array(lapply(Rdata, function(x){which(SN==x)}))
+			Mquant <- Mquant[V, , drop=F]
+			Mint <- Mint[V, , drop=F]
+			Msnr <- Msnr[V, , drop=F]
+		}
+
 		colnames(sampleinfos) <- c('TSPwidth', 'PULSEWIDTH', 'NUMBEROFSCANS', 'SW', 'SI')
 		rownames(sampleinfos) <- samplenames
 		sampletypes <- as.matrix(sampletypes, ncol=1)

@@ -368,8 +368,9 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
 			infos <- c(spec$expno, pkfit[k,8], pkfit[k,1:2], model$nbpeak, opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2,4), Idiff, round(t[3],2))
 		} else  {
+			Peaks <- NULL
 			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
-			infos <- c(spec$expno, pkfit[k,8], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, 0, 100, round(t[3],2))
+			infos <- c(spec$expno, pkfit[k,8], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, 0, opars.loc$qbl, 0, 100, round(t[3],2))
 		}
 		if (verbose) cat("-------------------\n")
 
@@ -399,12 +400,11 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	spec$intcorr <- NULL
 	spec$BL <- NULL
 
+	infos <- data.frame(infos[,1:ncol(infos)])
+	colnames(infos) <- c('expno','zone','ppm1','ppm2','nbpeaks','addpeaks','asym','obl','qbl','R2','Int. Diff. %','Time')
+
 	# Format the peak fitting information table
-	if (!is.null(Peaks)) {
-		rownames(Peaks) <- NULL
-		infos <- data.frame(infos[,1:ncol(infos)])
-		colnames(infos) <- c('expno','zone','ppm1','ppm2','nbpeaks','addpeaks','asym','obl','qbl','R2','Int. Diff. %','Time')
-	}
+	if (!is.null(Peaks)) rownames(Peaks) <- NULL
 
 	# Store the final fitted spectrum in the output object
 	ppmrange <- c(min(pkfit[,1]), max(pkfit[,2]))

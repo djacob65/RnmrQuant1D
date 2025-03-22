@@ -205,10 +205,10 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 	# Initialize output variables
 	Mquant <- SNR <- peaklist <- NULL
 
+	if (verbose) { print(spec$fit$infos); cat("\n") }
+
 	# If peaks were detected, proceed with quantification
 	if (! is.null(spec$fit$peaks)) {
-		if (verbose) { print(spec$fit$infos); cat("\n") }
-
 		# Perform quantification based on the fitted peaks
 		Q <- applyQuantification(spec, fullPattern=TRUE, verbose=verbose)
 		print(Q$quantification); cat("\n")

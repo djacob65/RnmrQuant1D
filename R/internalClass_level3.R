@@ -133,16 +133,26 @@ internalClass$set("public", "get_Matrix_Integrals", function()
 	S <-unique(res$allquantifs[,1])
 	cmpds <- unique(res$allquantifs[,3])
 
-	# Display all integration
+	# Merge all integration into a matrix
 	M <- NULL
 	for(k in 1:length(S)) {
 		long <- res$allquantifs[res$allquantifs[,1]==S[k],c(2,3,6)]
 		colnames(long)[1] <- "name"
 		M <- rbind(M, reshape(long, timevar="Compound", direction="wide", idvar="name"))
 	}
-	MatInt <- matrix(round(as.numeric(as.matrix(M[,2:ncol(M)])),2), nrow=nrow(M))
-	colnames(MatInt) <- cmpds
-	rownames(MatInt) <- M[,1]
+	M2 <- matrix(round(as.numeric(as.matrix(M[,2:ncol(M)])),2), nrow=nrow(M))
+	colnames(M2) <- cmpds
+	rownames(M2) <- M[,1]
+
+	# Add missing samples
+	V <- SAMPLES[which(!SAMPLES[,2] %in% rownames(M2)),2]
+	M3 <- matrix(rep(NA,length(V)*ncol(M2)), nrow=length(V), ncol=ncol(M2))
+	M4 <- rbind(M2,M3)
+	rownames(M4)[(nrow(M2)+1):(nrow(M2)+nrow(M3))] <- V
+
+	# Reorder rownames in the same order than samples
+	V <- simplify2array(lapply(rq1d$SAMPLES[,2], function(x){which(rownames(M4)==x)}))
+	MatInt <- M4[V, , drop=F]
 	MatInt
 })
 
@@ -162,9 +172,19 @@ internalClass$set("public", "get_Matrix_SNR", function()
 		colnames(long)[1] <- "name"
 		M <- rbind(M, reshape(long, timevar="Compound", direction="wide", idvar="name"))
 	}
-	MatSNR <- matrix(round(as.numeric(as.matrix(M[,2:ncol(M)])),2), nrow=nrow(M))
-	colnames(MatSNR) <- cmpds
-	rownames(MatSNR) <- M[,1]
+	M2 <- matrix(round(as.numeric(as.matrix(M[,2:ncol(M)])),2), nrow=nrow(M))
+	colnames(M2) <- cmpds
+	rownames(M2) <- M[,1]
+
+	# Add lacked samples
+	V <- SAMPLES[which(!SAMPLES[,2] %in% rownames(M2)),2]
+	M3 <- matrix(rep(NA,length(V)*ncol(M2)), nrow=length(V), ncol=ncol(M2))
+	M4 <- rbind(M2,M3)
+	rownames(M4)[(nrow(M2)+1):(nrow(M2)+nrow(M3))] <- V
+
+	# Reorder rownames in the same order than samples
+	V <- simplify2array(lapply(rq1d$SAMPLES[,2], function(x){which(rownames(M4)==x)}))
+	MatSNR <- M4[V, , drop=F]
 	MatSNR
 })
 
