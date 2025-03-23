@@ -145,6 +145,9 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	check_all()
 	if (is.null(cmpdlist) && ! is.null(zones)) check_profile(zones)
 
+	if (is.null(fP) || length(fP)==0 || is.null(fP$mean))
+		stop_quietly(paste0("Error: the PULCON factor must be computed before"))
+
 	if (verbose) cat("Do quantification ... \n")
 	if (verbose && CR) cat("\n")
 

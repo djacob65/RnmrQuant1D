@@ -169,27 +169,27 @@ internalClass$set("public", "reorderProfile", function()
 # Save the current quantification profile in an external file
 internalClass$set("public", "saveProfile", function(PROFILE)
 {
-	V <- cbind('preprocess', t(rq1d$PROFILE$preprocess))
+	V <- cbind('preprocess', t(PROFILE$preprocess))
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILE, append = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 	
 	V <- "\n\n"
 	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
-	V <- cbind(rep('fitting',nrow(rq1d$PROFILE$fitting)), rq1d$PROFILE$fitting)
+	V <- cbind(rep('fitting',nrow(PROFILE$fitting)), PROFILE$fitting)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 
 	V <- "\n\n"
 	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
-	V <- cbind(rep('quantif',nrow(rq1d$PROFILE$quantif)), rq1d$PROFILE$quantif)
+	V <- cbind(rep('quantif',nrow(PROFILE$quantif)), PROFILE$quantif)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 
 	V <- "\n\n"
 	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
-	V <- cbind(rep('compound',nrow(rq1d$PROFILE$compound)), rq1d$PROFILE$compound)
+	V <- cbind(rep('compound',nrow(PROFILE$compound)), PROFILE$compound)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 

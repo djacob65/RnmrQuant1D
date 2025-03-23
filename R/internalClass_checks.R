@@ -58,7 +58,13 @@ internalClass$set("public", "check_samples", function(verbose=FALSE)
 	# Check if the samples table has a 'F_dilition' columns
 	if (! FDILfield %in% colnames(SAMPLES))
 		stop_quietly(paste0("Error: the sample table must have a columns named '",FDILfield))
+
+	# Check if the samplenames are unique
+	if (unique(SAMPLES[,2]) != nrow(SAMPLES))
+		stop_quietly(paste0("Error: the samplenames (column 2) must be unique in the sample table"))
+
 	if (verbose) cat(paste0("OK: the sample table has at least ",NCMIN," columns with one named '", FDILfield, "'\n"))
+
 })
 
 internalClass$set("public", "check_calibration", function(QC=NULL, QS=NULL, sequence=NULL, verbose=FALSE)
@@ -173,7 +179,7 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 	}
 
 	# Check if all ppm range in the quantif section are positive
-	if (!is.na(as.numeric(rq1d$FIELD))) {
+	if (!is.na(as.numeric(FIELD))) {
 		M <- get_quantif_ppmrange()
 		L <- which((M[,2] - M[,1])<0)
 		if (length(L)) {

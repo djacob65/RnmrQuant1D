@@ -151,7 +151,7 @@ internalClass$set("public", "get_Matrix_Integrals", function()
 	rownames(M4)[(nrow(M2)+1):(nrow(M2)+nrow(M3))] <- V
 
 	# Reorder rownames in the same order than samples
-	V <- simplify2array(lapply(rq1d$SAMPLES[,2], function(x){which(rownames(M4)==x)}))
+	V <- simplify2array(lapply(SAMPLES[,2], function(x){which(rownames(M4)==x)}))
 	MatInt <- M4[V, , drop=F]
 	MatInt
 })
@@ -165,7 +165,7 @@ internalClass$set("public", "get_Matrix_SNR", function()
 	S <-unique(res$allquantifs[,1])
 	cmpds <- unique(res$allquantifs[,3])
 	
-	# Display all integration
+	# Merge all SNR into a matrix
 	M <- NULL
 	for(k in 1:length(S)) {
 		long <- res$allquantifs[res$allquantifs[,1]==S[k],c(2,3,7)]
@@ -183,7 +183,7 @@ internalClass$set("public", "get_Matrix_SNR", function()
 	rownames(M4)[(nrow(M2)+1):(nrow(M2)+nrow(M3))] <- V
 
 	# Reorder rownames in the same order than samples
-	V <- simplify2array(lapply(rq1d$SAMPLES[,2], function(x){which(rownames(M4)==x)}))
+	V <- simplify2array(lapply(SAMPLES[,2], function(x){which(rownames(M4)==x)}))
 	MatSNR <- M4[V, , drop=F]
 	MatSNR
 })
