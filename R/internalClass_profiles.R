@@ -15,8 +15,10 @@
 #      * compound : compound name
 #      * pattern : pattern for the peak seach 
 #      * P1, P2, P3 : parameters relatives to pattern
+#      * np : number of proton
+#      * factor : correction factor to be applied to the final concentration
 #      * zone : defines a zone id corresponding to a fitting zone
-#   'compound' : list of compounds along with their features (Mw, Np, Pattern)
+#   'compound' : list of compounds along with their Molecular Weight (MW)
 #=====================================================================
 
 internalClass$set("public", "readProfile", function(PROFILE)
@@ -61,21 +63,21 @@ internalClass$set("public", "readProfile", function(PROFILE)
 				CMD <- CMD[-1]  # Remove processed line
 				break
 			}
-			# Obsolete : this section will not be supported in the futur
+			# deprecated : this section will not be supported in the futur
 			if (type == 'exclude' && length(cmdPars) > 2) {
 				# Store exclusion zones
 				exclude_zones <- rbind(exclude_zones, cmdPars[2:3])
 				CMD <- CMD[-1]
 				break
 			}
-			# Obsolete : this section will not be supported in the futur
+			# deprecated : this section will not be supported in the futur
 			if (type == 'zeroneg' && length(cmdPars) > 2) {
 				# Store zero-negative zones
 				zeroneg <- rbind(zeroneg, cmdPars[2:3])
 				CMD <- CMD[-1]
 				break
 			}
-			# Obsolete : this section will not be supported in the futur
+			# deprecated : this section will not be supported in the futur
 			if (type == 'baseline' && length(cmdPars) > 5) {
 				# Store baseline correction parameters
 				baseline <- rbind(baseline, cmdPars[2:6])

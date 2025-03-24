@@ -146,13 +146,16 @@ internalClass$set("public", "get_Matrix_Integrals", function()
 
 	# Add missing samples
 	V <- SAMPLES[which(!SAMPLES[,2] %in% rownames(M2)),2]
-	M3 <- matrix(rep(NA,length(V)*ncol(M2)), nrow=length(V), ncol=ncol(M2))
-	M4 <- rbind(M2,M3)
-	rownames(M4)[(nrow(M2)+1):(nrow(M2)+nrow(M3))] <- V
-
-	# Reorder rownames in the same order than samples
-	V <- simplify2array(lapply(SAMPLES[,2], function(x){which(rownames(M4)==x)}))
-	MatInt <- M4[V, , drop=F]
+	if (length(V)>0) {
+		M3 <- matrix(rep(NA,length(V)*ncol(M2)), nrow=length(V), ncol=ncol(M2))
+		M4 <- rbind(M2,M3)
+		rownames(M4)[(nrow(M2)+1):(nrow(M2)+nrow(M3))] <- V
+		# Reorder rownames in the same order than samples
+		V <- simplify2array(lapply(SAMPLES[,2], function(x){which(rownames(M4)==x)}))
+		MatInt <- M4[V, , drop=F]
+	} else {
+		MatInt <- M2
+	}
 	MatInt
 })
 
@@ -178,13 +181,16 @@ internalClass$set("public", "get_Matrix_SNR", function()
 
 	# Add lacked samples
 	V <- SAMPLES[which(!SAMPLES[,2] %in% rownames(M2)),2]
-	M3 <- matrix(rep(NA,length(V)*ncol(M2)), nrow=length(V), ncol=ncol(M2))
-	M4 <- rbind(M2,M3)
-	rownames(M4)[(nrow(M2)+1):(nrow(M2)+nrow(M3))] <- V
-
-	# Reorder rownames in the same order than samples
-	V <- simplify2array(lapply(SAMPLES[,2], function(x){which(rownames(M4)==x)}))
-	MatSNR <- M4[V, , drop=F]
+	if (length(V)>0) {
+		M3 <- matrix(rep(NA,length(V)*ncol(M2)), nrow=length(V), ncol=ncol(M2))
+		M4 <- rbind(M2,M3)
+		rownames(M4)[(nrow(M2)+1):(nrow(M2)+nrow(M3))] <- V
+		# Reorder rownames in the same order than samples
+		V <- simplify2array(lapply(SAMPLES[,2], function(x){which(rownames(M4)==x)}))
+		MatSNR <- M4[V, , drop=F]
+	} else {
+		MatSNR <- M2
+	}
 	MatSNR
 })
 

@@ -5,7 +5,7 @@
 #' @author Daniel Jacob - (C) INRAE 2025
 #'
 #' @description
-#' Package dedicated to quantification from 1D NMR spectra, including peak fitting and calibration using standard spectra.
+#' Package dedicated to 1D proton NMR quantification, including peak fitting and based on external calibration using standard spectra.
 #'
 #' @details
 #' This package was initially developed as part of an ANR project on wine authenticity (\href{https://anr.fr/Project-ANR-21-CE21-0014}{ANR-21-CE21-0014}). However, it is generic enough to be used on other biological and/or food matrices. This involves the implementation of an analytical protocol allowing quantification from an external standard (see references).\cr\cr

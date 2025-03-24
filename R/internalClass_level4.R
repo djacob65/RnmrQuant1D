@@ -10,6 +10,8 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 
 	pkfit <- PROFILE$fitting
 	if (!is.null(zones)) pkfit <- pkfit[ pkfit$zone %in% zones, , drop=F]
+	if (nrow(pkfit)==0)
+		stop_quietly(paste0("Error: there no zone(s) '",paste0(collapse=","),"' defined in the fitting section in the quantification profile"))
 	ppm_range <<- c(min(pkfit[,1]), max(pkfit[,2]))
 
 	# Function of combining results for parallelization

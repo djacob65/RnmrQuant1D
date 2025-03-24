@@ -149,7 +149,7 @@ internalClass$set("private", "smoothSpec", function(spec, ppmrange, WS=30)
 	spec$int
 })
 
-internalClass$set("private", "qnmrbc", function(spec, ppmrange, CSIG=5, NLOOP=5)
+internalClass$set("private", "qnmrbc", function(spec, ppmrange, CSIG=5, NLOOP=5, WS=0)
 {
 	# external baseline at zero by default
 	BLext <- rep(0,length(spec$int))
@@ -159,6 +159,7 @@ internalClass$set("private", "qnmrbc", function(spec, ppmrange, CSIG=5, NLOOP=5)
 		dN <- round(0.00075/spec$dppm)
 		iseq <- getseq(spec,ppmrange)
 		Y <- spec$int[iseq]
+		if (WS>0) Y <- Rnmr1D:::Smooth(Y,WS)
 		bc <- rep(0,length(iseq))
 		for (l in 1:NLOOP) {
 			bci <- Rnmr1D:::C_GlobSeg(Y, dN, CSIG*specSig)

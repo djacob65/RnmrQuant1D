@@ -60,7 +60,7 @@ internalClass$set("public", "check_samples", function(verbose=FALSE)
 		stop_quietly(paste0("Error: the sample table must have a columns named '",FDILfield))
 
 	# Check if the samplenames are unique
-	if (unique(SAMPLES[,2]) != nrow(SAMPLES))
+	if (length(unique(SAMPLES[,2])) != nrow(SAMPLES))
 		stop_quietly(paste0("Error: the samplenames (column 2) must be unique in the sample table"))
 
 	if (verbose) cat(paste0("OK: the sample table has at least ",NCMIN," columns with one named '", FDILfield, "'\n"))
@@ -137,11 +137,18 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 	if (is.null(PROFILE$compound))
 		stop_quietly(paste0("Error: there no 'compound' section define in the quantification profile"))
 
-	# Check if all quantif zone match with a fitting zone
+	# Check if all quantif zones match with a fitting zone
 	L <- PROFILE$quantif$zone %in% PROFILE$fitting$zone
 	if (length(L) != sum(L)) {
 		bad <- paste(PROFILE$quantif$zone[which(L==FALSE)],sep=',')
 		stop_quietly(paste0("Error: there some 'quantif' zones (",bad,") that do not match with a fitting zone in the quantification profile"))
+	}
+
+	# Check if all fitting zones match with a quantif zone
+	L <- PROFILE$fitting$zone %in% PROFILE$quantif$zone
+	if (length(L) != sum(L)) {
+		bad <- paste(PROFILE$fitting$zone[which(L==FALSE)],sep=',')
+		stop_quietly(paste0("Error: there some 'fitting' zones (",bad,") that do not match with a quantif zone in the quantification profile"))
 	}
 
 	# Check if the requested zones are defined in the profile
@@ -154,14 +161,14 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 	if (sum(L)>0)
 		stop_quietly(paste0("Error: The zone(s) '",paste0(which(L>0),collapse=','),"' is (are) included in another in the quantification profile"))
 
-	# Check if the ppm ranges in the quantif section are included in the ppm ranges defined in the fitting section
+	# Check if the ppm ranges in the quantif section are included in those corresponding to the fitting section
 	Q <- cbind( PROFILE$quantif, get_quantif_ppmrange() )
 	L <- simplify2array(lapply(fit$zone, function(k) {
 			QZ <- Q[Q$zone==fit$zone[k], , drop=F]
 			sum(QZ$ppm1>fit$ppm1[k] & QZ$ppm2<fit$ppm2[k])==nrow(QZ)
 	}))
 	if (sum(L)<nrow(fit))
-		stop_quietly(paste0("Error: The ppm ranges in the quantif section are not included in those defined in the fitting section for zone(s) '",paste0(which(!L),collapse=','),"'"))
+		stop_quietly(paste0("Error: The ppm ranges in the quantif section are not included in those corresponding to the fitting section for zone(s) '",paste0(which(!L),collapse=','),"'"))
 
 	# Check if all quantif compound match with a compound line
 	L <- PROFILE$quantif$compound %in% PROFILE$compound$name
