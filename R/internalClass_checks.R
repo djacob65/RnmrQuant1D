@@ -164,8 +164,9 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 	# Check if the ppm ranges in the quantif section are included in those corresponding to the fitting section
 	Q <- cbind( PROFILE$quantif, get_quantif_ppmrange() )
 	L <- simplify2array(lapply(fit$zone, function(k) {
-			QZ <- Q[Q$zone==fit$zone[k], , drop=F]
-			sum(QZ$ppm1>fit$ppm1[k] & QZ$ppm2<fit$ppm2[k])==nrow(QZ)
+			FZ <- fit[fit$zone==k, , drop=F]
+			QZ <- Q[Q$zone==k, , drop=F]
+			sum(QZ$ppm1>FZ$ppm1[1] & QZ$ppm2<FZ$ppm2[1])==nrow(QZ)
 	}))
 	if (sum(L)<nrow(fit))
 		stop_quietly(paste0("Error: The ppm ranges in the quantif section are not included in those corresponding to the fitting section for zone(s) '",paste0(which(!L),collapse=','),"'"))
