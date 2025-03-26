@@ -556,7 +556,7 @@ internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, p
 		if (is.null(P1) || nrow(P1)<1) break
 		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
 		if (is.null(P2) || nrow(P2)<1) break
-		rownames(P2) <- rownames(P1)[which( P1$pos %in% P2$pos)]
+		rownames(P2) <- rownames(P1)[which( unique(P1$pos) %in% P2$pos)]
 		threshold <- 0.15
 		groups <- rownames(P2[which(P2$amp > threshold*max(P2$amp)), , drop=F])
 		break
