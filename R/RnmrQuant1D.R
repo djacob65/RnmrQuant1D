@@ -362,6 +362,7 @@ public = list(
 
 ))
 
+
 # --- Note ---
 # To render the documentation in HTML format
 # 1) devtools::document()

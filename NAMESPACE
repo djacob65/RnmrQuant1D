@@ -13,3 +13,4 @@ importFrom(DT, "formatStyle")
 import(openxlsx)
 import(plotly)
 import(Rnmr1D)
+

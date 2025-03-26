@@ -57,7 +57,7 @@ internalClass <- R6Class("internalClass",
 		quantpars    = list(),
 		fP           = list(),
 		expnolist    = "",
-
+ 
 	#=====================================================================
 	# Initialization
 	#=====================================================================
@@ -113,3 +113,5 @@ internalClass <- R6Class("internalClass",
 
 # -- End Public Class --
 )
+
+
