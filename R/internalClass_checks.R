@@ -159,7 +159,7 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 	fit <- PROFILE$fitting
 	L <- simplify2array(lapply(1:nrow(fit), function(k){sum(fit$ppm1[k]>fit$ppm1 & fit$ppm2[k]<fit$ppm2)}))
 	if (sum(L)>0)
-		stop_quietly(paste0("Error: The zone(s) '",paste0(which(L>0),collapse=','),"' is (are) included in another in the quantification profile"))
+		stop_quietly(paste0("Error: The zone(s) '",paste0(fit$zone[which(L>0)],collapse=','),"' is/are included in another in the quantification profile"))
 
 	# Check if the ppm ranges in the quantif section are included in those corresponding to the fitting section
 	Q <- cbind( PROFILE$quantif, get_quantif_ppmrange() )
