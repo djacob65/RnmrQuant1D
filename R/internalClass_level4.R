@@ -130,12 +130,14 @@ internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=T
 	t <- system.time({
 		sink(LogFile)
 		calib <- standardQuantification(stds, QSname, thresfP, deconv, verbose)
+		if (is.nan(calib$fPUL$mean)) {
+			fP <<- list()
+			stop_quietly(paste0("Error: the spectrum '",QSname,"' does not appear to contain the correct quantification standards."))
+		}
 		if (verbose) print(calib)
 		Mat <- get_factor_table(calib)
 		sink()
 	})
-	#V <- apply(calib$fP,1,mean)
-	#fP_CV <- sd(V)/mean(V)
 	fP <<- list(QSname=QSname, Mat=Mat, values=calib$fP, CV=calib$fPUL$CV, mean=calib$fPUL$mean,
 			fK=calib$fK, elapsed=round(as.numeric(t[3]),2))
 	if (verbose) cat('fP =', round(fP$mean),",  CV =",fP$CV,"\n")
@@ -147,7 +149,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	check_all()
 	if (is.null(cmpdlist) && ! is.null(zones)) check_profile(zones)
 
-	if (is.null(fP) || length(fP)==0 || is.null(fP$mean))
+	if (is.null(fP) || length(fP)==0 || is.nan(fP$mean))
 		stop_quietly(paste0("Error: the PULCON factor must be computed before"))
 
 	if (verbose) cat("Do quantification ... \n")
