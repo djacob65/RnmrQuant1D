@@ -169,31 +169,31 @@ internalClass$set("public", "reorderProfile", function()
 })
 
 # Save the current quantification profile in an external file
-internalClass$set("public", "saveProfile", function(PROFILE)
+internalClass$set("public", "saveProfile", function(PROFILENAME)
 {
 	V <- cbind('preprocess', t(PROFILE$preprocess))
 	colnames(V)[1] <- '#TYPE'
-	write.table(V, PROFILE, append = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+	write.table(V, PROFILENAME, append = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 	
 	V <- "\n\n"
-	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 	V <- cbind(rep('fitting',nrow(PROFILE$fitting)), PROFILE$fitting)
 	colnames(V)[1] <- '#TYPE'
-	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 
 	V <- "\n\n"
-	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
 	V <- cbind(rep('quantif',nrow(PROFILE$quantif)), PROFILE$quantif)
 	colnames(V)[1] <- '#TYPE'
-	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 
 	V <- "\n\n"
-	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
 	V <- cbind(rep('compound',nrow(PROFILE$compound)), PROFILE$compound)
 	colnames(V)[1] <- '#TYPE'
-	write.table(V, PROFILE, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 
 })
 
