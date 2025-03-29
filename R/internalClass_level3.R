@@ -378,7 +378,8 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 				idpeaks <- sort(as.numeric(unlist(strsplit(strlist,","))))
 				PLk <- spec$fit$peaks[idpeaks, , drop=F]
 				if (nrow(PLk)==0) next
-				ppm_zone <- as.numeric(PROFILE$fitting[PROFILE$fitting$zone==fit$zone, 1:2])
+				M <- PROFILE$fitting[PROFILE$fitting$zone==fit$zone, 1:2]
+				ppm_zone <- c(min(M[,1]), max(M[,2]))
 				iseq <- getseq(spec, ppm_zone)
 				V <- simplify2array(lapply(1:nrow(PLk), function(i) {
 						Rnmr1D::PVoigt(ppm[iseq], PLk$amp[i], PLk$ppm[i], PLk$sigma[i], PLk$asym[i], PLk$eta[i])}))

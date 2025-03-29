@@ -96,7 +96,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	parallel::stopCluster(cl)
 
 	# Results proc-process
-	res <<- list(Y=NULL, Ymodel=NULL, PPM=NULL, allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
+	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
 	specList <<- list()
 
 	# Merging results
