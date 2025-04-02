@@ -211,12 +211,12 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 internalClass$set("public", "check_outdir", function(verbose=FALSE)
 {
 	# Check if TMPDIR exist
-	if (!dir.exists(TMPDIR))
-		stop_quietly(paste0("Error: ", TMPDIR, " does not exist."))
+	if (!dir.exists(self$TMPDIR))
+		stop_quietly(paste0("Error: ", self$TMPDIR, " does not exist (TMPDIR)"))
 
 	# Check if RDATADIR exist
-	if (!dir.exists(RDATADIR))
-		stop_quietly(paste0("Error: ", RDATADIR, " does not exist."))
+	if (!dir.exists(self$RDATADIR))
+		stop_quietly(paste0("Error: ", self$RDATADIR, " does not exist (RDATADIR)"))
 
 	if (verbose) cat("OK: output directories are correctly defined\n")
 

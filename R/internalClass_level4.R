@@ -4,7 +4,6 @@
 
 internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 {
-
 	# Check the quantification profile
 	check_profile(zones)
 
@@ -24,28 +23,37 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	}
 
 	# Start Cluster
-	ncpu <- min(nrow(SAMPLES), max(ncpu,2))
-	cl <- parallel::makeCluster(ncpu)
-	doParallel::registerDoParallel(cl)
+	rq1d <<- self
+	if (ncpu>1) {
+		cltype <- ifelse(.Platform$OS.type == "unix", "FORK", "PSOCK")
+		ncpu <- min(nrow(SAMPLES), max(ncpu,2))
+		LOGFILE <- file.path(TMPDIR,"proc_Integrals_par.log")
+		if (file.exists(LOGFILE)) unlink(LOGFILE)
+		cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
+		doParallel::registerDoParallel(cl)
+		parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
+		on.exit(parallel::stopCluster(cl))
+	} else {
+		foreach::registerDoSEQ()
+	}
 	Sys.sleep(1)
 
 	Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR))
 	Slist <- Slist[ Slist[,1] %in% SAMPLES[,1] & Slist[,3] == SEQUENCE, 1:2]
 	Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), ]
 
+# ,.export=c("RnmrQuant1D")
 	# Process all samples in parallel
-	rq1d <- self
 	out <- foreach::foreach(ID=1:nrow(Slist),
 		.combine=combine_list,
-		.packages=c('Rnmr1D','RnmrQuant1D'),
-		.export=ls(globalenv())) %dopar%
+		.packages=c("Rnmr1D")) %dopar%
 	{
 		priv <- rq1d$.__enclos_env__$private
 
 		# Directory of the raw spectrum
 		samplename <- paste(Slist[ID,],collapse="/")
 		ACQDIR <- file.path(rq1d$RAWDIR,samplename)
-
+		print(paste(ID,"/",nrow(Slist),"..."))
 		sink(file = paste0(rq1d$TMPDIR,"/log-",Slist[ID,1],"-",ID,".txt"), append = FALSE, type = c("output", "message"), split = FALSE)
 
 		# Read the preprocessed spectrum (1r)
@@ -91,9 +99,8 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		return(mylist)
 	}
 
-	# Stop Cluster
+	# Clean memory
 	invisible(gc())
-	parallel::stopCluster(cl)
 
 	# Results proc-process
 	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
