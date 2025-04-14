@@ -191,7 +191,7 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 	# Calculate TSP width and check if it's within acceptable limits
 	spec$TSPwidth <- get_TSP_width(spec)
 	if (verbose) cat("TSP width:", spec$TSPwidth,"Hz\n")
-	if (spec$TSPwidth>1 && verbose)
+	if (spec$TSPwidth>TSPwidthMax && verbose)
 		cat("ERROR : TSP width too large\n")
 
 	# Peak fitting: Identify peaks in the spectrum

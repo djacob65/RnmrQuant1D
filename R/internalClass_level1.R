@@ -112,7 +112,6 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 	Ymodel <- Y <- spec$int <- spec$intcorr  # Store intensity and corrected intensity values
 	Peaks <- infos <- NULL  # To store peak fitting results and metadata
 	BLSIG <- 10             # Baseline significance threshold
-	ratioPN <- 5            # Ratio threshold for peak detection
 
 	# Loop through each peak fitting range
 	for (k in 1:nrow(pkfit)) {
@@ -257,7 +256,6 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 
 	# Constants for baseline correction and peak fitting
 	BLSIG <- 10             # Baseline significance threshold
-	ratioPN <- 5            # Ratio threshold for peak detection
 
 	# Function to merge peak fitting results from parallel computations
 	combine_list <- function(LL1, LL2) {

@@ -54,7 +54,7 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 })
 
 
-internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp')
+internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', container=NULL)
 {
 	type <- OUTTYPE
 	options(DT.options = list(pageLength = nrow(M)))
@@ -62,9 +62,11 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp')
 		"function(settings, json){$(this.api().table().header()).css({'font-size':'12px', 'background-color':'#c2d1f0', 'color':'#000'});}"
 	)
 	df=as.data.frame(M)
+    if (is.null(container))
+        container <- htmltools::tags$table(DT::tableHeader(colnames(df), TRUE), class = 'display')
 	V <- sapply(df, is.numeric)
 	for (k in 1:length(V)) if (V[k]) df[names(V)[k]] <- round(df[names(V)[k]],nbdec)
-	m <- DT::datatable(df, options = list(dom = 't', initComplete = optstyle)) |>
+	m <- DT::datatable(df, options = list(dom = 't', initComplete = optstyle), container=container) |>
 			DT::formatStyle( names(df), `font-size` = '12px') |>
 			DT::formatStyle( 0, `font-size` = '12px')
 	if (type == "html") {

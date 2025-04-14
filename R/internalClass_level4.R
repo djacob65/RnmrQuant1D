@@ -70,7 +70,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		# TSP width
 		spec$TSPwidth <- priv$get_TSP_width(spec)
 		if (verbose) cat("TSP width:", spec$TSPwidth,"Hz\n")
-		if (spec$TSPwidth>1 && verbose)
+		if (spec$TSPwidth>rq1d$TSPwidthMax && verbose)
 			cat("ERROR : TSP width too large\n")
 
 		# Peak fitting

@@ -343,7 +343,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 		ycurves <- cbind(spec$fit$Y, spec$fit$Ymodel)
 	}
 	ynames <- c( S, 'model' )
-	arrColors <- c('grey60',ifelse(spec$TSPwidth>1,'violetred','lightslateblue')); names(arrColors) <- ynames
+	arrColors <- c('grey60',ifelse(spec$TSPwidth>TSPwidthMax,'violetred','lightslateblue')); names(arrColors) <- ynames
 	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=arrColors, title=S)
 
   # Get the fitting zones
