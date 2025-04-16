@@ -30,7 +30,7 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 		setwd(tmpdir)
 		tryCatch({
 			sink("error.log")
-			suppressWarnings(plotly::orca(widget, file=paste0(IMGname, ".",type), width=width, height=height, verbose=TRUE, debug=TRUE))
+			plotly::orca(widget, file=paste0(IMGname, ".",type), width=width, height=height, verbose=TRUE, debug=TRUE)
 			sink()
 		}, error=function(cond) { sink() } )
 		IMGfile <- paste0(IMGname, ".",type)
