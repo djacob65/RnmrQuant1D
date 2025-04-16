@@ -358,6 +358,7 @@ internalClass$set("private", "find_peaks_range", function(spec, peaks, ppm1, ppm
 		rownames(P2) <- rownames(P1)[which( P1$pos %in% P2$pos)]
 		if (nbpeaks>0)
 			P2 <- P2[which(P2$amp %in% sort(P2$amp, decreasing=T)[1:nbpeaks]), ]
+		if (is.null(P2) || (nbpeaks>0 && nrow(P2)<nbpeaks)) break
 		if (is.null(P2) || nrow(P2)<1) break
 		groups <- rownames(P2)
 		break

@@ -16,7 +16,17 @@ internalClass$set("public", "saveWidgetFix", function(widget,file, ...)
 	setwd(wd);
 })
 
-
+# Note : installation of orca - see https://github.com/plotly/orca#installation
+#        need to have the processx R package installed as well.
+# For ubuntu :
+# cd /tmp
+# wget https://github.com/plotly/orca/releases/download/v1.3.1/orca-1.3.1.AppImage
+# chmod +x orca-1.3.1.AppImage
+# mv orca-1.3.1.AppImage /usr/bin/
+# apt-get install -y xvfb
+# echo '#!/bin/bash' > /usr/bin/orca
+# echo 'xvfb-run -a /usr/bin/orca-1.3.1.AppImage "$@"' >> /usr/bin/orca
+# chmod +x /usr/bin/orca
 internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', width='auto', height=400)
 {
 	type <- OUTTYPE
