@@ -30,7 +30,7 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 		setwd(tmpdir)
 		tryCatch({
 			sink("error.log")
-			suppressWarnings(plotly::orca(widget, file=paste0(IMGname, ".",type), width=width, height=height))
+			suppressWarnings(plotly::orca(widget, file=paste0(IMGname, ".",type), width=width, height=height, verbose=TRUE, debug=TRUE))
 			sink()
 		}, error=function(cond) { sink() } )
 		IMGfile <- paste0(IMGname, ".",type)
@@ -70,7 +70,7 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', c
 			DT::formatStyle( names(df), `font-size` = '12px') |>
 			DT::formatStyle( 0, `font-size` = '12px')
 	if (type == "html") {
-		displayWidget(m, type)
+		displayWidget(m)
 	} else {
 		IMGname <- floor(runif(1, 0, 10^12))
 		IMGhtml <- file.path(tmpdir,paste0(IMGname, ".html"))
