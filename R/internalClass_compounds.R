@@ -71,7 +71,7 @@ internalClass$set("private", "find_pattern_s", function(spec, peaks, ppm0, dppm=
 	ret
 })
 
-# doublet (d) : central ppm, J, sel, ratio, (dJ, dS, dp0)
+# doublet (d) : central ppm, J, sel, (ratio, dJ, dS)
 internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, sel=0, ratio=1.4, dJ=0.3, dS=65, full=FALSE)
 {
 	# Tolerance settings
@@ -104,11 +104,11 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 				}
 			}
 		if (is.null(JL)) break
-		if (nrow(JL)>1) JL <- JL[abs(as.numeric(JL[,6]))<(ratio+dA), , drop=F] # criterion based on the ratio
-		if (nrow(JL)>1) JL <- JL[abs(as.numeric(JL[,7]))<dS, , drop=F] # criterion based on dSigma
-		if (nrow(JL)>1) JL <- JL[abs(as.numeric(JL[,4])-ppm0)<dppm0, , drop=F] # criterion based on ppm0
-		if (nrow(JL)>1 && sel<2) JL <- JL[order(as.numeric(JL[,8])), ] # order by increasing criterion
-		if (nrow(JL)>1 && sel>1) JL <- JL[order(as.numeric(JL[,5]), decreasing=T), ] # order by decreasing intensities
+		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,6]))<(ratio+dA), , drop=F] # criterion based on the ratio
+		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,7]))<dS, , drop=F] # criterion based on dSigma
+		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,4])-ppm0)<dppm0, , drop=F] # criterion based on ppm0
+		if (nrow(JL)>0 && sel<2) JL <- JL[order(as.numeric(JL[,8])), ] # order by increasing criterion
+		if (nrow(JL)>0 && sel>1) JL <- JL[order(as.numeric(JL[,5]), decreasing=T), ] # order by decreasing intensities
 		if (nrow(JL)<1) { JL <- NULL; break }
 		if (!full) {
 			if (nrow(JL)>2) JL <- JL[1:2,, drop=F] # take the 2 doublets having the smallest criteria/intensities values
