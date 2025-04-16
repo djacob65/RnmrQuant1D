@@ -32,7 +32,7 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 			sink("error.log")
 			plotly::orca(widget, file=paste0(IMGname, ".",type), width=width, height=height, verbose=TRUE, debug=TRUE)
 			sink()
-		}, error=function(cond) { sink() } )
+		}, error=function(cond) { cat("Failed\n"); sink() } )
 		IMGfile <- paste0(IMGname, ".",type)
 		if (!file.exists(IMGfile)) IMGfile <- paste0(IMGname, "_1.",type)
 		if (file.exists(IMGfile)) {
