@@ -155,6 +155,19 @@ internalClass$set("public", "readProfile", function(PROFILE)
 		 fitting=fitting, quantif=quantif, compound=compound)
 })
 
+
+# Get the compounds by zone
+internalClass$set("public", "get_compound_table", function(zones=NULL)
+{
+	ql <- PROFILE$quantif
+	L <- unique(simplify2array(sapply(ql$zone, function(z){unique(ql$compound[ql$zone==z])})))
+	M <- NULL; for (k in 1:length(L)) M <- rbind(M, c(k,paste(L[[k]], collapse=", ")))
+	colnames(M) <- c("zones","compounds")
+	M <- as.data.frame(M)
+	if (!is.null(zones)) M <- M[M$zones %in% zones, , drop=FALSE]
+	M
+})
+
 # Orders the zones according to the ppm scale then renumbers the zones in both fitting and quantification section
 internalClass$set("public", "reorderProfile", function()
 {

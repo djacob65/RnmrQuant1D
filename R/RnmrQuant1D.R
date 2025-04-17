@@ -156,10 +156,19 @@ public = list(
 #' @description
 #' Reads the quantification profile. See the \href{https://github.com/djacob65/RnmrQuant1D/wiki/}{wiki page} for having more details.
 #' @param self The RnmrQuant1D instance 
-#' @param PROFILE the qualification profile filename
+#' @param PROFILE the quantification profile filename
 #' @return the qualification profile object
 	readProfile = function(PROFILE) {
 		super$readProfile(PROFILE)
+	},
+
+#' @description
+#' Gets the compounds by zone from the quantification profile.
+#' @param self The RnmrQuant1D instance 
+#' @param zones the quantification zones
+#' @return a dataframe with 2 columns : zones & compounds
+	get_compound_table = function(zones=NULL) {
+		super$get_compound_table(zones)
 	},
 
 #' @description

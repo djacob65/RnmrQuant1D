@@ -4,7 +4,7 @@
 \alias{RnmrQuant1D}
 \title{RnmrQuant1D}
 \description{
-Package dedicated to quantification from 1D NMR spectra, including peak fitting and calibration using standard spectra.
+Package dedicated to 1D proton NMR quantification, including peak fitting and based on external calibration using standard spectra.
 }
 \details{
 This package was initially developed as part of an ANR project on wine authenticity (\href{https://anr.fr/Project-ANR-21-CE21-0014}{ANR-21-CE21-0014}). However, it is generic enough to be used on other biological and/or food matrices. This involves the implementation of an analytical protocol allowing quantification from an external standard (see references).\cr\cr
@@ -83,6 +83,7 @@ Daniel Jacob - (C) INRAE 2025
 \item \href{#method-RnmrQuant1D-check_all}{\code{RnmrQuant1D$check_all()}}
 \item \href{#method-RnmrQuant1D-get_samples_table}{\code{RnmrQuant1D$get_samples_table()}}
 \item \href{#method-RnmrQuant1D-readProfile}{\code{RnmrQuant1D$readProfile()}}
+\item \href{#method-RnmrQuant1D-get_compound_table}{\code{RnmrQuant1D$get_compound_table()}}
 \item \href{#method-RnmrQuant1D-get_response_factors}{\code{RnmrQuant1D$get_response_factors()}}
 \item \href{#method-RnmrQuant1D-get_factor_table}{\code{RnmrQuant1D$get_factor_table()}}
 \item \href{#method-RnmrQuant1D-get_QC_estimation}{\code{RnmrQuant1D$get_QC_estimation()}}
@@ -108,6 +109,8 @@ Daniel Jacob - (C) INRAE 2025
 <details open><summary>Inherited methods</summary>
 <ul>
 <li><span class="pkg-link" data-pkg="RnmrQuant1D" data-topic="internalClass" data-id="get_Matrix_Stats"><a href='../../RnmrQuant1D/html/internalClass.html#method-internalClass-get_Matrix_Stats'><code>RnmrQuant1D::internalClass$get_Matrix_Stats()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="RnmrQuant1D" data-topic="internalClass" data-id="reorderProfile"><a href='../../RnmrQuant1D/html/internalClass.html#method-internalClass-reorderProfile'><code>RnmrQuant1D::internalClass$reorderProfile()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="RnmrQuant1D" data-topic="internalClass" data-id="saveProfile"><a href='../../RnmrQuant1D/html/internalClass.html#method-internalClass-saveProfile'><code>RnmrQuant1D::internalClass$saveProfile()</code></a></span></li>
 </ul>
 </details>
 }}
@@ -192,12 +195,14 @@ nothing
 \subsection{Method \code{check_profile()}}{
 Checks if the quantification profile is OK
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$check_profile(verbose = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$check_profile(zones = NULL, verbose = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{zones}}{specifies the zone(s) to be checked}
+
 \item{\code{verbose}}{Display the success message if TRUE}
 
 \item{\code{self}}{The RnmrQuant1D instance}
@@ -288,7 +293,7 @@ Reads the quantification profile. See the \href{https://github.com/djacob65/Rnmr
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{PROFILE}}{the qualification profile filename}
+\item{\code{PROFILE}}{the quantification profile filename}
 
 \item{\code{self}}{The RnmrQuant1D instance}
 }
@@ -296,6 +301,28 @@ Reads the quantification profile. See the \href{https://github.com/djacob65/Rnmr
 }
 \subsection{Returns}{
 the qualification profile object
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-RnmrQuant1D-get_compound_table"></a>}}
+\if{latex}{\out{\hypertarget{method-RnmrQuant1D-get_compound_table}{}}}
+\subsection{Method \code{get_compound_table()}}{
+Gets the compounds by zone from the quantification profile.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$get_compound_table(zones = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{zones}}{the quantification zones}
+
+\item{\code{self}}{The RnmrQuant1D instance}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+a dataframe with 2 columns : zones & compounds
 }
 }
 \if{html}{\out{<hr>}}
