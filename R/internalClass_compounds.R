@@ -15,35 +15,35 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 	V <- NULL
 	pkcmpd <- profil$quantif
 	for (k in 1:nrow(pkcmpd)) {
-		ppm0 <- pkcmpd[k,]$P1
+		P1 <- pkcmpd[k,]$P1
 		pattern <- pkcmpd[k,]$pattern
 		if (grepl(',',pkcmpd[k,]$P2)) {
-			J <- as.numeric(simplify2array(strsplit(pkcmpd[k,]$P2,',')))
+			P2 <- as.numeric(simplify2array(strsplit(pkcmpd[k,]$P2,',')))
 		} else {
-			J <- as.numeric(pkcmpd[k,]$P2)
+			P2 <- as.numeric(pkcmpd[k,]$P2)
 		}
 		dppm <- NULL
-		if (pattern == 'r1')	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 'r2')	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 'r3')	dppm <- 0.75*J/SFO1
-		if (pattern == 'r4')	dppm <- 0.75*J/SFO1
-		if (pattern == 'r5')	dppm <- 0.75*J/SFO1
-		if (pattern == 'r6')	dppm <- 0.75*J/SFO1
-		if (pattern == 'r7')	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 'r8')	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 'r9')	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 'r10')	dppm <- 0.75*J/SFO1
-		if (pattern == 'r11')	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 'b')	 	V <- rbind( V, c(ppm0, J) )
-		if (pattern == 's')		dppm <- 1.5*J
-		if (pattern == 'd')		dppm <- 0.75*J/SFO1
-		if (pattern == 't')		dppm <- 1.5*J/SFO1
-		if (pattern == 'dd')	dppm <- (0.5*J[1]+J[2])/SFO1
-		if (pattern == 'q')		dppm <- 2*J/SFO1
-		if (pattern == 'm')		dppm <- 2.5*J/SFO1
-		if (pattern == 'm2')	dppm <- 2.5*J/SFO1
+		if (pattern == 'r1')	V <- rbind( V, c(P1, P2) )
+		if (pattern == 'r2')	V <- rbind( V, c(P1, P2) )
+		if (pattern == 'r3')	dppm <- 0.75*P2/SFO1
+		if (pattern == 'r4')	dppm <- 0.75*P2/SFO1
+		if (pattern == 'r5')	dppm <- 0.75*P2/SFO1
+		if (pattern == 'r6')	dppm <- 0.75*P2/SFO1
+		if (pattern == 'r7')	V <- rbind( V, c(P1, P2) )
+		if (pattern == 'r8')	V <- rbind( V, c(P1, P2) )
+		if (pattern == 'r9')	V <- rbind( V, c(P1, P2) )
+		if (pattern == 'r10')	dppm <- 0.75*P2/SFO1
+		if (pattern == 'r11')	V <- rbind( V, c(P1, P2) )
+		if (pattern == 'b')	 	V <- rbind( V, c(P1, P2) )
+		if (pattern == 's')		dppm <- 1.5*P2
+		if (pattern == 'd')		dppm <- 0.75*P2/SFO1
+		if (pattern == 't')		dppm <- 1.5*P2/SFO1
+		if (pattern == 'dd')	dppm <- (0.5*P2[1]+P2[2])/SFO1
+		if (pattern == 'q')		dppm <- 2*P2/SFO1
+		if (pattern == 'm')		dppm <- 2.5*P2/SFO1
+		if (pattern == 'm2')	dppm <- 2.5*P2/SFO1
 		if (is.null(dppm)) 	 next
-		V <- rbind( V, c(ppm0-dppm, ppm0+dppm) )
+		V <- rbind( V, c(P1-dppm, P1+dppm) )
 	}
 	V <- as.data.frame(V)
 	colnames(V) <- c('ppm1', 'ppm2')
@@ -545,7 +545,7 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 })
 
 # Rule r9 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take all peaks in the selected ppm range (ppm1,ppm2)
-internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0)
+internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, threshold=0.15)
 {
 	ratioPN <- 5
 	groups <- NULL
@@ -558,7 +558,6 @@ internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, p
 		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
 		if (is.null(P2) || nrow(P2)<1) break
 		rownames(P2) <- rownames(P1)[which( unique(P1$pos) %in% P2$pos)]
-		threshold <- 0.15
 		groups <- rownames(P2[which(P2$amp > threshold*max(P2$amp)), , drop=F])
 		break
 	}
@@ -725,7 +724,8 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 				next
 			}
 			if (pattern == 'r9') {
-				groups[[cmpd]] <- find_peaks_rule_r9(spec, peaks, params[1], params[2], params[3], params[4], params[5])
+				threshold <- ifelse( length(params)>5, params[6], 0.05 )
+				groups[[cmpd]] <- find_peaks_rule_r9(spec, peaks, params[1], params[2], params[3], params[4], params[5], threshold)
 				next
 			}
 			if (pattern == 'r10') {

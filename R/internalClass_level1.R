@@ -468,31 +468,9 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 			} else if (Pattern == 's') {
 				if (verbose) cat("\t\tPPM pattern = ", Pattern, ZQ$P1[i],", ppm tol.=",ZQ$P2[i],", Rank=",param[1],"\n")
 				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, param)))
-		# peaks defined by a doublet, triplet or doublet of doublet
-			} else if (Pattern  %in% c('d','t','dd')) {
-				if (length(param)>3) {
-					if (verbose) cat("\t\tPPM pattern = ", Pattern, ZQ$P1[i],", J=",ZQ$P2[i],", params=",param[1],", ",param[2],",",param[3],",",param[4],"\n")
-				} else if (length(param)>2) {
-					if (verbose) cat("\t\tPPM pattern = ", Pattern, ZQ$P1[i],", J=",ZQ$P2[i],", params=",param[1],", ",param[2],",",param[3],"\n")
-				} else if (length(param)>1) {
-					if (verbose) cat("\t\tPPM pattern = ", Pattern, ZQ$P1[i],", J=",ZQ$P2[i],", params=",param[1],", ",param[2],"\n")
-				} else {
-					if (verbose) cat("\t\tPPM pattern = ", Pattern, ZQ$P1[i],", J=",ZQ$P2[i],", Criterion=",param[1],"\n")
-				}
-				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, param)))
-		# peaks defined by a rule rN
-			} else if (grepl("^r[0-9]+", Pattern)) {
-				if (length(param)>2) {
-					if (verbose) cat("\t\tPPM Rule = ", Pattern, ", ppm1=",ZQ$P1[i],", ppm2 or J=",ZQ$P2[i],", params=",param[1],",",param[2],",",param[3],"\n")
-				} else if (length(param)>1) {
-					if (verbose) cat("\t\tPPM Rule = ", Pattern, ", ppm1=",ZQ$P1[i],", ppm2 or J=",ZQ$P2[i],", params=",param[1],",",param[2],"\n")
-				} else {
-					if (verbose) cat("\t\tPPM Rule = ", Pattern, ", ppm1=",ZQ$P1[i],", ppm2 or J=",ZQ$P2[i],", param=",param,"\n")
-				}
-				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, param)))
 		# peaks defined by another pattern
 			} else {
-				if (verbose) cat("\t\tPPM pattern = ", Pattern, ", ppm1=",ZQ$P1[i],", ppm2 or J=",ZQ$P2[i],", param=",param,"\n")
+				if (verbose) cat("\t\tPPM Rule = ", Pattern, ", P1=",ZQ$P1[i],", P2=",ZQ$P2[i],", P3=",ZQ$P3[i],"\n")
 				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, param)))
 			}
 
