@@ -580,7 +580,7 @@ internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, 
 		rownames(P2) <- rownames(P1)[which( P1$pos %in% P2$pos)]
 		P2 <- P2[order(P2$amp, decreasing=T), , drop=F]
 		if (nrow(P2)>=nbpeaks)
-			groups <- rownames(P2)[nbpeaks]
+			groups <- rownames(P2)[1:nbpeaks]
 		break
 	}
 	groups
