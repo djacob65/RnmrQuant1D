@@ -565,7 +565,7 @@ internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, p
 })
 
 # Rule r11 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take the highest peak in the selected ppm range (ppm1,ppm2)
-internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0)
+internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, nbpeaks=1)
 {
 	ratioPN <- 5
 	groups <- NULL
@@ -579,7 +579,8 @@ internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, 
 		if (is.null(P2) || nrow(P2)<1) break
 		rownames(P2) <- rownames(P1)[which( P1$pos %in% P2$pos)]
 		P2 <- P2[order(P2$amp, decreasing=T), , drop=F]
-		groups <- rownames(P2)[1]
+		if (nrow(P2)>=nbpeaks)
+			groups <- rownames(P2)[nbpeaks]
 		break
 	}
 	groups
@@ -733,7 +734,8 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 				next
 			}
 			if (pattern == 'r11') {
-				groups[[cmpd]] <- find_peaks_rule_r11(spec, peaks, params[1], params[2], params[3], params[4], params[5])
+				nbpeaks <- ifelse( length(params)>5, params[6], 1 )
+				groups[[cmpd]] <- find_peaks_rule_r11(spec, peaks, params[1], params[2], params[3], params[4], params[5], nbpeaks)
 				next
 			}
 			next
