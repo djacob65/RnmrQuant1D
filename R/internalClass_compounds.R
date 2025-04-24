@@ -700,7 +700,7 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 			}
 			if (pattern == 'b') {
 				nbpeaks <- ifelse( length(params)>2, params[3], 0 )
-				ratioPN <- ifelse( length(params)>3, params[4], 7.5 )
+				ratioPN <- ifelse( length(params)>3, params[4], 5 )
 				groups[[cmpd]] <- find_peaks_range(spec, peaks, params[1], params[2], nbpeaks, ratioPN)
 				next
 			}
