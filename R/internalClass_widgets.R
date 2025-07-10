@@ -73,7 +73,7 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', c
 	)
 	df=as.data.frame(M)
     if (is.null(container))
-        container <- htmltools::tags$table(DT::tableHeader(colnames(df), TRUE), class = 'display')
+        container <- htmltools::tags$table(DT::tableHeader(c('ID',colnames(df)), TRUE), class = 'display')
 	V <- sapply(df, is.numeric)
 	for (k in 1:length(V)) if (V[k]) df[names(V)[k]] <- round(df[names(V)[k]],nbdec)
 	m <- DT::datatable(df, options = list(dom = 't', initComplete = optstyle), container=container) |>

@@ -209,19 +209,24 @@ internalClass$set("public", "get_Matrix_Stats", function(MatInt)
 })
 
 # Calculate the CV% for each sample
-internalClass$set("public", "get_Matrix_CV", function(MatInt=NULL, nbrep=3)
+internalClass$set("public", "get_Matrix_CV", function(MatInt=NULL)
 {
 	if (is.null(MatInt))
 		MatInt <- get_Matrix_Integrals()
-	k <- 1:(nrow(MatInt)/nbrep)
-	V <- cbind((k-1)*nbrep + 1,k*nbrep)
-	V <- t(apply(V,1,function(v) v[1]:v[2]))
-	M <- NULL
-	for (k in 1:ncol(MatInt))
-		M <- cbind(M, apply(V,1, function(x) 100*sd(MatInt[x, k])/mean(MatInt[x, k])))
-	colnames(M) <- colnames(MatInt)
-	rownames(M) <- unique(SAMPLES[,1])
-	M
+	SL <- unique(SAMPLES[,1])
+	MatCV <- NULL
+	for (k in 1:length(SL)) {
+		SC <- SAMPLES[SAMPLES[,1] == SL[k],2]
+		M1 <- MatInt[rownames(MatInt) %in% SC, , drop=FALSE]
+		if (is.null(M1) || nrow(M1)==0) next
+		MatCV <- rbind(MatCV, sapply(1:ncol(M1), function(x){
+				V <-M1[ !is.na(M1[,x]), x ]
+				ifelse( length(V)>0, 100*sd(V)/mean(V), NA )
+		}))
+	}
+	colnames(MatCV) <- colnames(MatInt)
+	rownames(MatCV) <- SL
+	MatCV
 })
 
 internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
@@ -235,7 +240,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 		stop_quietly(paste0("ERROR : Integrals must be computed with the proc_Integrals() method before !\n"))
 
 	# Get all result tables
-	results <- list(Int=get_NumMat(get_Matrix_Integrals()), SNR=get_NumMat(get_Matrix_SNR()), infos <- res$infos)
+	results <- list(Int=get_NumMat(get_Matrix_Integrals()), SNR=get_NumMat(get_Matrix_SNR()), infos=res$infos)
 
 	# Create Workbook
 	wb <- openxlsx::createWorkbook()
@@ -327,8 +332,8 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	if (! res$proctype %in% c('integration', 'quantification') || length(specList)==0)
 		stop_quietly(paste0("ERROR : Integrals or quantification must be computed before !\n"))
 
-	S <- unique(SAMPLES[,2])[id]
-	idx <- which(SAMPLES[,2]==S)
+	S <- ifelse(is.numeric(id), SAMPLES[id,2], id)
+	idx <- which(sapply(1:nrow(SAMPLES), function(k){ specList[[k]]$samplecode==S }))
 	spec <- specList[[idx]]
 	peaklist <- res$peaklist
 

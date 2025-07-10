@@ -245,10 +245,9 @@ public = list(
 #' Gets the CV matrix from the integration matrix if samples have repetitions.
 #' @param self The RnmrQuant1D instance
 #' @param MatInt The integration matrix. If NULL, it will be fetched from the the RnmrQuant1D instance. See \href{#method-RnmrQuant1D-get_Matrix_Integrals}{\code{get_Matrix_Integrals()}}.
-#' @param nbrep the number of repetition. default=3.
 #' @return the CV matrix
-	get_Matrix_CV = function(MatInt=NULL, nbrep=3) {
-		super$get_Matrix_CV(MatInt, nbrep)
+	get_Matrix_CV = function(MatInt=NULL) {
+		super$get_Matrix_CV(MatInt)
 	},
 
 #' @description
@@ -264,7 +263,7 @@ public = list(
 #' @description
 #' Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positioned by the zone(s) chosen when calculating the integrations by \href{#method-RnmrQuant1D-proc_Integrals}{\code{proc_Integrals()}}.
 #' @param self The RnmrQuant1D instance
-#' @param id the order number of the spectrum in the sample table.
+#' @param id Either the order number (numeric) of the spectrum in the sample table or the samplecode (string), i.e the 2nd column in the sample table.
 #' @param plotmodel If TRUE, plot the model based on the deconvolution.
 #' @param plotTrueSpec  If TRUE, plot the original spectrum without local baseline corrections.
 #' @param plotzones If TRUE, add a semi-transparent rectangle superimposed on each fit zone.
@@ -330,7 +329,7 @@ public = list(
 
 #' @description
 #' Visualizes the compound 'compound' for spectrum 'id', where id is the order number of the spectrum in the sample table. 
-#' @param id The order number of the spectrum in the sample table
+#' @param id Either the order number (numeric) of the spectrum in the sample table or the samplecode (string), i.e the 2nd column in the sample table.
 #' @param compound The compound name taken from quantpars$cmpdlist in the RnmrQuant1D instance.
 #' @param ... Arguments to be passed to the \href{#method-RnmrQuant1D-view_spectra}{\code{view_spectra()}} method.
 #' @return a \href{https://plotly.com/r/}{plotly} graph

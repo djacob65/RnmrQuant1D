@@ -63,6 +63,8 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		if (verbose) cat("Sequence:",spec$acq$PULSE,"\n")
 		spec$samplename <- Slist[ID,1]
 		spec$expno <- Slist[ID,2]
+		SID <- paste0(spec$samplename, spec$expno, sep="-")
+		spec$samplecode <- rq1d$SAMPLES[which(paste0(rq1d$SAMPLES[,1], rq1d$SAMPLES[,3],sep="-") %in% SID ),2]
 
 		# Baseline correction
 		spec <- priv$applyBLcorrection(spec, verbose=verbose)
@@ -90,7 +92,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		# Accumulating results
 		mylist <- list()
 		if (!is.null(spec$fit$peaks)) {
-			Tinfos <- cbind( rep(rq1d$SAMPLES[ID,2],nrow(spec$fit$infos)), spec$fit$infos )
+			Tinfos <- cbind( rep(spec$samplecode, nrow(spec$fit$infos)), spec$fit$infos )
 			colnames(Tinfos)[1] <- 'Samplecode'
 			mylist[[paste0('S',ID)]] <- list( id=paste0('S',ID), spec=spec, quantif=Q$quantification, peaklist=Q$peaklist, infos=Tinfos)
 		} else {
@@ -108,14 +110,15 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 
 	# Merging results
 	for(k in 1:length(out)) {
+		spec <- out[[k]]$spec
 		if (!is.null(out[[k]]$quantif)) {
 			M <- matrix(rep('.',nrow(out[[k]]$quantif)*2), ncol=2)
-			M[,1] <- SAMPLES[k,1]; M[,2] <- SAMPLES[k,2]
+			M[,1] <- spec$samplename; M[,2] <- spec$samplecode
 			res$allquantifs <<- rbind(res$allquantifs, cbind(M, out[[k]]$quantif))
 			res$peaklist <<- rbind(res$peaklist, cbind(M, out[[k]]$peaklist))
 			res$infos <<- rbind(res$infos, out[[k]]$infos)
 		}
-		specList[[k]] <<- out[[k]]$spec
+		specList[[k]] <<- spec
 	}
 })
 
@@ -339,6 +342,7 @@ internalClass$set("public", "get_output_results", function()
 	} else {
 		profil_quantif <- PROFILE$quantif[ PROFILE$quantif$zone %in% zones, , drop=F ]
 	}
+	out$profil_preprocess <- t(PROFILE$preprocess)
 	out$profil_quantif <- profil_quantif
 	out$profil_fitting <- PROFILE$fitting[PROFILE$fitting$zone %in% unique(profil_quantif$zone), , drop=F ]
 	out$profil_compound <- PROFILE$compound[PROFILE$compound$name %in% unique(profil_quantif$compound), ]
@@ -404,7 +408,7 @@ internalClass$set("public", "save_Results", function(file, filelist=NULL)
 
 	# Write tabs
 	Tid <- 1 # Samples
-	Spectrum <- results$samples[,1]
+	Spectrum <- results$samples[,2]
 	openxlsx::writeData(wb, Tid, x = results$samples, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
 	openxlsx::addStyle(wb, Tid, style = styBH, rows = 1, cols = c(1:ncol(results$samples)), gridExpand = TRUE)
 	openxlsx::conditionalFormatting(wb, Tid, rows = c(2:nrow(results$samples)), cols = ncol(results$samples)-4,
@@ -445,8 +449,13 @@ internalClass$set("public", "save_Results", function(file, filelist=NULL)
 
 
 	Tid <- Tid + 1 # Quantification profile
-	# fitting
+	# Preprocess
 	startRow <- 1
+	preprocess <- results$profil_preprocess
+	openxlsx::writeData(wb, Tid, x = preprocess, startRow=startRow, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
+	openxlsx::addStyle(wb, Tid, style = styBH, rows = startRow, cols = c(1:ncol(preprocess)), gridExpand = TRUE)
+	# fitting
+	startRow <- 4
 	fitting <- results$profil_fitting
 	fitting$obl <- as.numeric(fitting$obl)
 	openxlsx::writeData(wb, Tid, x = fitting, startRow=startRow, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
