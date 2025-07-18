@@ -197,7 +197,7 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 	}
 
 	# Check if all patterns/rules are recognized
-	patterns <- c('b','s','d','t','q','dd','m','m2','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','r11')
+	patterns <- c('b','s','d','t','q','dd','m','m2','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','r11','r12')
 	L<- unique(PROFILE$quantif$pattern) %in% patterns
 	if (length(L) != sum(L)) {
 		bad <- paste(unique(PROFILE$quantif$pattern)[which(L==FALSE)],sep=',')

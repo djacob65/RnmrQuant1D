@@ -34,6 +34,7 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 		if (pattern == 'r9')	V <- rbind( V, c(P1, P2) )
 		if (pattern == 'r10')	dppm <- 0.75*P2/SFO1
 		if (pattern == 'r11')	V <- rbind( V, c(P1, P2) )
+		if (pattern == 'r12')	V <- rbind( V, c(P1, P2) )
 		if (pattern == 'b')	 	V <- rbind( V, c(P1, P2) )
 		if (pattern == 's')		dppm <- 1.5*P2
 		if (pattern == 'd')		dppm <- 0.75*P2/SFO1
@@ -112,8 +113,8 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 		if (nrow(JL)<1) { JL <- NULL; break }
 		if (!full) {
 			if (nrow(JL)>2) JL <- JL[1:2,, drop=F] # take the 2 doublets having the smallest criteria/intensities values
-			# if criterion for the first doublet is not less than 10% of the second one then ...
-			if (nrow(JL)>1 && (min(as.numeric(JL[1:2,8]))/max(as.numeric(JL[1:2,8])))>0.1)
+			# if intensity for the first doublet is not higher than 10% of the second one then ...
+			if (nrow(JL)>1 && (min(as.numeric(JL[1:2,5]))/max(as.numeric(JL[1:2,5])))<0.1)
 				JL <- JL[which(max(as.numeric(JL[,5]))==as.numeric(JL[,5])), , drop=F] # take the highest amplitude
 			JL <- JL[1, 1:2] # take the first doublet
 		}
@@ -211,18 +212,16 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ra
 	# Apply separation depending on links
 		L <- NULL; k <- 0
 		h <- h[order(as.numeric(h[,1])),]
-		for (i in 1:nrow(h)) {
-			if (k==0) { k <- 1; L[[k]] = c(h[i,1], h[i,2]) }
-			else {
-				ok <- 0
-				for (j in 1:length(L)) if (h[i,1] %in% L[[j]]) { L[[j]] <- unique(c(L[[j]], h[i,1], h[i,2]) ); ok <- 1 }
-				if (ok==0) { k <- k+1; L[[k]] = c(h[i,1], h[i,2]) }
+		for (m in 1:(nrow(h)-1)) {
+			for (i in m:nrow(h)) {
+				if (i==m) { k <- k + 1; L[[k]] = c(h[i,1], h[i,2]) }
+				else if (h[i,1] == L[[k]][length(L[[k]])]) { L[[k]] = c(L[[k]], h[i,2]) }
 			}
 		}
 		G <- NULL; k <- 0
 		for (j in 1:length(L)) if (length(L[[j]])==4) { k<-k+1; G[[k]] <- L[[j]] }
 		if (is.null(G)) break
-## In case there are 2 or more peak lists, take the one with the highest sum of amplitudes
+	## In case there are 2 or more peak lists, take the one with the highest sum of amplitudes
 		v <- sapply(1:length(G), function(k) sum(peaks[as.numeric(G[[k]]), ]$amp))
 		L <- sort(as.numeric(G[[which(v==max(v))]]))
 	# Criterion on amplitude (1, 3, 3, 1)
@@ -248,21 +247,25 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ra
 			L <- L[ idx ]
 		}
 		if (length(L)<4) break
+		if (length(L)>4) {
 	# Criterion on J (J +/- dJ)
-		M <- matrix(rep(0,length(L)*length(L)), nrow=length(L), byrow=T)
-		colnames(M) <- rownames(M) <- L
-		for (i in 1:length(L)) for (j in 1:length(L)) {
-			if (i==j) next
-			Jij <- round(abs(peaks$ppm[L[i]]-peaks$ppm[L[j]])*spec$acq$SFO1,2)
-			if (Jij>(J-dJ) && Jij<(J+dJ) )  M[i,j] <- Jij
+			M <- matrix(rep(0,length(L)*length(L)), nrow=length(L), byrow=T)
+			colnames(M) <- rownames(M) <- L
+			for (i in 1:length(L)) for (j in 1:length(L)) {
+				if (i==j) next
+				Jij <- round(abs(peaks$ppm[L[i]]-peaks$ppm[L[j]])*spec$acq$SFO1,2)
+				if (Jij>(J-dJ) && Jij<(J+dJ) )  M[i,j] <- Jij
+			}
+			idx <- which(apply(M,1,sum)>0)
+			if (length(idx)<4) break
+			L <- L[ idx ]
+			M <- M[idx,idx]
+			idx <- which(apply(M,2,sum)>0)
+			if (length(idx)<4) break
+			groups <- L[ idx ]
+		} else {
+			groups <- L
 		}
-		idx <- which(apply(M,1,sum)>0)
-		if (length(idx)<4) break
-		L <- L[ idx ]
-		M <- M[idx,idx]
-		idx <- which(apply(M,2,sum)>0)
-		if (length(idx)<4) break
-		groups <- L[ idx ]
 		break
 	}
 	groups
@@ -547,7 +550,7 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 # Rule r9 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take all peaks in the selected ppm range (ppm1,ppm2)
 internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, threshold=0.15)
 {
-	ratioPN <- 5
+	ratioPN <- 4.9
 	groups <- NULL
 	repeat {
 		iseq <- getseq(spec,c(pzone1,pzone2))
@@ -623,6 +626,37 @@ internalClass$set("private", "find_peaks_rule_r10", function(spec, peaks, ppm0, 
 			g <- g[ order(as.numeric(g[,5]), decreasing=T), ]         # Aij
 		}
 		if (!is.null(g) && nrow(g)>0) groups <- g[1, 1:2]
+		break
+	}
+	groups
+})
+
+# r12: find 'nbpeaks' consecutive peaks in the ppm range (e.g shikimic acid)
+internalClass$set("private", "find_peaks_rule_r12", function(spec, peaks, ppm1, ppm2, nbpeaks=5, ratioPN=1)
+{
+	facthres <- 0.6
+	J <- 2
+	Jmax <- 4*J
+	SFO1 <- spec$acq$SFO1
+
+	groups <- NULL
+	repeat {
+		P1 <- peaks[peaks$ppm>ppm1 & peaks$ppm<ppm2, , drop=F]
+		if (is.null(P1) || nrow(P1)<nbpeaks) break
+		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
+		if (is.null(P2) || nrow(P2)<nbpeaks) break
+		gn <- as.numeric(rownames(P1)[which( P1$pos %in% P2$pos)])
+		if (length(gn)>nbpeaks) {
+			gm <- gn[order(peaks$amp[gn], decreasing=T)][1:(nbpeaks-2)]
+			gm <- gm[order(gm)]
+			gn <- (min(gm)-1):(max(gm)+1)
+			Athres <- facthres*max(peaks$amp[gn])
+			while (peaks$amp[gn[1]]>Athres && (peaks$ppm[gn[length(gn)]]-peaks$ppm[gn[1]])*SFO1>Jmax)
+				gn <- gn[2:length(gn)]
+			while (peaks$amp[gn[length(gn)]]>Athres && (peaks$ppm[gn[length(gn)]]-peaks$ppm[gn[1]])*SFO1>Jmax)
+				gn <- gn[1:(length(gn)-1)]
+		}
+		groups <- as.character(gn)
 		break
 	}
 	groups
@@ -736,6 +770,12 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 			if (pattern == 'r11') {
 				nbpeaks <- ifelse( length(params)>5, params[6], 1 )
 				groups[[cmpd]] <- find_peaks_rule_r11(spec, peaks, params[1], params[2], params[3], params[4], params[5], nbpeaks)
+				next
+			}
+			if (pattern == 'r12') {
+				nbpeaks <- ifelse( length(params)>2, params[3], 5 )
+				ratioPN <- ifelse( length(params)>3, params[4], 1 )
+				groups[[cmpd]] <- find_peaks_rule_r12(spec, peaks, params[1], params[2], nbpeaks, ratioPN)
 				next
 			}
 			next

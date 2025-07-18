@@ -38,9 +38,10 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	}
 	Sys.sleep(1)
 
+	dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
 	Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR))
 	Slist <- Slist[ Slist[,1] %in% SAMPLES[,1] & Slist[,3] == SEQUENCE, 1:2]
-	Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), ]
+	Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), , drop=F]
 
 # ,.export=c("RnmrQuant1D")
 	# Process all samples in parallel
@@ -52,12 +53,12 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 
 		# Directory of the raw spectrum
 		samplename <- paste(Slist[ID,],collapse="/")
-		ACQDIR <- file.path(rq1d$RAWDIR,samplename)
-		print(paste(ID,"/",nrow(Slist),"..."))
-		sink(file = paste0(rq1d$TMPDIR,"/log-",Slist[ID,1],"-",ID,".txt"), append = FALSE, type = c("output", "message"), split = FALSE)
+		print(paste0(ID,"/",nrow(Slist),': ',Slist[ID,2]," ..."))
+		sink(file = paste0(rq1d$TMPDIR,"/log-",Slist[ID,1],"-",Slist[ID,2],".txt"), append = FALSE, type = c("output", "message"), split = FALSE)
 
 		# Read the preprocessed spectrum (1r)
 		cat(samplename,': ')
+		ACQDIR <- file.path(dirs[basename(dirs) == Slist[ID,1]],Slist[ID,2])
 		spec <- priv$applyReadSpectrum(ACQDIR, verbose=verbose)
 		if (verbose) cat("Path:", ACQDIR,"\n")
 		if (verbose) cat("Sequence:",spec$acq$PULSE,"\n")

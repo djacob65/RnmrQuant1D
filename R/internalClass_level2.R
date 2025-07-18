@@ -33,7 +33,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	# Retrieve spectra names for the given samplename
 	spectra <- get_list_spectrum(QSDIR, samplename)
 	M <- spectra[ spectra[,3]==SEQUENCE, , drop=F]
-	spectranames <- unlist(lapply(1:nrow(M), function(x){ paste(M[x,1:2], collapse='-')}))
+	dirs <- list.dirs(QSDIR, recursive = TRUE, full.names = TRUE)
 
 	# Remove TSP/TMSP/DSS from the standard compounds
 	stds_loc <- stds_loc[! stds_loc$Compound %in% calib_cmpd_names, , drop=F]
@@ -53,7 +53,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 		expno <- M[k,2]
 		expno_list <- c(expno_list, expno)
 		if (verbose) cat(samplename,', expno=',expno,', sequence =',SEQUENCE,': ')
-		ACQDIR <- file.path(QSDIR,samplename,expno)
+		ACQDIR <- file.path(dirs[basename(dirs) == samplename],expno)
 		spec <- Rnmr1D::readSpectrum(ACQDIR, procPars, PPM_NOISE, NULL, SCALE_INT, verbose= (verbose>1))
 	# Display information if verbose
 		if (verbose) cat("Path:", ACQDIR,"\n")
@@ -97,14 +97,13 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 				if (verbose) cat(cmpd,": Nb Peaks =",nrow(modelF$peaks)," -  R2 =",round(modelF$R2,4),"\n")
 				Peaks <- rbind(Peaks, modelF$peaks)
 				Iref <- sum(modelF$peaks$integral)
-				if (verbose) cat("Iref :", Iref,"\n")
 			} else {
 				iseq <- getseq(spec,ppmrange)
 				SUM <- 0
 				for (l in 1:(length(iseq)-1)) SUM <- SUM + (spec$int[iseq[l+1]]+spec$int[iseq[l]])
 				Iref <- 0.5*SUM*spec$dppm
-				if (verbose) cat("Iref :", Iref,"\n")
 			}
+			if (verbose) cat("Iref :", Iref,"\n")
 
 			# Compute concentration factor
 			factor <- K1*Iref*(C$MW/C$NH)
@@ -176,7 +175,8 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 
 	# Preprocessing: Read and process the raw spectrum (fid)
 	if (verbose) cat(samplename,', expno=',expno,': ')
-	ACQDIR <- file.path(RAWDIR,samplename,expno)
+	dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
+	ACQDIR <- file.path(dirs[basename(dirs) == samplename],expno)
 	spec <- applyReadSpectrum(ACQDIR)
 	if (verbose) cat("Path:", ACQDIR,"\n")
 	if (verbose) cat("Sequence:",spec$acq$PULSE,"\n")

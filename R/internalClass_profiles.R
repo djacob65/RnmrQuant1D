@@ -57,9 +57,11 @@ internalClass$set("public", "readProfile", function(PROFILE)
 		repeat {
 			if (type == 'preprocess' && length(cmdPars) > 3) {
 				# Extract preprocessing parameters
-				preprocess <- list(LB=as.numeric(cmdPars[2]), ZFFAC=as.numeric(cmdPars[3]), PHC0=as.numeric(cmdPars[4]))
+				preprocess <- list(LB=as.numeric(cmdPars[2]), ZFFAC=as.numeric(cmdPars[3]), PHC0=as.numeric(cmdPars[4]), CALIB=NULL)
 				if (length(cmdPars) > 4) preprocess$MVPZTSP <- as.numeric(cmdPars[5])
 				if (length(cmdPars) > 5) preprocess$DHZPZRANGE <- as.numeric(cmdPars[6])
+				if (length(cmdPars) > 8)
+					preprocess$CALIB <- c( as.numeric(cmdPars[7]), as.numeric(cmdPars[8]), as.numeric(cmdPars[9]) )
 				CMD <- CMD[-1]  # Remove processed line
 				break
 			}
@@ -190,6 +192,7 @@ internalClass$set("public", "saveProfile", function(PROFILENAME)
 	
 	V <- "\n\n"
 	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+
 	V <- cbind(rep('fitting',nrow(PROFILE$fitting)), PROFILE$fitting)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)

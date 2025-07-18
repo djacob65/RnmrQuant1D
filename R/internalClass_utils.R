@@ -49,28 +49,34 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 internalClass$set("private", "get_list_samples", function(DIR=NULL)
 {
 	if (is.null(DIR)) DIR <- RAWDIR
-	unlist(lapply(list.files(DIR), function(d) { if (dir.exists(file.path(DIR,d))) d }))
+	LIST <- list.files(path = rq1d$RAWDIR, pattern = "audita.txt$",
+					all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)
+	unique(unlist(lapply(LIST, function(f) { V <- unlist(strsplit(f,'/')); V[c(length(V)-2)] })))
+
 })
 
 # Get matrix of spectra for each samples under DIR
 internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 {
 	M <- NULL
-	for (S in samples) {
-		SDIR <- file.path(DIR,S)
-		Sexp <- unlist(lapply(list.files(SDIR), function(d) { if (dir.exists(file.path(SDIR,d))) d }))
-		for (id in Sexp) {
-			ACQDIR <- file.path(SDIR,id)
-			ACQFILE <- file.path(ACQDIR,'acqus')
-			if (!file.exists(ACQFILE)) next
-			ACQ <- readLines(ACQFILE)
-			Pstr <- Rnmr1D:::.bruker.get_param(ACQ,"PULPROG",type="string")
-			PULSE <- NULL
-			if (length(grep('^zg[0-9]{0,2}$',Pstr))) PULSE <- 'zg'
-			if (length(grep('^zgpr',Pstr))) PULSE <- 'zgpr'
-			if (length(grep('^noesy',Pstr))) PULSE <- 'noesy'
-			if (is.null(PULSE)) next
-			M <- rbind(M, c(S, id, PULSE))
+	if (! is.null(DIR) && dir.exists(DIR)) {
+		dirs <- list.dirs(DIR, recursive = TRUE, full.names = TRUE)
+		for (S in samples) {
+			SDIR <- dirs[basename(dirs) == S]
+			Sexp <- unlist(lapply(list.files(SDIR), function(d) { if (dir.exists(file.path(SDIR,d))) d }))
+			for (id in Sexp) {
+				ACQDIR <- file.path(SDIR,id)
+				ACQFILE <- file.path(ACQDIR,'acqus')
+				if (!file.exists(ACQFILE)) next
+				ACQ <- readLines(ACQFILE)
+				Pstr <- Rnmr1D:::.bruker.get_param(ACQ,"PULPROG",type="string")
+				PULSE <- NULL
+				if (length(grep('^zg[0-9]{0,2}$',Pstr))) PULSE <- 'zg'
+				if (length(grep('^zgpr',Pstr))) PULSE <- 'zgpr'
+				if (length(grep('^noesy',Pstr))) PULSE <- 'noesy'
+				if (is.null(PULSE)) next
+				M <- rbind(M, c(S, id, PULSE))
+			}
 		}
 	}
 	M

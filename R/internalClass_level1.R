@@ -11,6 +11,17 @@ internalClass$set("private", "applyReadSpectrum", function(ACQDIR, verbose=1)
 	# - Uses the processing parameters (procParams)
 	spec <- Rnmr1D::readSpectrum(ACQDIR, procParams, PPM_NOISE, NULL, SCALE_INT, verbose=verbose)
 
+	# if defined, calibrate the spectrum
+	if (!is.null(PROFILE$preprocess$CALIB)) {
+		CALIB <- PROFILE$preprocess$CALIB
+		iseq <- getseq(spec,c(CALIB[1],CALIB[2]))
+		Y <- spec$int[iseq]
+		dppm <- spec$ppm[iseq[1] + which(Y == max(Y)) - 1] - CALIB[3]
+		spec$ppm <- spec$ppm - dppm
+		spec$pmin <- spec$pmin - dppm
+		spec$pmax <- spec$pmax - dppm
+	}
+
 	# Return the processed spectrum
 	spec
 })
