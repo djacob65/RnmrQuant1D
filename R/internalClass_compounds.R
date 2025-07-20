@@ -632,12 +632,13 @@ internalClass$set("private", "find_peaks_rule_r10", function(spec, peaks, ppm0, 
 })
 
 # r12: find 'nbpeaks' consecutive peaks in the ppm range (e.g shikimic acid)
-internalClass$set("private", "find_peaks_rule_r12", function(spec, peaks, ppm1, ppm2, nbpeaks=5, ratioPN=1)
+internalClass$set("private", "find_peaks_rule_r12", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, ratioPN=1)
 {
-	facthres <- 0.6
-	J <- 2
-	Jmax <- 4*J
+	Jmax <- (nbpeaks-1)*J
 	SFO1 <- spec$acq$SFO1
+	facthres <- 0.45
+	snrthres <- 3
+	facJ <- 1.1
 
 	groups <- NULL
 	repeat {
@@ -646,11 +647,19 @@ internalClass$set("private", "find_peaks_rule_r12", function(spec, peaks, ppm1, 
 		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
 		if (is.null(P2) || nrow(P2)<nbpeaks) break
 		gn <- as.numeric(rownames(P1)[which( P1$pos %in% P2$pos)])
-		if (length(gn)>nbpeaks) {
-			gm <- gn[order(peaks$amp[gn], decreasing=T)][1:(nbpeaks-2)]
-			gm <- gm[order(gm)]
-			gn <- (min(gm)-1):(max(gm)+1)
+		gm <- gn[order(peaks$amp[gn], decreasing=T)][1:(nbpeaks-2)]
+		gm <- gm[order(gm)]
+		gn <- (min(gm)-1):(max(gm)+1)
+		if ((peaks$ppm[gn[length(gn)]]-peaks$ppm[gn[1]])*SFO1>Jmax) {
 			Athres <- facthres*max(peaks$amp[gn])
+			gn <- (min(gn)-1):(max(gn)+1)
+			P <- peaks[gn, ]
+			gn <- as.numeric(rownames(P[P$ppm>ppm1 & P$ppm<ppm2, , drop=F]))
+			gn <- gn[which(peaks$amp[gn]/spec$Noise>snrthres)]
+			D <- sapply(1:(length(gn)-1), function(k){round((peaks$ppm[gn[k+1]]-peaks$ppm[gn[k]])*SFO1 ,2)})
+			v <- which(D>facJ*J)
+			if(length(v)==1)
+				if (v<length(gn)/2) { gn <- gn[(v+1):length(gn)] } else { gn <- gn[1:v] }
 			while (peaks$amp[gn[1]]>Athres && (peaks$ppm[gn[length(gn)]]-peaks$ppm[gn[1]])*SFO1>Jmax)
 				gn <- gn[2:length(gn)]
 			while (peaks$amp[gn[length(gn)]]>Athres && (peaks$ppm[gn[length(gn)]]-peaks$ppm[gn[1]])*SFO1>Jmax)
@@ -773,9 +782,10 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 				next
 			}
 			if (pattern == 'r12') {
-				nbpeaks <- ifelse( length(params)>2, params[3], 5 )
-				ratioPN <- ifelse( length(params)>3, params[4], 1 )
-				groups[[cmpd]] <- find_peaks_rule_r12(spec, peaks, params[1], params[2], nbpeaks, ratioPN)
+				J       <- ifelse( length(params)>2, params[3], 2 )
+				nbpeaks <- ifelse( length(params)>3, params[4], 5 )
+				ratioPN <- ifelse( length(params)>4, params[5], 1 )
+				groups[[cmpd]] <- find_peaks_rule_r12(spec, peaks, params[1], params[2], J, nbpeaks, ratioPN)
 				next
 			}
 			next

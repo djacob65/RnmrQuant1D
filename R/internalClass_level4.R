@@ -22,6 +22,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		return(mylist)
 	}
 
+t <- system.time({
 	# Start Cluster
 	rq1d <<- self
 	if (ncpu>1) {
@@ -36,12 +37,17 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	} else {
 		foreach::registerDoSEQ()
 	}
-	Sys.sleep(1)
+})
+if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n")
 
+
+t <- system.time({
 	dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
 	Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR))
 	Slist <- Slist[ Slist[,1] %in% SAMPLES[,1] & Slist[,3] == SEQUENCE, 1:2]
 	Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), , drop=F]
+})
+if (verbose>1) cat('Time taken to obtain the sample list (s) =', round(t[3], 2), "\n")
 
 # ,.export=c("RnmrQuant1D")
 	# Process all samples in parallel
