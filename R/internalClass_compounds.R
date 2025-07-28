@@ -51,6 +51,14 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 	V
 })
 
+# Get the ppm shift so that the maximum intensity in a ppm zone (pzone1, pzone2) corresponds to the p0 value
+internalClass$set("private", "get_ppm_shift", function(spec, pzone1, pzone2, p0)
+{
+	iseq <- getseq(spec,c(pzone1,pzone2))
+	Y <- spec$int[iseq]
+	spec$ppm[iseq[1] + which(Y == max(Y)) - 1] - p0
+})
+
 # singulet (s) : central ppm, tolerance for ppm
 internalClass$set("private", "find_pattern_s", function(spec, peaks, ppm0, dppm=0.005, rank=1)
 {
@@ -553,9 +561,7 @@ internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, p
 	ratioPN <- 4.9
 	groups <- NULL
 	repeat {
-		iseq <- getseq(spec,c(pzone1,pzone2))
-		Y <- spec$int[iseq]
-		dppm <- spec$ppm[iseq[1] + which(Y == max(Y)) - 1] - p0
+		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0)
 		P1 <-peaks[ peaks$ppm>(ppm1+dppm) & peaks$ppm<(ppm2+dppm), , drop=F]
 		if (is.null(P1) || nrow(P1)<1) break
 		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
@@ -573,9 +579,7 @@ internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, 
 	ratioPN <- 5
 	groups <- NULL
 	repeat {
-		iseq <- getseq(spec,c(pzone1,pzone2))
-		Y <- spec$int[iseq]
-		dppm <- spec$ppm[iseq[1] + which(Y == max(Y)) - 1] - p0
+		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0)
 		P1 <-peaks[ peaks$ppm>(ppm1+dppm) & peaks$ppm<(ppm2+dppm), , drop=F]
 		if (is.null(P1) || nrow(P1)<1) break
 		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
@@ -598,9 +602,7 @@ internalClass$set("private", "find_peaks_rule_r10", function(spec, peaks, ppm0, 
 	dS <- 65
 	groups <- NULL
 	repeat {
-		iseq <- getseq(spec,c(pzone1,pzone2))
-		Y <- spec$int[iseq]
-		dppm <- spec$ppm[iseq[1] + which(Y == max(Y)) - 1] - p0
+		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0)
 		dppm1 <- dppm0 + 0.5*(J+dJ)/spec$acq$SFO1
 		P1 <-peaks[ peaks$ppm>(ppm0-dppm1+dppm) & peaks$ppm<(ppm0+dppm1+dppm), , drop=F]
 		if (is.null(P1) || nrow(P1)<2) break
@@ -632,39 +634,105 @@ internalClass$set("private", "find_peaks_rule_r10", function(spec, peaks, ppm0, 
 })
 
 # r12: find 'nbpeaks' consecutive peaks in the ppm range (e.g shikimic acid)
-internalClass$set("private", "find_peaks_rule_r12", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, ratioPN=1)
+internalClass$set("private", "find_peaks_rule_r12", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, snrthres=5)
 {
-	Jmax <- (nbpeaks-1)*J
-	SFO1 <- spec$acq$SFO1
-	facthres <- 0.45
-	snrthres <- 3
-	facJ <- 1.1
+	Dmax <- 1.02*(nbpeaks-1)*J
+	Dmin <- 0.9*(nbpeaks-1)*J
+	facJ <- 1.05
+	ratioPN <- 1
+
+	distHz <- function(gn, n1, n2) { (peaks$ppm[gn[n2]] - peaks$ppm[gn[n1]])*spec$acq$SFO1 }
+	is_snr <- function(n) { (peaks$amp[n]/spec$Noise)<snrthres }
 
 	groups <- NULL
 	repeat {
+		# Get peaks within the ppm range
 		P1 <- peaks[peaks$ppm>ppm1 & peaks$ppm<ppm2, , drop=F]
-		if (is.null(P1) || nrow(P1)<nbpeaks) break
+		if (is.null(P1) || nrow(P1)<(nbpeaks-1)) break
 		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
-		if (is.null(P2) || nrow(P2)<nbpeaks) break
+		if (is.null(P2) || nrow(P2)<(nbpeaks-1)) break
 		gn <- as.numeric(rownames(P1)[which( P1$pos %in% P2$pos)])
-		gm <- gn[order(peaks$amp[gn], decreasing=T)][1:(nbpeaks-2)]
-		gm <- gm[order(gm)]
-		gn <- (min(gm)-1):(max(gm)+1)
-		if ((peaks$ppm[gn[length(gn)]]-peaks$ppm[gn[1]])*SFO1>Jmax) {
-			Athres <- facthres*max(peaks$amp[gn])
-			gn <- (min(gn)-1):(max(gn)+1)
-			P <- peaks[gn, ]
-			gn <- as.numeric(rownames(P[P$ppm>ppm1 & P$ppm<ppm2, , drop=F]))
-			gn <- gn[which(peaks$amp[gn]/spec$Noise>snrthres)]
-			D <- sapply(1:(length(gn)-1), function(k){round((peaks$ppm[gn[k+1]]-peaks$ppm[gn[k]])*SFO1 ,2)})
-			v <- which(D>facJ*J)
-			if(length(v)==1)
-				if (v<length(gn)/2) { gn <- gn[(v+1):length(gn)] } else { gn <- gn[1:v] }
-			while (peaks$amp[gn[1]]>Athres && (peaks$ppm[gn[length(gn)]]-peaks$ppm[gn[1]])*SFO1>Jmax)
-				gn <- gn[2:length(gn)]
-			while (peaks$amp[gn[length(gn)]]>Athres && (peaks$ppm[gn[length(gn)]]-peaks$ppm[gn[1]])*SFO1>Jmax)
-				gn <- gn[1:(length(gn)-1)]
+
+		# Get peaks with high intensities
+		gn <- gn[order(peaks$amp[gn], decreasing=T)][1:(nbpeaks-2)]
+		gn <- gn[order(gn)]
+
+		# Remove high peaks on both side
+		Amed <- median(peaks$amp[gn])
+		while (peaks$amp[gn[1]]>2*Amed) gn <- gn[2:length(gn)]
+		while (peaks$amp[gn[length(gn)]]>2*Amed) gn <- gn[1:(length(gn)-1)]
+
+		# Add peaks on both side if peaks are not too high
+		k1 <- 0; while(is_snr(min(gn)-k1)) k1 <- k1+1
+		k2 <- 0; while(is_snr(max(gn)+k2)) k2 <- k2+1
+		aL <- 0.75*median(peaks$amp[gn])
+		if (k1>0 && peaks$amp[min(gn)-k1]>aL) k1 <- k1-1
+		if (k2>0 && peaks$amp[max(gn)+k2]>aL) k2 <- k2-1
+		gn <- (min(gn)-k1):(max(gn)+k2)
+
+		# Add peaks on both side if distHz<Dmin and peaks are not too high
+		while (distHz(gn,1,length(gn))<Dmin) {
+			k1 <- 1; while(is_snr(min(gn)-k1)) k1 <- k1+1
+			k2 <- 1; while(is_snr(max(gn)+k2)) k2 <- k2+1
+			J1 <- distHz(c(min(gn)-k1,min(gn)),1,2)
+			J2 <- distHz(c(max(gn),max(gn)+k2),1,2)
+			d1 <- distHz(c(min(gn)-k1, gn),1,length(gn)+1); a1 <- peaks$amp[min(gn)-k1] 
+			d2 <- distHz(c(gn, max(gn)+k2),1,length(gn)+1); a2 <- peaks$amp[max(gn)+k2]
+			aL <- 0.95*max(peaks$amp[gn])
+			ret <- 0
+			if (d1<Dmax && J1<facJ*J && (J1>0.7*J || J1<0.4*J) && a1<aL && a1<1.25*peaks$amp[min(gn)]) { gn <- c(min(gn)-k1, gn); ret <- 1 }
+			if (distHz(gn,1,length(gn))>Dmin) break
+			if (d2<Dmax && J2<facJ*J && (J2>0.7*J || J2<0.4*J) && a2<aL && a2<1.25*peaks$amp[max(gn)]) { gn <- c(gn, max(gn)+k2); ret <- 1 }
+			if (ret==0) break
 		}
+
+		# Remove peaks on both side if distHz>Dmax
+		while (distHz(gn,1,length(gn))>Dmax) {
+			g1 <- c((min(gn)+1):max(gn));  g2 <-c(min(gn):(max(gn)-1)) 
+			d1 <- distHz(g1,1,length(g1)); d2 <- distHz(g2,1,length(g2));
+			a1 <- peaks$amp[min(gn)+1];    a2 <- peaks$amp[max(gn)-1]
+			J1 <- distHz(c(min(gn),min(gn)+1),1,2)
+			J2 <- distHz(c(max(gn)-1,max(gn)),1,2)
+			if (J1>facJ*J) { gn <- g1;  next }
+			if (J2>facJ$J) { gn <- g2;  next }
+			if (d1>Dmin && (d1>d2 || a1>a2)) { gn <- g1;  next }
+			if (d2>Dmin && (d2>d1 || a2>a1)) { gn <- g2;  next }
+			break
+		}
+		# Remove peaks below the snr on both side
+		# so that a peak that satisfies the Dmax constraint can be included next
+		if (is_snr(min(gn))) gn <- c((min(gn)+1):max(gn))
+		if (is_snr(max(gn))) gn <- c(min(gn):(max(gn)-1)) 
+
+		# In case we missed a peak
+		nloop <- 1
+		repeat {
+			k1 <- k2 <- 1
+			if (distHz(gn,1,length(gn))<Dmax) {
+				aL <- 0.75*median(peaks$amp[gn])
+				a1 <- peaks$amp[min(gn)-k1];
+				k1 <- 1; while(is_snr(min(gn)-k1)) k1 <- k1+1
+				g1 <- c((min(gn)-k1):max(gn));
+				d1 <- distHz(g1,1,length(g1));
+				if (d1<Dmax && !is_snr(min(gn)-k1) && a1<aL) { gn <- c((min(gn)-k1):max(gn)) }
+			}
+			if (distHz(gn,1,length(gn))<Dmax) {
+				aL <- 0.75*median(peaks$amp[gn])
+				a2 <- peaks$amp[max(gn)+k2];
+				k2 <- 1; while(is_snr(max(gn)+k2)) k2 <- k2+1
+				g2 <-c(min(gn):(max(gn)+k2)); 
+				d2 <- distHz(g2,1,length(g2));
+				if (d2<Dmax && !is_snr(max(gn)+k2) && a2<aL) { gn <- c(min(gn):(max(gn)+k2)) }
+			}
+			if (distHz(gn,1,length(gn))<Dmax) {
+				if (k1>1 && distHz(c(min(gn)-1, gn),1,length(gn)+1)<Dmax) { gn <- c(min(gn)-1, gn) }
+				if (k2>1 && distHz(c(gn, max(gn)+1),1,length(gn)+1)<Dmax) { gn <- c(gn, max(gn)+1) }
+			}
+			nloop <- nloop + 1
+			if (nloop>2) break
+		}
+
+		gn <- (min(gn):max(gn))
 		groups <- as.character(gn)
 		break
 	}
@@ -782,10 +850,10 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 				next
 			}
 			if (pattern == 'r12') {
-				J       <- ifelse( length(params)>2, params[3], 2 )
-				nbpeaks <- ifelse( length(params)>3, params[4], 5 )
-				ratioPN <- ifelse( length(params)>4, params[5], 1 )
-				groups[[cmpd]] <- find_peaks_rule_r12(spec, peaks, params[1], params[2], J, nbpeaks, ratioPN)
+				J        <- ifelse( length(params)>2, params[3], 2 )
+				nbpeaks  <- ifelse( length(params)>3, params[4], 5 )
+				snrthres <- ifelse( length(params)>4, params[5], 5 )
+				groups[[cmpd]] <- find_peaks_rule_r12(spec, peaks, params[1], params[2], J, nbpeaks, snrthres)
 				next
 			}
 			next

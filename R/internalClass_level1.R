@@ -200,12 +200,12 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		# Store fitting results
 		if (k > 1 && pkfit[k,1] >= pkfit[k-1,2]) {
 			subsetPeaks <- model$peaks[model$peaks$ppm > pkfit[k-1,2], , drop=F]
-			Peaks <- rbind(Peaks, subsetPeaks)
+			Peaks <- rbind(Peaks, subsetPeaks[subsetPeaks$amp>0, ])
 			Ymodel <- Ymodel + Rnmr1D::specModel(spec, c(pkfit[k,1], pkfit[k,2]), subsetPeaks)
 			iseq <- getseq(spec, c(pkfit[k-1,2], pkfit[k,2]))
 			Y[iseq] <- Y[iseq] - model$LB[iseq]
 		} else {
-			Peaks <- rbind(Peaks, model$peaks)
+			Peaks <- rbind(Peaks, model$peaks[model$peaks$amp>0, ])
 			Ymodel <- model$model
 			Y <- Y - model$LB
 		}
@@ -217,7 +217,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		Ispec <- (Y[iseq[1]] + Y[iseq[length(iseq)]]) / 2 + sum(Y[iseq])
 		Idiff <- round(100 * (Imodel - Ispec) / Ispec, 4)
 		asym <- ifelse(opars.loc$oasym > 0, opars.loc$asymmax, 0)
-		infos <- rbind(infos, c(spec$expno, pkfit[k,8], pkfit[k,1:2], model$nbpeak, opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2, 4), Idiff))
+		infos <- rbind(infos, c(spec$expno, pkfit[k,8], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2, 4), Idiff))
 
 		if (verbose) cat("-------------------\n")
 	}
@@ -357,13 +357,13 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		if (!is.null(model) && nrow(model$peaks)>0) {
 			# Accumulating fitting results
 			if (k>1 && pkfit[k,1]>=pkfit[k-1,2]) {
-				Peaks <- model$peaks[ model$peaks$ppm>pkfit[k-1,2], ]
+				Peaks <- model$peaks[model$peaks$ppm>pkfit[k-1,2] & model$peaks$amp>0, ]
 				Ymodel <- Rnmr1D::specModel(spec, c(pkfit[k,1], pkfit[k,2]), Peaks)
 				iseq <- priv$getseq(spec, c(pkfit[k-1,2], pkfit[k,2]))
 				LB[iseq] <- LB[iseq] + model$LB[iseq]
 				Y[iseq] <- Y[iseq] - model$LB[iseq]
 			} else {
-				Peaks <- model$peaks
+				Peaks <- model$peaks[model$peaks$amp>0, ]
 				Ymodel <- model$model
 				LB <- LB + model$LB
 				Y <- Y - model$LB
@@ -375,7 +375,7 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 			Ispec <- (Y[iseq[1]]+Y[iseq[length(iseq)]])/2 + sum(Y[iseq])
 			Idiff <- round(100*(Imodel-Ispec)/Ispec,4)
 			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
-			infos <- c(spec$expno, pkfit[k,8], pkfit[k,1:2], model$nbpeak, opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2,4), Idiff, round(t[3],2))
+			infos <- c(spec$expno, pkfit[k,8], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2,4), Idiff, round(t[3],2))
 		} else  {
 			Peaks <- NULL
 			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
@@ -413,7 +413,8 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	colnames(infos) <- c('expno','zone','ppm1','ppm2','nbpeaks','addpeaks','asym','obl','qbl','R2','Int. Diff. %','Time')
 
 	# Format the peak fitting information table
-	if (!is.null(Peaks)) rownames(Peaks) <- NULL
+	if (!is.null(Peaks))
+		rownames(Peaks) <- NULL
 
 	# Store the final fitted spectrum in the output object
 	ppmrange <- c(min(pkfit[,1]), max(pkfit[,2]))
@@ -513,7 +514,8 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 
 	# Compute Signal-to-Noise Ratio (SNR) using the highest peak intensity
 		SNR <- NA
-		if (!is.null(PKZQ)) SNR <- round(max(peaks[ rownames(peaks)[PKZQ], ]$amp)/(2*Vnoise))
+		if (!is.null(PKZQ))
+			SNR <- round(median(peaks[rownames(peaks)[PKZQ], ]$amp)/(2*Vnoise))
 
 	# Store quantification results and peaklist
 		quantification <- rbind(quantification,c(cmpd, ppmrange, ISUM, SNR))

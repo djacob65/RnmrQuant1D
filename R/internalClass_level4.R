@@ -23,6 +23,15 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	}
 
 t <- system.time({
+	rownames(SAMPLES) <<- 1:nrow(SAMPLES)
+	dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
+	Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR))
+	Slist <- Slist[ Slist[,1] %in% SAMPLES[,1] & Slist[,3] == SEQUENCE, 1:2]
+	Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), , drop=F]
+})
+if (verbose>1) cat('Time taken to obtain the sample list (s) =', round(t[3], 2), "\n")
+
+t <- system.time({
 	# Start Cluster
 	rq1d <<- self
 	if (ncpu>1) {
@@ -33,21 +42,13 @@ t <- system.time({
 		cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
 		doParallel::registerDoParallel(cl)
 		parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
-		on.exit(parallel::stopCluster(cl))
+		on.exit({parallel::stopCluster(cl); rm(cl)})
 	} else {
 		foreach::registerDoSEQ()
 	}
 })
 if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n")
 
-
-t <- system.time({
-	dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
-	Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR))
-	Slist <- Slist[ Slist[,1] %in% SAMPLES[,1] & Slist[,3] == SEQUENCE, 1:2]
-	Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), , drop=F]
-})
-if (verbose>1) cat('Time taken to obtain the sample list (s) =', round(t[3], 2), "\n")
 
 # ,.export=c("RnmrQuant1D")
 	# Process all samples in parallel
@@ -192,6 +193,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	}
 
 	# For each samples
+	rownames(SAMPLES) <<- 1:nrow(SAMPLES)
 	samplelist <- SAMPLES[,1]
 	expnolist <<- character(0)
 	cnt <- 0
