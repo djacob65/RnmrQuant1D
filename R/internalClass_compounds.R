@@ -52,11 +52,19 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 })
 
 # Get the ppm shift so that the maximum intensity in a ppm zone (pzone1, pzone2) corresponds to the p0 value
-internalClass$set("private", "get_ppm_shift", function(spec, pzone1, pzone2, p0)
+internalClass$set("private", "get_ppm_shift", function(spec, pzone1, pzone2, p0, type='s')
 {
 	iseq <- getseq(spec,c(pzone1,pzone2))
 	Y <- spec$int[iseq]
-	spec$ppm[iseq[1] + which(Y == max(Y)) - 1] - p0
+	if (type=='d') {
+		DMIN <- round(15*spec$size/65535)
+		V <- order(Y, decreasing=T)
+		k <- 2; while(abs(V[k]-V[k-1])<DMIN) k <- k+1
+		i0 <- round(0.5*(V[1]+V[k]))
+	} else {
+		i0 <- which(Y == max(Y))
+	}
+	spec$ppm[iseq[1] + i0 - 1] - p0
 })
 
 # singulet (s) : central ppm, tolerance for ppm

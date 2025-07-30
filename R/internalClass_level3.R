@@ -214,15 +214,15 @@ internalClass$set("public", "get_Matrix_CV", function(MatInt=NULL)
 	if (is.null(MatInt))
 		MatInt <- get_Matrix_Integrals()
 	SL <- unique(SAMPLES[,1])
-	MatCV <- NULL
+	MatCV <- matrix(0, nrow=length(SL), ncol=ncol(MatInt))
 	for (k in 1:length(SL)) {
 		SC <- SAMPLES[SAMPLES[,1] == SL[k],2]
 		M1 <- MatInt[rownames(MatInt) %in% SC, , drop=FALSE]
 		if (is.null(M1) || nrow(M1)==0) next
-		MatCV <- rbind(MatCV, sapply(1:ncol(M1), function(x){
+		MatCV[k, 1:ncol(M1)] <- sapply(1:ncol(M1), function(x){
 				V <-M1[ !is.na(M1[,x]), x ]
 				ifelse( length(V)>0, 100*sd(V)/mean(V), NA )
-		}))
+		})
 	}
 	colnames(MatCV) <- colnames(MatInt)
 	rownames(MatCV) <- SL
@@ -327,7 +327,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 #=====================================================================
 
 # View spectra along with models & compounds
-internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', legendhoriz=FALSE, verbose=FALSE)
+internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', legendhoriz=FALSE, showgrid=TRUE, verbose=FALSE)
 {
 	if (! res$proctype %in% c('integration', 'quantification') || length(specList)==0)
 		stop_quietly(paste0("ERROR : Integrals or quantification must be computed before !\n"))
@@ -339,6 +339,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 
 	# Compound colors - see https://bookdown.org/hneth/ds4psy/D-3-apx-colors-basics.html
 	colfits <- c('mediumorchid1','palegreen4','deepskyblue3','lightsalmon2','steelblue4','lightpink3','purple','blue','magenta','green')
+	colfits <- c( colfits, colfits, colfits )
 
 	ppmview <- ppm_range
 	ppm <- spec$ppm
@@ -435,6 +436,9 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 
 	if (legendhoriz)
 		p <- p |> plotly::layout(legend = list(orientation = 'h', xanchor = "center",  x = 0.5))
+	if (!showgrid)
+		p <- p |> plotly::layout(xaxis = list(showgrid = F), yaxis = list(showgrid = F))
+
 	p <- p |> plotly::layout(colorway = arrColors)
 	p
 })

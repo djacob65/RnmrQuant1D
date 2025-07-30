@@ -269,9 +269,10 @@ public = list(
 #' @param plotzones If TRUE, add a semi-transparent rectangle superimposed on each fit zone.
 #' @param tags add an arrow annotation on each peak resulting from the deconvolution. Among the possible values: 1) 'id' adds the number of the compound to which the peak belongs, 2) 'name' adds the name of the compound to which the peak belongs, 'auto' adds either the number if multiple zones, or the name of the compound, 3) 'none' adds no arrow annotation.
 #' @param legendhoriz Put the legend at the bottom (TRUE) or at the left (FALSE) of the graph
+#' @param showgrid If TRUE, show the grid on the background
 #' @param verbose If TRUE, The peak list is displayed
 #' @return a \href{https://plotly.com/r/}{plotly} graph
-	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', legendhoriz=FALSE, verbose=FALSE) {
+	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', legendhoriz=FALSE, showgrid=TRUE, verbose=FALSE) {
 		super$view_spectra(id, plotmodel, plotTrueSpec, plotzones, tags, legendhoriz, verbose)
 	},
 
