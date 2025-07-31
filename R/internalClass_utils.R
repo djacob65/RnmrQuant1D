@@ -45,14 +45,26 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 # Some functions about spectra under RAWDIR
 #=====================================================================
 
+# Get list of directories under DIR
+internalClass$set("private", "get_list_dirs", function(DIR=NULL)
+{
+	if (is.null(DIR)) DIR <- RAWDIR
+	unique(dirname(list.files(path = DIR, pattern = "audita.txt$", all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
+})
+
 # Get list of samples under RAWDIR
 internalClass$set("private", "get_list_samples", function(DIR=NULL)
 {
 	if (is.null(DIR)) DIR <- RAWDIR
-	LIST <- list.files(path = DIR, pattern = "audita.txt$",
-					all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)
-	unique(unlist(lapply(LIST, function(f) { V <- unlist(strsplit(f,'/')); V[c(length(V)-2)] })))
-
+	LIST <- NULL
+	if (DIR != RAWDIR || is.null(RAWDIR_SLIST)) {
+		LIST <- get_list_dirs(DIR)
+	} else {
+		LIST <- RAWDIR_SLIST
+	}
+	if (DIR == RAWDIR && is.null(RAWDIR_SLIST))
+		RAWDIR_SLIST <<- LIST
+	unique(basename(dirname(LIST)))
 })
 
 # Get matrix of spectra for each samples under DIR
@@ -60,10 +72,16 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 {
 	M <- NULL
 	if (! is.null(DIR) && dir.exists(DIR)) {
-		dirs <- list.dirs(DIR, recursive = TRUE, full.names = TRUE)
+		if (DIR == RAWDIR && ! is.null(RAWDIR_SLIST))
+			dirs <- RAWDIR_SLIST
+		else
+			dirs <- get_list_dirs(DIR)
+		M <- matrix(0, nrow=length(dirs), ncol=3)
+		cnt <- 0
 		for (S in samples) {
-			SDIR <- dirs[basename(dirs) == S]
-			Sexp <- unlist(lapply(list.files(SDIR), function(d) { if (dir.exists(file.path(SDIR,d))) d }))
+			L <- grep(paste0('/',S,'/'), dirs, value = TRUE)
+			SDIR <- unique(dirname(L))[1]
+			Sexp <- unique(basename(L), dirs, value = TRUE)
 			for (id in Sexp) {
 				ACQDIR <- file.path(SDIR,id)
 				ACQFILE <- file.path(ACQDIR,'acqus')
@@ -75,9 +93,13 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 				if (length(grep('^zgpr',Pstr))) PULSE <- 'zgpr'
 				if (length(grep('^noesy',Pstr))) PULSE <- 'noesy'
 				if (is.null(PULSE)) next
-				M <- rbind(M, c(S, id, PULSE))
+				cnt <- cnt + 1
+				M[cnt, 1:3] <- c(S, id, PULSE)
+				if (cnt==nrow(M)) break
 			}
 		}
+		if (cnt>0) M <- M[1:cnt, , drop=T]
+		else       M <- NULL
 	}
 	M
 })

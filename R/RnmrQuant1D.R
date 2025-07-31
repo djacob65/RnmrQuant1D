@@ -87,6 +87,9 @@ public = list(
 #' @field QStype Identifier of the Quantification Standards (QS) in the calibration profile (1st column - default = "QS")
 	QStype       = "QS",
 
+#' @field  RAWDIR_SLIST Spectra list in RAWDIR directory - internally initialized
+	RAWDIR_SLIST     = NULL,
+
 #' @description Class Constructor - Initializes internal parameters for preprocessing and deconvolution.
 #' @param self the RnmrQuant1D instance
 #' @return a RnmrQuant1D instance

@@ -69,6 +69,8 @@ Daniel Jacob - (C) INRAE 2025
 \item{\code{QCtype}}{Identifier of the Quality Control (QC) in the calibration profile (1st column - default = "QC")}
 
 \item{\code{QStype}}{Identifier of the Quantification Standards (QS) in the calibration profile (1st column - default = "QS")}
+
+\item{\code{RAWDIR_SLIST}}{Spectra list in RAWDIR directory - internally initialized}
 }
 \if{html}{\out{</div>}}
 }

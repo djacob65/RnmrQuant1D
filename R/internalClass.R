@@ -58,6 +58,9 @@ internalClass <- R6Class("internalClass",
 		fP           = list(),
 		expnolist    = "",
  
+	# Internally initialized sample list in RAWDIR directory
+		RAWDIR_SLIST     = NULL,
+
 	#=====================================================================
 	# Initialization
 	#=====================================================================
