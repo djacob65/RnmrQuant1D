@@ -49,7 +49,7 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 internalClass$set("private", "get_list_samples", function(DIR=NULL)
 {
 	if (is.null(DIR)) DIR <- RAWDIR
-	LIST <- list.files(path = rq1d$RAWDIR, pattern = "audita.txt$",
+	LIST <- list.files(path = DIR, pattern = "audita.txt$",
 					all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)
 	unique(unlist(lapply(LIST, function(f) { V <- unlist(strsplit(f,'/')); V[c(length(V)-2)] })))
 
