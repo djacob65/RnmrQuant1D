@@ -549,7 +549,7 @@ nothing
 \if{html}{\out{<a id="method-RnmrQuant1D-view_spectra"></a>}}
 \if{latex}{\out{\hypertarget{method-RnmrQuant1D-view_spectra}{}}}
 \subsection{Method \code{view_spectra()}}{
-Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positioned by the zone(s) chosen when calculating the integrations by \href{#method-RnmrQuant1D-proc_Integrals}{\code{proc_Integrals()}}.
+Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positioned by the zone(s) chosen when calculating the integrations by \href{#method-RnmrQuant1D-proc_Integrals}{\code{proc_Integrals()}}. The graph superimposes several spectra, namely the original spectrum, the model spectrum resulting from the deconvolution, as well as all the patterns corresponding to the compounds identified according to the profile in the preselected zone(s).
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$view_spectra(
   id,
@@ -557,7 +557,12 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
   plotTrueSpec = TRUE,
   plotzones = TRUE,
   tags = "none",
+  showlegend = TRUE,
   legendhoriz = FALSE,
+  showgrid = TRUE,
+  title = NULL,
+  colspecs = NULL,
+  colcpmds = NULL,
   verbose = FALSE
 )}\if{html}{\out{</div>}}
 }
@@ -575,9 +580,19 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
 
 \item{\code{tags}}{add an arrow annotation on each peak resulting from the deconvolution. Among the possible values: 1) 'id' adds the number of the compound to which the peak belongs, 2) 'name' adds the name of the compound to which the peak belongs, 'auto' adds either the number if multiple zones, or the name of the compound, 3) 'none' adds no arrow annotation.}
 
+\item{\code{showlegend}}{If TRUE, show the legend}
+
 \item{\code{legendhoriz}}{Put the legend at the bottom (TRUE) or at the left (FALSE) of the graph}
 
-\item{\code{verbose}}{If TRUE, The peak list is displayed}
+\item{\code{showgrid}}{If TRUE, show the grid on the background}
+
+\item{\code{title}}{If NULL, the title will be the sample code. Otherwise, it will be the specified string. If you don't want a title, enter an empty string.}
+
+\item{\code{colspecs}}{specifies the array of colors for the original spectrum and the model. Only the two first colors will be used.}
+
+\item{\code{colcpmds}}{specifies the array of colors for the compounds (i.e. patterns). If the number of colors specified is not sufficient, the colors will be repeated.}
+
+\item{\code{verbose}}{If TRUE, The peak list will be displayed}
 
 \item{\code{self}}{The RnmrQuant1D instance}
 }

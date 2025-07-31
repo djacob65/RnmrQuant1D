@@ -555,7 +555,7 @@ internalClass$set("public", "plot_spectra", function(id, compound, ...)
 	if (sum(compound %in% PROFILE$compound$name)==0)
 		stop_quietly(paste("Error:",compound,"not known as a compound"))
 
-	if (res$proctype != 'quantification')
+	if (!res$proctype %in% c('quantification','integration'))
 		stop_quietly(paste0("ERROR : Quantifications must be computed with the proc_Quantification() method before !\n"))
 
 	if (is.null(res$peaklist))

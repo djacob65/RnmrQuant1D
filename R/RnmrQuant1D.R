@@ -261,19 +261,23 @@ public = list(
 	},
 
 #' @description
-#' Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positioned by the zone(s) chosen when calculating the integrations by \href{#method-RnmrQuant1D-proc_Integrals}{\code{proc_Integrals()}}.
+#' Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positioned by the zone(s) chosen when calculating the integrations by \href{#method-RnmrQuant1D-proc_Integrals}{\code{proc_Integrals()}}. The graph superimposes several spectra, namely the original spectrum, the model spectrum resulting from the deconvolution, as well as all the patterns corresponding to the compounds identified according to the profile in the preselected zone(s).
 #' @param self The RnmrQuant1D instance
 #' @param id Either the order number (numeric) of the spectrum in the sample table or the samplecode (string), i.e the 2nd column in the sample table.
 #' @param plotmodel If TRUE, plot the model based on the deconvolution.
 #' @param plotTrueSpec  If TRUE, plot the original spectrum without local baseline corrections.
 #' @param plotzones If TRUE, add a semi-transparent rectangle superimposed on each fit zone.
 #' @param tags add an arrow annotation on each peak resulting from the deconvolution. Among the possible values: 1) 'id' adds the number of the compound to which the peak belongs, 2) 'name' adds the name of the compound to which the peak belongs, 'auto' adds either the number if multiple zones, or the name of the compound, 3) 'none' adds no arrow annotation.
+#' @param showlegend If TRUE, show the legend
 #' @param legendhoriz Put the legend at the bottom (TRUE) or at the left (FALSE) of the graph
 #' @param showgrid If TRUE, show the grid on the background
-#' @param verbose If TRUE, The peak list is displayed
+#' @param title If NULL, the title will be the sample code. Otherwise, it will be the specified string. If you don't want a title, enter an empty string.
+#' @param colspecs specifies the array of colors for the original spectrum and the model. Only the two first colors will be used.
+#' @param colcpmds specifies the array of colors for the compounds (i.e. patterns). If the number of colors specified is not sufficient, the colors will be repeated.
+#' @param verbose If TRUE, The peak list will be displayed
 #' @return a \href{https://plotly.com/r/}{plotly} graph
-	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', legendhoriz=FALSE, showgrid=TRUE, verbose=FALSE) {
-		super$view_spectra(id, plotmodel, plotTrueSpec, plotzones, tags, legendhoriz, verbose)
+	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE) {
+		super$view_spectra(id, plotmodel, plotTrueSpec, plotzones, tags, showlegend, legendhoriz, showgrid, title, colspecs, colcpmds, verbose)
 	},
 
 #' @description

@@ -327,7 +327,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 #=====================================================================
 
 # View spectra along with models & compounds
-internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', legendhoriz=FALSE, showgrid=TRUE, verbose=FALSE)
+internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE)
 {
 	if (! res$proctype %in% c('integration', 'quantification') || length(specList)==0)
 		stop_quietly(paste0("ERROR : Integrals or quantification must be computed before !\n"))
@@ -337,9 +337,12 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	spec <- specList[[idx]]
 	peaklist <- res$peaklist
 
-	# Compound colors - see https://bookdown.org/hneth/ds4psy/D-3-apx-colors-basics.html
-	colfits <- c('mediumorchid1','palegreen4','deepskyblue3','lightsalmon2','steelblue4','lightpink3','purple','blue','magenta','green')
-	colfits <- c( colfits, colfits, colfits )
+	# Compound colors - see https://derekogle.com/NCGraphing/resources/colors
+	if (is.null(colcpmds))
+		colcpmds <- c('mediumorchid1','palegreen4','deepskyblue3','lightsalmon2','steelblue4',
+					'lightpink3','purple','blue','magenta','green','chocolate','chartreuse',
+					'bisque3','firebrick3','slateblue2')
+	colcpmds <- c( colcpmds, colcpmds, colcpmds )
 
 	ppmview <- ppm_range
 	ppm <- spec$ppm
@@ -349,8 +352,13 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 		ycurves <- cbind(spec$fit$Y, spec$fit$Ymodel)
 	}
 	ynames <- c( S, 'model' )
-	arrColors <- c('grey60',ifelse(spec$TSPwidth>TSPwidthMax,'violetred','lightslateblue')); names(arrColors) <- ynames
-	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=arrColors, title=S)
+	if (is.null(colspecs) || length(colspecs)<2)
+		colspecs <- c('grey60',ifelse(spec$TSPwidth>TSPwidthMax,'violetred','lightslateblue'));
+	colspecs <- colspecs[1:2]
+	names(colspecs) <- ynames
+	arrColors <- colspecs
+	if (is.null(title)) title <- S
+	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=colspecs, title=title)
 
   # Get the fitting zones
 	fit <- PROFILE$fitting
@@ -393,8 +401,8 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 				fmodel[iseq] <- apply(V,1,sum)
 				if (sum(fmodel)>0 && min(ppm[iseq])>=ppmview[1] && max(ppm[iseq])<=ppmview[2]) {
 					df <- data.frame(x=ppm[iseq], y=fmodel[iseq])
-					p <- plotly::add_trace(p, data=df, x = ~x, y = ~y, name=cmpdlist[k,1], mode = 'lines', fill = 'tozeroy', fillcolor=colfits[k])
-					arrColors <- c(arrColors, colfits[k])
+					p <- plotly::add_trace(p, data=df, x = ~x, y = ~y, name=cmpdlist[k,1], mode = 'lines', fill = 'tozeroy', fillcolor=colcpmds[k])
+					arrColors <- c(arrColors, colcpmds[k])
 					names(arrColors)[length(arrColors)] <- cmpdlist[k,1]
 				}
 			}
@@ -439,7 +447,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	if (!showgrid)
 		p <- p |> plotly::layout(xaxis = list(showgrid = F), yaxis = list(showgrid = F))
 
-	p <- p |> plotly::layout(colorway = arrColors)
+	p <- p |> plotly::layout(colorway = arrColors, showlegend=showlegend)
 	p
 })
 
