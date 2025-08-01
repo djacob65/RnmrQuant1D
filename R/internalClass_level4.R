@@ -100,8 +100,9 @@ if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n"
 		# Accumulating results
 		mylist <- list()
 		if (!is.null(spec$fit$peaks)) {
-			Tinfos <- cbind( rep(spec$samplecode, nrow(spec$fit$infos)), spec$fit$infos )
+			Tinfos <- cbind( rep(spec$samplecode, nrow(spec$fit$infos)), spec$fit$infos, spec$TSPwidth )
 			colnames(Tinfos)[1] <- 'Samplecode'
+			colnames(Tinfos)[length(Tinfos)] <- 'TSPwidth'
 			mylist[[paste0('S',ID)]] <- list( id=paste0('S',ID), spec=spec, quantif=Q$quantification, peaklist=Q$peaklist, infos=Tinfos)
 		} else {
 			mylist[[paste0('S',ID)]] <- list( id=paste0('S',ID), spec=spec, quantif=NULL, peaklist=NULL, infos=NULL )

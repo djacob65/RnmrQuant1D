@@ -38,18 +38,39 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 			tmpdir <- paste0("tmp", floor(runif(1, 0, 10^12)))
 		suppressWarnings(dir.create(tmpdir))
 		setwd(tmpdir)
-		tryCatch({
-			sink("error.log")
-			plotly::orca(widget, file=paste0(IMGname, ".",type), width=width, height=height, verbose=TRUE, debug=TRUE)
-			sink()
-		}, error=function(cond) { cat("Failed\n"); sink() } )
 		IMGfile <- paste0(IMGname, ".",type)
+		tryCatch({
+			suppressWarnings(suppressMessages(
+				plotly::orca(widget, file=IMGfile, width=width, height=height, verbose=FALSE, debug=FALSE)))
+		}, error=function(cond) { cat("Failed\n"); sink() } )
 		if (!file.exists(IMGfile)) IMGfile <- paste0(IMGname, "_1.",type)
-		if (file.exists(IMGfile)) {
-			IRdisplay::display_html(paste0('<style type="text/css">div.output_',type,', img { max-width: 100%; height: ',height,'; }</style>'))
-			if (type == "png") IRdisplay::display_png(file=IMGfile)
-			if (type == "jpeg") IRdisplay::display_jpeg(file=IMGfile)
-			if (type == "svg") IRdisplay::display_svg(file=IMGfile)
+		repeat {
+			if (! file.exists(IMGfile)) break
+			# Jupyter : return the figure
+			if (.Platform$GUI != "RStudio" & !interactive()) {
+				IRdisplay::display_html(paste0('<style type="text/css">div.output_',type,', img { max-width: 100%; height: ',height,'; }</style>'))
+				if (type == "png") IRdisplay::display_png(file=IMGfile)
+				if (type == "jpeg") IRdisplay::display_jpeg(file=IMGfile)
+				if (type == "svg") IRdisplay::display_svg(file=IMGfile)
+				break
+			}
+			# RStudio or R GUI
+			if (type=='svg' && (.Platform$GUI == "RStudio" || interactive())) {
+				if ('svgtools' %in% installed.packages()) {
+					suppressWarnings(suppressMessages(library(svgtools)))
+					suppressWarnings(suppressMessages(svgtools::display_svg(readLines(IMGfile))))
+				}
+			}
+			if (type %in% c("png", "jpeg") && (.Platform$GUI == "RStudio" || interactive())) {
+				if ('magick' %in% installed.packages()) {
+					suppressWarnings(suppressMessages(library(magick)))
+					print(magick::image_read(IMGfile), info=FALSE)
+				}
+			}
+			# RStudio, R GUI or Terminal : return the file name
+			setwd(wd);
+			return(IMGfile)
+			break
 		}
 		setwd(wd);
 		#unlink(tmpdir, recursive=TRUE, force = TRUE)
