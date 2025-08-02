@@ -356,9 +356,9 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 		colspecs <- c('grey60',ifelse(spec$TSPwidth>TSPwidthMax,'violetred','lightslateblue'));
 	colspecs <- colspecs[1:2]
 	names(colspecs) <- ynames
-	arrColors <- colspecs
 	if (is.null(title)) title <- S
 	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=colspecs, title=title)
+	arrColors <- colspecs
 
   # Get the fitting zones
 	fit <- PROFILE$fitting
@@ -392,7 +392,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 				idpeaks <- sort(as.numeric(unlist(strsplit(strlist,","))))
 				PLk <- spec$fit$peaks[idpeaks, , drop=F]
 				if (nrow(PLk)==0) next
-				M <- PROFILE$fitting[PROFILE$fitting$zone==fit$zone, 1:2]
+				M <- PROFILE$fitting[PROFILE$fitting$zone %in% fit$zone, 1:2]
 				ppm_zone <- c(min(M[,1]), max(M[,2]))
 				iseq <- getseq(spec, ppm_zone)
 				V <- simplify2array(lapply(1:nrow(PLk), function(i) {

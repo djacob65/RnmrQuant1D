@@ -193,7 +193,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		# If no peaks were found, store default info and continue to the next range
 		if (is.null(model) || nrow(model$peaks) == 0) {
 			asym <- ifelse(opars.loc$oasym > 0, opars.loc$asymmax, 0)
-			infos <- rbind(infos, c(pkfit[k,8], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, 0, 100, 100))
+			infos <- rbind(infos, c(pkfit[k,9], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, 0, 100, 100))
 			next
 		}
 
@@ -217,7 +217,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		Ispec <- (Y[iseq[1]] + Y[iseq[length(iseq)]]) / 2 + sum(Y[iseq])
 		Idiff <- round(100 * (Imodel - Ispec) / Ispec, 4)
 		asym <- ifelse(opars.loc$oasym > 0, opars.loc$asymmax, 0)
-		infos <- rbind(infos, c(spec$expno, pkfit[k,8], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2, 4), Idiff))
+		infos <- rbind(infos, c(spec$expno, pkfit[k,9], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2, 4), Idiff))
 
 		if (verbose) cat("-------------------\n")
 	}
@@ -375,11 +375,11 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 			Ispec <- (Y[iseq[1]]+Y[iseq[length(iseq)]])/2 + sum(Y[iseq])
 			Idiff <- round(100*(Imodel-Ispec)/Ispec,4)
 			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
-			infos <- c(spec$expno, pkfit[k,8], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2,4), Idiff, round(t[3],2))
+			infos <- c(spec$expno, pkfit[k,9], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2,4), Idiff, round(t[3],2))
 		} else  {
 			Peaks <- NULL
 			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
-			infos <- c(spec$expno, pkfit[k,8], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, 0, opars.loc$qbl, 0, 100, round(t[3],2))
+			infos <- c(spec$expno, pkfit[k,9], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, 0, opars.loc$qbl, 0, 100, round(t[3],2))
 		}
 		if (verbose) cat("-------------------\n")
 
