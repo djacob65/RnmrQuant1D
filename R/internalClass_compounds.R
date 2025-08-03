@@ -205,7 +205,7 @@ internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, se
 })
 
 # quadruplet (q) : central ppm, J
-internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ramp=3, qtest=TRUE)
+internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ramp=3, qtest=FALSE)
 {
 	# Tolerance settings
 	dJ <- 2.5*spec$dppm*spec$acq$SFO1
@@ -220,11 +220,11 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ra
 	g <- unique(g)
 	repeat {
 		if (! c('matrix') %in% class(g)) break
-		if (is.null(g) || is.null(nrow(g)) || nrow(g)<3) break
+		if (is.null(g) || is.null(nrow(g)) || nrow(g)<2) break
 	# Doublets must be linked
 		h <- NULL
 		for (i in 1:nrow(g)) if (g[i,1] %in% g[,2] || g[i,2] %in% g[,1]) h <- rbind(h, g[i,])
-		if (is.null(h) || nrow(h)<3) break
+		if (is.null(h) || nrow(h)<2) break
 	# Apply separation depending on links
 		L <- NULL; k <- 0
 		h <- h[order(as.numeric(h[,1])),]
@@ -233,6 +233,19 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ra
 				if (i==m) { k <- k + 1; L[[k]] = c(h[i,1], h[i,2]) }
 				else if (h[i,1] == L[[k]][length(L[[k]])]) { L[[k]] = c(L[[k]], h[i,2]) }
 			}
+		}
+		# In case we missed a peak
+		if(length(L)==1 && length(L[[1]])==3) {
+			P1 <- peaks[L[[1]], ]
+			P1 <- P1[order(P1$ppm), ]
+			if (P1$amp[3]<2*P1$amp[2]) {
+				P2 <- peaks[peaks$ppm<(P1$ppm[1]-0.2*J/spec$acq$SFO1) & peaks$ppm>(P1$ppm[1]-1.2*J/spec$acq$SFO1), , drop=F]
+				if (nrow(P2)>1) P2 <- P2[which( abs((P1$ppm[1]-P2$ppm)*spec$acq$SFO1-J)==min(abs((P1$ppm[1]-P2$ppm)*spec$acq$SFO1-J))), , drop=F]
+			} else {
+				P2 <- peaks[peaks$ppm>(P1$ppm[3]+0.2*J/spec$acq$SFO1) & peaks$ppm<(P1$ppm[3]+1.2*J/spec$acq$SFO1), , drop=F]
+				if (nrow(P2)>1) P2 <- P2[which( abs((P1$ppm[3]-P2$ppm)*spec$acq$SFO1-J)==min(abs((P1$ppm[3]-P2$ppm)*spec$acq$SFO1-J))), , drop=F]
+			}
+			if (nrow(P2)==1) L[[1]] <- c(L[[1]], rownames(P2))
 		}
 		G <- NULL; k <- 0
 		for (j in 1:length(L)) if (length(L[[j]])==4) { k<-k+1; G[[k]] <- L[[j]] }
