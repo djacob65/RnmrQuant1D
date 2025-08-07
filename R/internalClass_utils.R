@@ -48,22 +48,21 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 # Get list of directories under DIR
 internalClass$set("private", "get_list_dirs", function(DIR=NULL)
 {
-	if (is.null(DIR)) DIR <- RAWDIR
-	unique(dirname(list.files(path = DIR, pattern = "audita.txt$", all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
-})
-
-# Get list of samples under RAWDIR
-internalClass$set("private", "get_list_samples", function(DIR=NULL)
-{
-	if (is.null(DIR)) DIR <- RAWDIR
 	LIST <- NULL
 	if (DIR != RAWDIR || is.null(RAWDIR_SLIST)) {
-		LIST <- get_list_dirs(DIR)
+		LIST <- unique(dirname(list.files(path = DIR, pattern = "audita.txt$", all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
 	} else {
 		LIST <- RAWDIR_SLIST
 	}
 	if (DIR == RAWDIR && is.null(RAWDIR_SLIST))
 		RAWDIR_SLIST <<- LIST
+	LIST
+})
+
+# Get list of samples under RAWDIR
+internalClass$set("private", "get_list_samples", function(DIR=NULL)
+{
+	LIST <- get_list_dirs(DIR)
 	unique(basename(dirname(LIST)))
 })
 
@@ -72,10 +71,7 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 {
 	M <- NULL
 	if (! is.null(DIR) && dir.exists(DIR)) {
-		if (DIR == RAWDIR && ! is.null(RAWDIR_SLIST))
-			dirs <- RAWDIR_SLIST
-		else
-			dirs <- get_list_dirs(DIR)
+		dirs <- get_list_dirs(DIR)
 		M <- matrix(0, nrow=length(dirs), ncol=3)
 		cnt <- 0
 		for (S in samples) {

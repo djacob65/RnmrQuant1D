@@ -467,7 +467,9 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				P2 <- as.numeric(ZQ$P2[i])
 			}
 			if (grepl(',',ZQ$P3[i])) {
-				param <- as.numeric(simplify2array(strsplit(ZQ$P3[i],',')))
+				V <- as.vector(simplify2array(strsplit(ZQ$P3[i],',')))
+				if (length(V)>3 && V[4] %in% c('s','d')) V[4] <- ifelse(V[4]=='d', 1, 0)
+				param <- as.numeric(V)
 			} else {
 				param <- as.numeric(ZQ$P3[i])
 			}

@@ -327,7 +327,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 #=====================================================================
 
 # View spectra along with models & compounds
-internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotzones=TRUE, tags='none', showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE)
+internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE)
 {
 	if (! res$proctype %in% c('integration', 'quantification') || length(specList)==0)
 		stop_quietly(paste0("ERROR : Integrals or quantification must be computed before !\n"))
@@ -346,15 +346,25 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 
 	ppmview <- ppm_range
 	ppm <- spec$ppm
+
 	if (plotTrueSpec) {
 		ycurves <- cbind(spec$int, spec$fit$Ymodel)
 	} else {
 		ycurves <- cbind(spec$fit$Y, spec$fit$Ymodel)
 	}
-	ynames <- c( S, 'model' )
 	if (is.null(colspecs) || length(colspecs)<2)
 		colspecs <- c('grey60',ifelse(spec$TSPwidth>TSPwidthMax,'violetred','lightslateblue'));
-	colspecs <- colspecs[1:2]
+	ynames <- c( S, 'model' )
+
+	if (plotresidus) {
+		ycurves <- cbind(ycurves, spec$fit$Y - spec$fit$Ymodel)
+		ynames <- c(ynames, 'residus')
+		if (length(colspecs)<3) colspecs <- c(colspecs, 'pink')
+		colspecs <- colspecs[1:3]
+	} else {
+		colspecs <- colspecs[1:2]
+	}
+
 	names(colspecs) <- ynames
 	if (is.null(title)) title <- S
 	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=colspecs, title=title)

@@ -57,7 +57,7 @@ internalClass$set("private", "get_ppm_shift", function(spec, pzone1, pzone2, p0,
 	iseq <- getseq(spec,c(pzone1,pzone2))
 	Y <- spec$int[iseq]
 	if (type=='d') {
-		DMIN <- round(15*spec$size/65535)
+		DMIN <- round(10*spec$size/65535)
 		V <- order(Y, decreasing=T)
 		k <- 2; while(abs(V[k]-V[k-1])<DMIN) k <- k+1
 		i0 <- round(0.5*(V[1]+V[k]))
@@ -205,7 +205,7 @@ internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, se
 })
 
 # quadruplet (q) : central ppm, J
-internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ramp=3, qtest=FALSE)
+internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ramp=3)
 {
 	# Tolerance settings
 	dJ <- 2.5*spec$dppm*spec$acq$SFO1
@@ -253,28 +253,6 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ra
 	## In case there are 2 or more peak lists, take the one with the highest sum of amplitudes
 		v <- sapply(1:length(G), function(k) sum(peaks[as.numeric(G[[k]]), ]$amp))
 		L <- sort(as.numeric(G[[which(v==max(v))]]))
-	# Criterion on amplitude (1, 3, 3, 1)
-		if (qtest) {
-			M <- matrix(rep(0,length(L)*length(L)), nrow=length(L), byrow=T)
-			colnames(M) <- rownames(M) <- L
-			for (i in 1:length(L))
-				for (j in 1:length(L)) {
-					if(i==j) next
-					a1 <- peaks$amp[L[i]]; a2 <- peaks$amp[L[j]]
-					v <- ifelse(a1>a2, a1/a2, a2/a1)
-					if (v>Ramp*(1-facR) && v<Ramp*(1+facR)) v <- 3
-					if (v>1 && v<(1+facR)) v <- 1
-					M[i,j] <- round(v,4)
-				}
-			M <- apply(M, c(1,2), function(x){ if(! x %in% c(1,2,3)) x<-0; x })
-			idx <- which(apply(M,1,sum)>=7)
-			if (length(idx)<4) break
-			L <- L[ idx ]
-			M <- M[idx,idx]
-			idx <- which(apply(M,2,sum)>=7)
-			if (length(idx)<4) break
-			L <- L[ idx ]
-		}
 		if (length(L)<4) break
 		if (length(L)>4) {
 	# Criterion on J (J +/- dJ)
@@ -295,6 +273,10 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ra
 		} else {
 			groups <- L
 		}
+		# Criterion on amplitude (1, 3, 3, 1)
+		if (length(L)==4 && mean(peaks$amp[L[order(L)][2:3]])<mean(peaks$amp[L[order(L)][c(1,4)]]))
+			groups <- NULL
+
 		break
 	}
 	groups
@@ -398,7 +380,7 @@ internalClass$set("private", "find_peaks_range", function(spec, peaks, ppm1, ppm
 	groups
 })
 
-# Rule r1 : Among the peaks having a S/N greater than 100 (default), take the nth peak (rank) in increasing ppm order, otherwise in decreasing ppm order
+# Rule r1 : Among the peaks having a S/N greater than 25 (default), take the nth peak (rank) in increasing ppm order, otherwise in decreasing ppm order
 internalClass$set("private", "find_peaks_rule_r1", function(spec, peaks, ppm1, ppm2, rank)
 {
 	groups <- NULL
@@ -416,7 +398,7 @@ internalClass$set("private", "find_peaks_rule_r1", function(spec, peaks, ppm1, p
 	groups
 })
 
-# Rule r2:  Among the peaks having a S/N greater than 80 (default), take the first peak which is distant at least Jmin Hz but not more than Jmax Hz from the first peak of the selected ppm interval. If Jmin is positive, consider the first peak from the smallest ppm, otherwise from the largest ppm. Jmax will have automatically the same sign that Jmin.
+# Rule r2:  Among the peaks having a S/N greater than 65 (default), take the first peak which is distant at least Jmin Hz but not more than Jmax Hz from the first peak of the selected ppm interval. If Jmin is positive, consider the first peak from the smallest ppm, otherwise from the largest ppm. Jmax will have automatically the same sign that Jmin.
 internalClass$set("private", "find_peaks_rule_r2", function(spec, peaks, ppm1, ppm2, Jmin, Jmax=4)
 {
 	groups <- NULL
@@ -577,12 +559,12 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 })
 
 # Rule r9 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take all peaks in the selected ppm range (ppm1,ppm2)
-internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, threshold=0.15)
+internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, type='s', threshold=0.15)
 {
 	ratioPN <- 4.9
 	groups <- NULL
 	repeat {
-		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0)
+		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0, type)
 		P1 <-peaks[ peaks$ppm>(ppm1+dppm) & peaks$ppm<(ppm2+dppm), , drop=F]
 		if (is.null(P1) || nrow(P1)<1) break
 		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
@@ -595,12 +577,12 @@ internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, p
 })
 
 # Rule r11 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take the highest peak in the selected ppm range (ppm1,ppm2)
-internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, nbpeaks=1)
+internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, type='s', nbpeaks=1)
 {
 	ratioPN <- 5
 	groups <- NULL
 	repeat {
-		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0)
+		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0, type)
 		P1 <-peaks[ peaks$ppm>(ppm1+dppm) & peaks$ppm<(ppm2+dppm), , drop=F]
 		if (is.null(P1) || nrow(P1)<1) break
 		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
@@ -615,7 +597,7 @@ internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, 
 })
 
 # Rule r10 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take the doublet corresponding to ppm0,J.
-internalClass$set("private", "find_peaks_rule_r10", function(spec, peaks, ppm0, J, pzone1, pzone2, p0)
+internalClass$set("private", "find_peaks_rule_r10", function(spec, peaks, ppm0, J, pzone1, pzone2, p0, type='s')
 {
 	ratioPN <- 5
 	dppm0 <- 0.0025 # 1.25/spec$acq$SFO1
@@ -623,7 +605,7 @@ internalClass$set("private", "find_peaks_rule_r10", function(spec, peaks, ppm0, 
 	dS <- 65
 	groups <- NULL
 	repeat {
-		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0)
+		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0, type)
 		dppm1 <- dppm0 + 0.5*(J+dJ)/spec$acq$SFO1
 		P1 <-peaks[ peaks$ppm>(ppm0-dppm1+dppm) & peaks$ppm<(ppm0+dppm1+dppm), , drop=F]
 		if (is.null(P1) || nrow(P1)<2) break
@@ -818,8 +800,7 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 			}
 			if (pattern == 'q') {
 				Ramp <- ifelse( length(params)>2 & params[3]!=0, params[3], 3)
-				qtest <- ifelse( length(params)>3, params[4], 1)
-				groups[[cmpd]] <- find_pattern_q(spec, peaks, params[1], params[2], Ramp, qtest)
+				groups[[cmpd]] <- find_pattern_q(spec, peaks, params[1], params[2], Ramp)
 				next
 			}
 			if (pattern == 'm') {
@@ -857,17 +838,20 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 				next
 			}
 			if (pattern == 'r9') {
-				threshold <- ifelse( length(params)>5, params[6], 0.05 )
-				groups[[cmpd]] <- find_peaks_rule_r9(spec, peaks, params[1], params[2], params[3], params[4], params[5], threshold)
+				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
+				threshold <- ifelse( length(params)>6, params[7], 0.05 )
+				groups[[cmpd]] <- find_peaks_rule_r9(spec, peaks, params[1], params[2], params[3], params[4], params[5], type, threshold)
 				next
 			}
 			if (pattern == 'r10') {
-				groups[[cmpd]] <- find_peaks_rule_r10(spec, peaks, params[1], params[2], params[3], params[4], params[5])
+				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
+				groups[[cmpd]] <- find_peaks_rule_r10(spec, peaks, params[1], params[2], params[3], params[4], params[5], type)
 				next
 			}
 			if (pattern == 'r11') {
-				nbpeaks <- ifelse( length(params)>5, params[6], 1 )
-				groups[[cmpd]] <- find_peaks_rule_r11(spec, peaks, params[1], params[2], params[3], params[4], params[5], nbpeaks)
+				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
+				nbpeaks <- ifelse( length(params)>6, params[7], 1 )
+				groups[[cmpd]] <- find_peaks_rule_r11(spec, peaks, params[1], params[2], params[3], params[4], params[5], type, nbpeaks)
 				next
 			}
 			if (pattern == 'r12') {

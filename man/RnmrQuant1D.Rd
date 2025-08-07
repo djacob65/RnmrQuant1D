@@ -557,6 +557,7 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
   id,
   plotmodel = TRUE,
   plotTrueSpec = TRUE,
+  plotresidus = FALSE,
   plotzones = TRUE,
   tags = "none",
   showlegend = TRUE,
@@ -577,6 +578,8 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
 \item{\code{plotmodel}}{If TRUE, plot the model based on the deconvolution.}
 
 \item{\code{plotTrueSpec}}{If TRUE, plot the original spectrum without local baseline corrections.}
+
+\item{\code{plotresidus}}{If TRUE, plot the residus i.e the difference between the spectrum and the model.}
 
 \item{\code{plotzones}}{If TRUE, add a semi-transparent rectangle superimposed on each fit zone.}
 
