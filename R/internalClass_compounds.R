@@ -234,15 +234,31 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ra
 				else if (h[i,1] == L[[k]][length(L[[k]])]) { L[[k]] = c(L[[k]], h[i,2]) }
 			}
 		}
+		G <- NULL; k <- 0
+		for (j in 1:length(L))
+			if (length(L[[j]])==4) {
+				V <- as.numeric(L[[j]])
+				if (mean(peaks$amp[V[order(V)][2:3]])>mean(peaks$amp[V[order(V)][c(1,4)]])) { k<-k+1; G[[k]] <- V }
+			}
+		if (is.null(G) && length(L)>2) {
+			for (j in 1:length(L)) {
+				if (length(L[[j]]) != 3) { G <- c(G,99999); next }
+				V <- as.numeric(L[[j]]); V <- V[order(V)]
+				G <- c(G, 0.5*(abs(abs(peaks$ppm[V[1]]-peaks$ppm[V[2]])*spec$acq$SFO1-J) + abs(abs(peaks$ppm[V[2]]-peaks$ppm[V[3]])*spec$acq$SFO1-J)))
+			}
+			if (!is.null(G)) L <- list(L[[which(G==min(G))]]) else L <- NULL
+		} else {
+			L <- G
+		}
 		# In case we missed a peak
 		if(length(L)==1 && length(L[[1]])==3) {
 			P1 <- peaks[L[[1]], ]
 			P1 <- P1[order(P1$ppm), ]
-			if (P1$amp[3]<2*P1$amp[2]) {
-				P2 <- peaks[peaks$ppm<(P1$ppm[1]-0.2*J/spec$acq$SFO1) & peaks$ppm>(P1$ppm[1]-1.2*J/spec$acq$SFO1), , drop=F]
+			if (P1$amp[2]>1.5*P1$amp[3]) {
+				P2 <- peaks[peaks$ppm<(P1$ppm[1]-0.8*J/spec$acq$SFO1) & peaks$ppm>(P1$ppm[1]-1.2*J/spec$acq$SFO1), , drop=F]
 				if (nrow(P2)>1) P2 <- P2[which( abs((P1$ppm[1]-P2$ppm)*spec$acq$SFO1-J)==min(abs((P1$ppm[1]-P2$ppm)*spec$acq$SFO1-J))), , drop=F]
 			} else {
-				P2 <- peaks[peaks$ppm>(P1$ppm[3]+0.2*J/spec$acq$SFO1) & peaks$ppm<(P1$ppm[3]+1.2*J/spec$acq$SFO1), , drop=F]
+				P2 <- peaks[peaks$ppm>(P1$ppm[3]+0.8*J/spec$acq$SFO1) & peaks$ppm<(P1$ppm[3]+1.2*J/spec$acq$SFO1), , drop=F]
 				if (nrow(P2)>1) P2 <- P2[which( abs((P1$ppm[3]-P2$ppm)*spec$acq$SFO1-J)==min(abs((P1$ppm[3]-P2$ppm)*spec$acq$SFO1-J))), , drop=F]
 			}
 			if (nrow(P2)==1) L[[1]] <- c(L[[1]], rownames(P2))
@@ -768,97 +784,118 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 			params <- as.numeric(compounds[[k]][-1])
 			if (pattern == 's') {
 				rank <- ifelse( length(params)>2, params[3], 1)
-				groups[[cmpd]] <- find_pattern_s(spec, peaks, params[1], params[2], rank)
+				groups[[cmpd]] <- tryCatch({ find_pattern_s(spec, peaks, params[1], params[2], rank) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'd') {
 				crit <- ifelse( length(params)>2, params[3], 0)
 				if( length(params)>5 ) {
-					groups[[cmpd]] <- find_pattern_d(spec, peaks, params[1], params[2], crit, params[4], params[5], params[6])
+					groups[[cmpd]] <- tryCatch({ find_pattern_d(spec, peaks, params[1], params[2], crit, params[4], params[5], params[6]) },
+										error = function(e) { return(NULL) })
 				} else if( length(params)>4 ) {
-					groups[[cmpd]] <- find_pattern_d(spec, peaks, params[1], params[2], crit, params[4], params[5])
+					groups[[cmpd]] <- tryCatch({ find_pattern_d(spec, peaks, params[1], params[2], crit, params[4], params[5]) },
+										error = function(e) { return(NULL) })
 				} else if( length(params)>3 ) {
-					groups[[cmpd]] <- find_pattern_d(spec, peaks, params[1], params[2], crit, params[4])
+					groups[[cmpd]] <- tryCatch({find_pattern_d(spec, peaks, params[1], params[2], crit, params[4]) },
+										error = function(e) { return(NULL) })
 				} else {
-					groups[[cmpd]] <- find_pattern_d(spec, peaks, params[1], params[2], crit)
+					groups[[cmpd]] <- tryCatch({ find_pattern_d(spec, peaks, params[1], params[2], crit) },
+										error = function(e) { return(NULL) })
 				}
 				next
 			}
 			if (pattern == 't') {
 				crit <- ifelse( length(params)>2, params[3], 0)
 				if( length(params)>3 ) {
-					groups[[cmpd]] <- find_pattern_t(spec, peaks, params[1], params[2], crit, params[4])
+					groups[[cmpd]] <- tryCatch({ find_pattern_t(spec, peaks, params[1], params[2], crit, params[4]) },
+										error = function(e) { return(NULL) })
 				} else {
-					groups[[cmpd]] <- find_pattern_t(spec, peaks, params[1], params[2], crit)
+					groups[[cmpd]] <- tryCatch({ find_pattern_t(spec, peaks, params[1], params[2], crit) },
+										error = function(e) { return(NULL) })
 				}
 				next
 			}
 			if (pattern == 'dd') {
 				crit <- ifelse( length(params)>3, params[4], 0)
-				groups[[cmpd]] <- find_pattern_dd(spec, peaks, params[1], params[2], params[3], crit)
+				groups[[cmpd]] <- tryCatch({ find_pattern_dd(spec, peaks, params[1], params[2], params[3], crit) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'q') {
 				Ramp <- ifelse( length(params)>2 & params[3]!=0, params[3], 3)
-				groups[[cmpd]] <- find_pattern_q(spec, peaks, params[1], params[2], Ramp)
+				groups[[cmpd]] <- tryCatch({ find_pattern_q(spec, peaks, params[1], params[2], Ramp) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'm') {
-				groups[[cmpd]] <- find_pattern_m(spec, peaks, params[1], params[2])
+				groups[[cmpd]] <- tryCatch({ find_pattern_m(spec, peaks, params[1], params[2]) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'm2') {
-				groups[[cmpd]] <- find_pattern_m2(spec, peaks, params[1], params[2])
+				groups[[cmpd]] <- tryCatch({ find_pattern_m2(spec, peaks, params[1], params[2])},
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'b') {
 				nbpeaks <- ifelse( length(params)>2, params[3], 0 )
 				ratioPN <- ifelse( length(params)>3, params[4], 5 )
-				groups[[cmpd]] <- find_peaks_range(spec, peaks, params[1], params[2], nbpeaks, ratioPN)
+				groups[[cmpd]] <- tryCatch({ find_peaks_range(spec, peaks, params[1], params[2], nbpeaks, ratioPN) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r2') {
-				groups[[cmpd]] <- find_peaks_rule_r2(spec, peaks, params[1], params[2], params[3], params[4])
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r2(spec, peaks, params[1], params[2], params[3], params[4]) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r3') {
-				groups[[cmpd]] <- find_peaks_rule_r3(spec, peaks, params[1], params[2], params[3])
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r3(spec, peaks, params[1], params[2], params[3]) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r4') {
-				groups[[cmpd]] <- find_peaks_rule_r4(spec, peaks, params[1], params[2], params[3])
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r4(spec, peaks, params[1], params[2], params[3]) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r5') {
-				groups[[cmpd]] <- find_peaks_rule_r5(spec, peaks, params[1], params[2], params[3], params[4])
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r5(spec, peaks, params[1], params[2], params[3], params[4]) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r7') {
-				groups[[cmpd]] <- find_peaks_rule_r7(spec, peaks, params[1], params[2], params[3], params[4])
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r7(spec, peaks, params[1], params[2], params[3], params[4]) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r9') {
 				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
 				threshold <- ifelse( length(params)>6, params[7], 0.05 )
-				groups[[cmpd]] <- find_peaks_rule_r9(spec, peaks, params[1], params[2], params[3], params[4], params[5], type, threshold)
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r9(spec, peaks, params[1], params[2], params[3], params[4], params[5], type, threshold) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r10') {
 				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
-				groups[[cmpd]] <- find_peaks_rule_r10(spec, peaks, params[1], params[2], params[3], params[4], params[5], type)
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r10(spec, peaks, params[1], params[2], params[3], params[4], params[5], type) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r11') {
 				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
 				nbpeaks <- ifelse( length(params)>6, params[7], 1 )
-				groups[[cmpd]] <- find_peaks_rule_r11(spec, peaks, params[1], params[2], params[3], params[4], params[5], type, nbpeaks)
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r11(spec, peaks, params[1], params[2], params[3], params[4], params[5], type, nbpeaks) },
+									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r12') {
 				J        <- ifelse( length(params)>2, params[3], 2 )
 				nbpeaks  <- ifelse( length(params)>3, params[4], 5 )
 				snrthres <- ifelse( length(params)>4, params[5], 5 )
-				groups[[cmpd]] <- find_peaks_rule_r12(spec, peaks, params[1], params[2], J, nbpeaks, snrthres)
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r12(spec, peaks, params[1], params[2], J, nbpeaks, snrthres) }, 
+									error = function(e) { return(NULL) })
 				next
 			}
 			next

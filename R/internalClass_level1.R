@@ -123,6 +123,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 	Ymodel <- Y <- spec$int <- spec$intcorr  # Store intensity and corrected intensity values
 	Peaks <- infos <- NULL  # To store peak fitting results and metadata
 	BLSIG <- 10             # Baseline significance threshold
+	WS <- 0                 # Window Size for smoothing (before=5)
 
 	# Loop through each peak fitting range
 	for (k in 1:nrow(pkfit)) {
@@ -159,7 +160,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		if (opars.loc$qbl != 0) {
 			spec$int <- spec$intcorr
 			if (opars.loc$qbl == 1) {
-				BL <- qnmrbc(spec, ppmrange, BLSIG, 5) 
+				BL <- qnmrbc(spec, ppmrange, BLSIG, WS) 
 			} else { 
 				BL <- getBLexternal(spec, opars.loc$qbl, 2, ppmrange) 
 			}

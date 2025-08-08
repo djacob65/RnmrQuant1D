@@ -43,7 +43,7 @@ t <- system.time({
 		doParallel::registerDoParallel(cl)
 		parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
 		on.exit({parallel::stopCluster(cl); rm(cl)})
-	} else {
+	} else if (ncpu==1) {
 		foreach::registerDoSEQ()
 	}
 })

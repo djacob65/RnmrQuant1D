@@ -227,7 +227,9 @@ internalClass$set("private", "get_quantif_cmpds", function(profil, zone)
 			p2 <- as.numeric(quantifs[x, 4])
 		}
 		if (grepl(',',quantifs[x, 5])) {
-			p3 <- as.numeric(simplify2array(strsplit(quantifs[x, 5],',')))
+			V <- as.vector(simplify2array(strsplit(quantifs[x, 5],',')))
+			if (length(V)>3 && V[4] %in% c('s','d')) V[4] <- ifelse(V[4]=='d', 1, 0)
+			p3 <- as.numeric(V)
 		} else {
 			p3 <- as.numeric(quantifs[x, 5])
 		}
