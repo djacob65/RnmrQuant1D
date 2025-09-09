@@ -32,11 +32,6 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 		if (!is.null(profile$preprocess$DHZPZRANGE)) {
 			procParams$DHZPZRANGE <<- profile$preprocess$DHZPZRANGE
 		}
-		if (abs(profile$preprocess$PHC0)>0) {
-			procParams$OPTPHC0 <<- procParams$OPTPHC1 <<- FALSE
-			procParams$PHC0 <<- profile$preprocess$PHC0
-			procParams$PHC1 <<- 0
-		}
 	}
 	procParams
 })
@@ -94,8 +89,8 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 				if (cnt==nrow(M)) break
 			}
 		}
-		if (cnt>0) M <- M[1:cnt, , drop=T]
-		else       M <- NULL
+		if (cnt>0) { M <- M[1:cnt, , drop=F] }
+		else       { M <- NULL }
 	}
 	M
 })

@@ -22,35 +22,35 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		return(mylist)
 	}
 
-t <- system.time({
-	rownames(SAMPLES) <<- 1:nrow(SAMPLES)
-	dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
-	Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR))
-	Slist <- Slist[ Slist[,1] %in% SAMPLES[,1] & Slist[,3] == SEQUENCE, 1:2]
-	Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), , drop=F]
-})
-if (verbose>1) cat('Time taken to obtain the sample list (s) =', round(t[3], 2), "\n")
+	t <- system.time({
+		rownames(SAMPLES) <<- 1:nrow(SAMPLES)
+		dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
+		Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR))
+		Slist <- Slist[ Slist[,1] %in% SAMPLES[,1] & Slist[,3] == SEQUENCE, 1:2]
+		Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), , drop=F]
+	})
+	if (verbose>1) cat('Time taken to obtain the sample list (s) =', round(t[3], 2), "\n")
 
-t <- system.time({
-	# Start Cluster
-	rq1d <<- self
-	if (ncpu>1) {
-		cltype <- ifelse(.Platform$OS.type == "unix", "FORK", "PSOCK")
+	# Initialise the cluster for parallel processing
+	t <- system.time({
+		# Start Cluster
+		rq1d <<- self
 		ncpu <- min(nrow(SAMPLES), max(ncpu,2))
-		LOGFILE <- file.path(TMPDIR,"proc_Integrals_par.log")
-		if (file.exists(LOGFILE)) unlink(LOGFILE)
-		cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
-		doParallel::registerDoParallel(cl)
-		parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
-		on.exit({parallel::stopCluster(cl); rm(cl)})
-	} else if (ncpu==1) {
-		foreach::registerDoSEQ()
-	}
-})
-if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n")
+		if (ncpu>1) {
+			cltype <- ifelse(.Platform$OS.type == "unix", "FORK", "PSOCK")
+			LOGFILE <- file.path(TMPDIR,"proc_Integrals_par.log")
+			if (file.exists(LOGFILE)) unlink(LOGFILE)
+			cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
+			doParallel::registerDoParallel(cl)
+			parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
+			on.exit({ parallel::stopCluster(cl); rm(cl) })
+		} else if (ncpu==1) {
+			foreach::registerDoSEQ()
+		}
 
+	})
+	if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n")
 
-# ,.export=c("RnmrQuant1D")
 	# Process all samples in parallel
 	out <- foreach::foreach(ID=1:nrow(Slist),
 		.combine=combine_list,
@@ -73,6 +73,7 @@ if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n"
 		spec$expno <- Slist[ID,2]
 		SID <- paste0(spec$samplename, spec$expno, sep="-")
 		spec$samplecode <- rq1d$SAMPLES[which(paste0(rq1d$SAMPLES[,1], rq1d$SAMPLES[,3],sep="-") %in% SID ),2]
+		if (verbose && !is.null(rq1d$PROFILE$preprocess$CALIB)) cat('PPM shift =', round(spec$ppm_shift,4), "\n")
 
 		# Baseline correction
 		spec <- priv$applyBLcorrection(spec, verbose=verbose)
@@ -109,9 +110,6 @@ if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n"
 		}
 		return(mylist)
 	}
-
-	# Clean memory
-	invisible(gc())
 
 	# Results proc-process
 	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
@@ -171,9 +169,6 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	if (is.null(fP) || length(fP)==0 || is.nan(fP$mean))
 		stop_quietly(paste0("Error: the PULCON factor must be computed before"))
 
-	if (verbose) cat("Do quantification ... \n")
-	if (verbose && CR) cat("\n")
-
 	# Depending on input, return the correspond zones
 	if (!is.null(cmpdlist)) {
 		L <-  cmpdlist %in% PROFILE$quantif$compound
@@ -193,6 +188,28 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 		unlink(paste0(TMPDIR,"/output_*.txt"))
 	}
 
+	# Initialise the cluster for parallel processing
+	t <- system.time({
+		# Start Cluster
+		rq1d <<- self
+		if (ncpu>1) {
+			cltype <- ifelse(.Platform$OS.type == "unix", "FORK", "PSOCK")
+			LOGFILE <- file.path(TMPDIR,"proc_Quantif_par.log")
+			if (file.exists(LOGFILE)) unlink(LOGFILE)
+			cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
+			doParallel::registerDoParallel(cl)
+			parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
+			on.exit({ parallel::stopCluster(cl); rm(cl) })
+		} else if (ncpu==1) {
+			foreach::registerDoSEQ()
+		}
+
+	})
+	if (verbose) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n\n")
+
+	if (verbose) cat("Do quantification ... \n")
+	if (verbose && CR) cat("\n")
+
 	# For each samples
 	rownames(SAMPLES) <<- 1:nrow(SAMPLES)
 	samplelist <- SAMPLES[,1]
@@ -200,7 +217,6 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	cnt <- 0
 	tottime <- 0
 	totcnt <- length(samplelist)
-
 	for (samplename in unique(samplelist))
 	{
 		slist <- get_list_spectrum(RAWDIR, samplename)
@@ -209,7 +225,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 		slist <- slist[paste0(slist[,1],slist[,2],sep="-") %in% paste0(SAMPLES[,1],SAMPLES[,3],sep="-"), ]
 		sampleid <- which(samplename==samplelist)
 		fdil <- SAMPLES[FDILfield][sampleid,1]
-		# For each expno
+		# # Process all expno in parallel
 		for (k in 1:nrow(slist))
 		{
 			cnt <- cnt + 1
@@ -230,6 +246,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 				SNR <- out$SNR
 				spec <- out$spec
 				spec$sampleidx <- sampleid[k]
+				spec$samplecode <- SAMPLES[which(paste0(SAMPLES[,1], SAMPLES[,3],sep="-") %in% paste0(samplename, expno, sep="-") ),2]
 				spec$peaklist <- spec$Q$peaklist
 				spec$Q <- NULL
 				absQuantMat <- NULL
@@ -251,6 +268,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 			save(quantParams, quantMat, absQuantMat, SNR, spec, file = RDataFile)
 		}
 	}
+
 	quantpars <<- list(cmpdlist=cmpdlist, zones=zones, tottime=as.numeric(tottime), ncpu=ncpu)
 	res$proctype <<- 'quantification'
 })
@@ -368,7 +386,7 @@ internalClass$set("public", "get_spectra_data", function()
 		stop_quietly(paste0("ERROR : Quantifications must be computed with the proc_Quantification() method before !\n"))
 
 	# Results proc-process
-	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, proctype='quantification')
+	res <<- list(allquantifs=NULL, peaklist=NULL, zones=NULL, infos=NULL, proctype='quantification')
 	specList <<- list()
 
 	Rdata <- stringr::str_replace_all(list.files(path = RDATADIR, pattern = "*.RData"), setNames('','.RData'))
@@ -383,6 +401,7 @@ internalClass$set("public", "get_spectra_data", function()
 		M[,1:2] <- cbind(rep(SAMPLES[spec$sampleidx,1],n), rep(SAMPLES[spec$sampleidx,2],n))
 		M[,3:4] <- PL[,1:2]
 		res$peaklist <<- rbind(res$peaklist, M)
+		res$zones <<- quantParams$zones
 		res$infos <<- rbind(res$infos, spec$fit$infos)
 		specList[[spec$sampleidx]] <<- spec
 		pkfit <- PROFILE$fitting[PROFILE$fitting$zone %in% quantParams$zones, , drop=F]
@@ -465,17 +484,17 @@ internalClass$set("public", "save_Results", function(file, filelist=NULL)
 	openxlsx::writeData(wb, Tid, x = preprocess, startRow=startRow, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
 	openxlsx::addStyle(wb, Tid, style = styBH, rows = startRow, cols = c(1:ncol(preprocess)), gridExpand = TRUE)
 	# fitting
-	startRow <- 4
+	startRow <- 5
 	fitting <- results$profil_fitting
 	fitting$obl <- as.numeric(fitting$obl)
 	openxlsx::writeData(wb, Tid, x = fitting, startRow=startRow, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
 	openxlsx::addStyle(wb, Tid, style = styBH, rows = startRow, cols = c(1:ncol(fitting)), gridExpand = TRUE)
 	# quantif
-	startRow <- nrow(fitting) + 3
+	startRow <- startRow + nrow(fitting) + 3
 	quantif <- results$profil_quantif
 	openxlsx::writeData(wb, Tid, x = quantif, startRow=startRow, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
 	SR <- startRow; ER <- startRow+nrow(quantif)
-	openxlsx::addStyle(wb, Tid, style = centerStyle, rows = c(SR:ER), cols = c(2:7), gridExpand = TRUE)
+	openxlsx::addStyle(wb, Tid, style = centerStyle, rows = c(SR:ER), cols = c(2:10), gridExpand = TRUE)
 	openxlsx::addStyle(wb, Tid, style = styBH, rows = startRow, cols = c(1:ncol(quantif)), gridExpand = TRUE)
 	openxlsx::setColWidths(wb, Tid, cols=1, widths=25,  ignoreMergedCells = FALSE)
 	openxlsx::setColWidths(wb, Tid, cols=5, widths=17, ignoreMergedCells = FALSE)

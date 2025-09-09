@@ -14,9 +14,20 @@ internalClass$set("private", "applyReadSpectrum", function(ACQDIR, verbose=1)
 	# if defined, calibrate the spectrum
 	if (!is.null(PROFILE$preprocess$CALIB)) {
 		CALIB <- PROFILE$preprocess$CALIB
-		iseq <- getseq(spec,c(CALIB[1],CALIB[2]))
+		iseq <- getseq(spec,as.numeric(CALIB[1:2]))
 		Y <- spec$int[iseq]
-		dppm <- spec$ppm[iseq[1] + which(Y == max(Y)) - 1] - CALIB[3]
+		if (CALIB[4]=='d') {
+			if (verbose) cat('Calibration based on a doublet :', CALIB[1:3], "\n")
+			DMIN <- round(10*spec$size/65535)
+			V <- order(Y, decreasing=T)
+			k <- 2; while(abs(V[k]-V[k-1])<DMIN) k <- k+1
+			i0 <- round(0.5*(V[1]+V[k]))
+		} else {
+			if (verbose) cat('Calibration based on a singulet :', CALIB[1:3], "\n")
+			i0 <- which(Y == max(Y))
+		}
+		dppm <- spec$ppm[iseq[1] + i0 - 1] - as.numeric(CALIB[3])
+		spec$ppm_shift <- dppm
 		spec$ppm <- spec$ppm - dppm
 		spec$pmin <- spec$pmin - dppm
 		spec$pmax <- spec$pmax - dppm
@@ -100,7 +111,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 {
 	# If verbose mode is enabled, print the default parameters and peak fitting method
 	if (verbose) {
-		cat("-------------------\n")
+		cat("\n-------------------\n")
 		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,
 		    ', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
 		cat('Peak fitting = Internal method',"\n")
@@ -153,7 +164,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		if (verbose) {
 			cat('Parameters: addPeaks =', opars.loc$addPeaks,', qbl =', opars.loc$qbl,', oblset =', pkfit$obl[k], "\n")
 			cat('Parameters: asymmax =', opars.loc$asymmax,', etamin =', opars.loc$etamin, "\n")
-			cat('filter =', paste(filters$main, collapse=','), "\n")
+			cat('Main filter =', paste(filters$main, collapse=','), "\n\n")
 		}
 
 		# If baseline correction (qbl) is enabled, perform baseline correction
@@ -173,7 +184,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		t <- system.time({
 			model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
 		})
-		if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n")
+		if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
 
 		# If the first fit doesn't meet the R² threshold, try alternative filters
 		opars.loc <- opars.save
@@ -188,7 +199,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 					model <- model2
 				}
 			})
-			if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n")
+			if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
 		}
 
 		# If no peaks were found, store default info and continue to the next range
@@ -220,7 +231,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		asym <- ifelse(opars.loc$oasym > 0, opars.loc$asymmax, 0)
 		infos <- rbind(infos, c(spec$expno, pkfit[k,9], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2, 4), Idiff))
 
-		if (verbose) cat("-------------------\n")
+		if (verbose) cat("-------------------\n\n")
 	}
 
 	# Cleanup to reduce the final object size
@@ -279,10 +290,10 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	}
 
 	# Initialize parallel processing cluster
-	NCPU <- min(nrow(pkfit), ncpu)
-	cl <- parallel::makeCluster(NCPU)
-	doParallel::registerDoParallel(cl)
-	Sys.sleep(1)
+	#NCPU <- min(nrow(pkfit), ncpu)
+	#cl <- parallel::makeCluster(NCPU)
+	#doParallel::registerDoParallel(cl)
+	#Sys.sleep(1)
 
 	# Process all peak fitting zones in parallel
 	rq1d <- self
@@ -392,7 +403,7 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 
 	# Stop parallel cluster
 	invisible(gc())
-	parallel::stopCluster(cl)
+	#parallel::stopCluster(cl)
 
 	# Merge results from parallel processing
 	Y <- spec$int <- spec$intcorr
@@ -468,25 +479,38 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				P2 <- as.numeric(ZQ$P2[i])
 			}
 			if (grepl(',',ZQ$P3[i])) {
-				V <- as.vector(simplify2array(strsplit(ZQ$P3[i],',')))
-				if (length(V)>3 && V[4] %in% c('s','d')) V[4] <- ifelse(V[4]=='d', 1, 0)
-				param <- as.numeric(V)
+				P3 <- as.numeric(simplify2array(strsplit(ZQ$P3[i],',')))
 			} else {
-				param <- as.numeric(ZQ$P3[i])
+				P3 <- as.numeric(ZQ$P3[i])
+			}
+			if (grepl(',',ZQ$P4[i])) {
+				type <- 's'
+				V <- as.vector(simplify2array(strsplit(ZQ$P4[i],',')))
+				if (length(V)>3 && V[4] %in% c('s','d')) {
+					type <- V[4]
+					V[4] <- ifelse(type=='d', 1, 0)
+				}
+				if (verbose) cat('Calibration based on a',ifelse(type=='d', 'doublet', 'singulet'),':', V[1:3],"\n")
+				P4 <- as.numeric(V)
+				dppm <- get_ppm_shift(spec, P4[1], P4[2], P4[3], type=type)
+				if (verbose) cat('PPM shift =',round(dppm,4),"\n")
+			} else {
+				if (verbose) cat('No calibration',"\n")
+				P4 <- 0
 			}
 
 		# peaks within a range (block)
 			if (Pattern == 'b') {
-				if (verbose) cat("\t\tPPM pattern = ", Pattern, ", Range = [",ppm1,",",ppm2,"], Np=",ZQ$np[i],", Nb=",param,"\n")
-				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ppm1, ppm2, param)))
+				if (verbose) cat("\t\tPPM pattern = ", Pattern, ", Range = [",ppm1,",",ppm2,"], Np=",ZQ$np[i],", Nb=",P3,"\n")
+				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ppm1, ppm2, P3)), P4)
 		# peaks defined by a singulet
 			} else if (Pattern == 's') {
-				if (verbose) cat("\t\tPPM pattern = ", Pattern, ZQ$P1[i],", ppm tol.=",ZQ$P2[i],", Rank=",param[1],"\n")
-				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, param)))
+				if (verbose) cat("\t\tPPM pattern = ", Pattern, ZQ$P1[i],", ppm tol.=",ZQ$P2[i],", Rank=",P3[1],"\n")
+				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, P3)), P4)
 		# peaks defined by another pattern
 			} else {
 				if (verbose) cat("\t\tPPM Rule = ", Pattern, ", P1=",ZQ$P1[i],", P2=",ZQ$P2[i],", P3=",ZQ$P3[i],"\n")
-				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, param)))
+				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, P3)), P4)
 			}
 
 		# If peaks are found, compute the integral sum
@@ -513,17 +537,23 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				if (fullPattern) break
 			}
 		}
-		if (verbose) cat("\n\n")
 
-	# Compute Signal-to-Noise Ratio (SNR) using the highest peak intensity
-		SNR <- NA
-		if (!is.null(PKZQ))
+	# Compute Signal-to-Noise Ratio (SNR) using the average of peak intensities
+		PKlist <- SNR <- NA
+		if (!is.null(PKZQ)) {
 			SNR <- round(median(peaks[rownames(peaks)[PKZQ], ]$amp)/(2*Vnoise))
+		}
+		if (!is.na(SNR) && SNR<mean(ZQ$snrmin)) {
+			ISUM <- NA
+			if (verbose) cat("\t\tIntensities lower than the minimum SNR (",round(mean(ZQ$snrmin)),")\n")
+		} else {
+			PKlist <- paste0(PKZQ, collapse=',')
+		}
+		if (verbose) cat("\n\n")
 
 	# Store quantification results and peaklist
 		quantification <- rbind(quantification,c(cmpd, ppmrange, ISUM, SNR))
-		if (!is.null(PKZQ)) peaklist <- rbind(peaklist, c( cmpd, paste0(PKZQ, collapse=',') ))
-		else                peaklist <- rbind(peaklist, c( cmpd, NA ))
+		peaklist <- rbind(peaklist, c( cmpd, PKlist ))
 	}
 
 	# Convert specific columns to numeric for proper formatting

@@ -272,6 +272,7 @@ public = list(
 #' @param plotresidus  If TRUE, plot the residus i.e the difference between the spectrum and the model.
 #' @param plotzones If TRUE, add a semi-transparent rectangle superimposed on each fit zone.
 #' @param tags add an arrow annotation on each peak resulting from the deconvolution. Among the possible values: 1) 'id' adds the number of the compound to which the peak belongs, 2) 'name' adds the name of the compound to which the peak belongs, 'auto' adds either the number if multiple zones, or the name of the compound, 3) 'none' adds no arrow annotation.
+#' @param lw line width in pixels
 #' @param showlegend If TRUE, show the legend
 #' @param legendhoriz Put the legend at the bottom (TRUE) or at the left (FALSE) of the graph
 #' @param showgrid If TRUE, show the grid on the background
@@ -280,8 +281,8 @@ public = list(
 #' @param colcpmds specifies the array of colors for the compounds (i.e. patterns). If the number of colors specified is not sufficient, the colors will be repeated.
 #' @param verbose If TRUE, The peak list will be displayed
 #' @return a \href{https://plotly.com/r/}{plotly} graph
-	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE) {
-		super$view_spectra(id, plotmodel, plotTrueSpec, plotresidus, plotzones, tags, showlegend, legendhoriz, showgrid, title, colspecs, colcpmds, verbose)
+	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE) {
+		super$view_spectra(id, plotmodel, plotTrueSpec, plotresidus, plotzones, tags, lw, showlegend, legendhoriz, showgrid, title, colspecs, colcpmds, verbose)
 	},
 
 #' @description

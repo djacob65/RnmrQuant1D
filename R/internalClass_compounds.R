@@ -32,13 +32,10 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 		if (pattern == 'r7')	V <- rbind( V, c(P1, P2) )
 		if (pattern == 'r8')	V <- rbind( V, c(P1, P2) )
 		if (pattern == 'r9')	V <- rbind( V, c(P1, P2) )
-		if (pattern == 'r10')	dppm <- 0.75*P2/SFO1
-		if (pattern == 'r11')	V <- rbind( V, c(P1, P2) )
-		if (pattern == 'r12')	V <- rbind( V, c(P1, P2) )
 		if (pattern == 'b')	 	V <- rbind( V, c(P1, P2) )
 		if (pattern == 's')		dppm <- 1.5*P2
 		if (pattern == 'd')		dppm <- 0.75*P2/SFO1
-		if (pattern == 't')		dppm <- 1.5*P2/SFO1
+		if (pattern == 't')		dppm <- 1.35*P2/SFO1
 		if (pattern == 'dd')	dppm <- (0.5*P2[1]+P2[2])/SFO1
 		if (pattern == 'q')		dppm <- 2*P2/SFO1
 		if (pattern == 'm')		dppm <- 2.5*P2/SFO1
@@ -140,16 +137,15 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 })
 
 # triplet (t) : central ppm, J
-internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, sel=0, Ramp2=1.3)
+internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, sel=0, Ramp2=1.3, dJ=0.35)
 {
 	# Tolerance settings
-	dJ <- 0.35
 	Ramp <- 3.5
 	dppm <- J/(2*spec$acq$SFO1)
 
 	groups <- NULL
-	g <- unique(rbind(find_pattern_d(spec, peaks, ppm0-dppm, J, sel, Ramp, full=T),
-					  find_pattern_d(spec, peaks, ppm0+dppm, J, sel, Ramp, full=T)))
+	g <- unique(rbind(find_pattern_d(spec, peaks, ppm0-dppm, J, sel, Ramp, dJ, full=T),
+					  find_pattern_d(spec, peaks, ppm0+dppm, J, sel, Ramp, dJ, full=T)))
 	repeat {
 		if (! c('matrix') %in% class(g)) break
 		if (is.null(g) || is.null(nrow(g)) || nrow(g)<2) break
@@ -247,7 +243,7 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, Ra
 				G <- c(G, 0.5*(abs(abs(peaks$ppm[V[1]]-peaks$ppm[V[2]])*spec$acq$SFO1-J) + abs(abs(peaks$ppm[V[2]]-peaks$ppm[V[3]])*spec$acq$SFO1-J)))
 			}
 			if (!is.null(G)) L <- list(L[[which(G==min(G))]]) else L <- NULL
-		} else {
+		} else if (!is.null(G)) {
 			L <- G
 		}
 		# In case we missed a peak
@@ -574,86 +570,8 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 	groups
 })
 
-# Rule r9 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take all peaks in the selected ppm range (ppm1,ppm2)
-internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, type='s', threshold=0.15)
-{
-	ratioPN <- 4.9
-	groups <- NULL
-	repeat {
-		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0, type)
-		P1 <-peaks[ peaks$ppm>(ppm1+dppm) & peaks$ppm<(ppm2+dppm), , drop=F]
-		if (is.null(P1) || nrow(P1)<1) break
-		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
-		if (is.null(P2) || nrow(P2)<1) break
-		rownames(P2) <- rownames(P1)[which( unique(P1$pos) %in% P2$pos)]
-		groups <- rownames(P2[which(P2$amp > threshold*max(P2$amp)), , drop=F])
-		break
-	}
-	groups
-})
-
-# Rule r11 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take the highest peak in the selected ppm range (ppm1,ppm2)
-internalClass$set("private", "find_peaks_rule_r11", function(spec, peaks, ppm1, ppm2, pzone1, pzone2, p0, type='s', nbpeaks=1)
-{
-	ratioPN <- 5
-	groups <- NULL
-	repeat {
-		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0, type)
-		P1 <-peaks[ peaks$ppm>(ppm1+dppm) & peaks$ppm<(ppm2+dppm), , drop=F]
-		if (is.null(P1) || nrow(P1)<1) break
-		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
-		if (is.null(P2) || nrow(P2)<1) break
-		rownames(P2) <- rownames(P1)[which( P1$pos %in% P2$pos)]
-		P2 <- P2[order(P2$amp, decreasing=T), , drop=F]
-		if (nrow(P2)>=nbpeaks)
-			groups <- rownames(P2)[1:nbpeaks]
-		break
-	}
-	groups
-})
-
-# Rule r10 : first, align the maximum intensity within a ppm zone (pzone1,pzone2) to the p0 value, then take the doublet corresponding to ppm0,J.
-internalClass$set("private", "find_peaks_rule_r10", function(spec, peaks, ppm0, J, pzone1, pzone2, p0, type='s')
-{
-	ratioPN <- 5
-	dppm0 <- 0.0025 # 1.25/spec$acq$SFO1
-	dJ <- 1.5
-	dS <- 65
-	groups <- NULL
-	repeat {
-		dppm <- get_ppm_shift(spec, pzone1, pzone2, p0, type)
-		dppm1 <- dppm0 + 0.5*(J+dJ)/spec$acq$SFO1
-		P1 <-peaks[ peaks$ppm>(ppm0-dppm1+dppm) & peaks$ppm<(ppm0+dppm1+dppm), , drop=F]
-		if (is.null(P1) || nrow(P1)<2) break
-		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
-		if (is.null(P2) || nrow(P2)<2) break
-		rownames(P2) <- rownames(P1)[which( P1$pos %in% P2$pos)]
-		g <- NULL
-		for (i in 1:(nrow(P2)-1)) {
-			for (j in 2:nrow(P2)) {
-				Jij <- (P2$ppm[j]-P2$ppm[i])*spec$acq$SFO1
-				pij <- 0.5*(P2$ppm[i]+P2$ppm[j])
-				Aij <- 0.5*(P2$amp[i]+P2$amp[j])
-				Rij <- ifelse(P2$amp[i]>P2$amp[j], P2$amp[i]/P2$amp[j], P2$amp[j]/P2$amp[i])
-				Cij <- 0.333*abs(J-Jij)/J + 0.333*abs(ppm0+dppm - pij)/(ppm0+dppm) + 0.333*Rij
-				Sij <- 200*abs(P2$sigma[i]-P2$sigma[j])/(P2$sigma[i]+P2$sigma[j])
-				if ( abs(J-Jij)<dJ & abs(ppm0+dppm - pij)<dppm0 & Sij<dS && Rij<2 )
-					g <- rbind(g, c(rownames(P2)[c(i,j)], Jij, pij, Aij, Rij, Cij))
-			}
-		}
-		if (!is.null(g) && nrow(g)>1) {
-			g <- g[ order(as.numeric(g[,7]), decreasing=F), , drop=F] # Cij
-			if (nrow(g)>2) { g <- g[1:3, ] } else { g <- g[1:2, ] }
-			g <- g[ order(as.numeric(g[,5]), decreasing=T), ]         # Aij
-		}
-		if (!is.null(g) && nrow(g)>0) groups <- g[1, 1:2]
-		break
-	}
-	groups
-})
-
-# r12: find 'nbpeaks' consecutive peaks in the ppm range (e.g shikimic acid)
-internalClass$set("private", "find_peaks_rule_r12", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, snrthres=5)
+# r9: find 'nbpeaks' consecutive peaks in the ppm range (e.g shikimic acid)
+internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, snrthres=5)
 {
 	Dmax <- 1.02*(nbpeaks-1)*J
 	Dmin <- 0.9*(nbpeaks-1)*J
@@ -718,6 +636,7 @@ internalClass$set("private", "find_peaks_rule_r12", function(spec, peaks, ppm1, 
 			if (d2>Dmin && (d2>d1 || a2>a1)) { gn <- g2;  next }
 			break
 		}
+
 		# Remove peaks below the snr on both side
 		# so that a peak that satisfies the Dmax constraint can be included next
 		if (is_snr(min(gn))) gn <- c((min(gn)+1):max(gn))
@@ -774,10 +693,19 @@ internalClass$set("private", "merge_compounds", function(groups)
 #         'C3'=c('dd',2.89,4.5,16.3),   # doublet of doublet (dd), central ppm, J1, J2
 #         'C4'=c('b',1.125,1.132)       # peaks within a range (b), ppm1, ppm2
 #     )
-internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
+# calibration <- c( pzone1, pzone2, p0, type) with type : 1 for d, 0 for s
+internalClass$set("private", "find_compounds", function(spec, peaks, compounds, calibration=0)
 {
 	groups <- NULL
-	if (!is.null(compounds) && length(compounds)>0) {
+	if (!is.null(compounds) && length(compounds)>0)
+	{
+		# calibration before if required
+		if (length(calibration)>1) {
+			V <- as.numeric(calibration[1:3])
+			dppm <- get_ppm_shift(spec, V[1], V[2], V[3], type=ifelse(calibration[4]==1,'d','s'))
+			peaks$ppm <- peaks$ppm - dppm
+		}
+		# for each compound, search for peaks matching the requested pattern
 		for (k in 1:length(compounds)) {
 			cmpd <- names(compounds)[k]
 			pattern <- compounds[[k]][1]
@@ -807,7 +735,10 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 			}
 			if (pattern == 't') {
 				crit <- ifelse( length(params)>2, params[3], 0)
-				if( length(params)>3 ) {
+				if( length(params)>4 ) {
+					groups[[cmpd]] <- tryCatch({ find_pattern_t(spec, peaks, params[1], params[2], crit, params[4], params[5]) },
+										error = function(e) { return(NULL) })
+				} else if( length(params)>3 ) {
 					groups[[cmpd]] <- tryCatch({ find_pattern_t(spec, peaks, params[1], params[2], crit, params[4]) },
 										error = function(e) { return(NULL) })
 				} else {
@@ -871,30 +802,10 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 				next
 			}
 			if (pattern == 'r9') {
-				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
-				threshold <- ifelse( length(params)>6, params[7], 0.05 )
-				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r9(spec, peaks, params[1], params[2], params[3], params[4], params[5], type, threshold) },
-									error = function(e) { return(NULL) })
-				next
-			}
-			if (pattern == 'r10') {
-				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
-				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r10(spec, peaks, params[1], params[2], params[3], params[4], params[5], type) },
-									error = function(e) { return(NULL) })
-				next
-			}
-			if (pattern == 'r11') {
-				type <- ifelse( length(params)>5, ifelse(params[6]==1, 'd', 's'), 's' )
-				nbpeaks <- ifelse( length(params)>6, params[7], 1 )
-				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r11(spec, peaks, params[1], params[2], params[3], params[4], params[5], type, nbpeaks) },
-									error = function(e) { return(NULL) })
-				next
-			}
-			if (pattern == 'r12') {
 				J        <- ifelse( length(params)>2, params[3], 2 )
 				nbpeaks  <- ifelse( length(params)>3, params[4], 5 )
 				snrthres <- ifelse( length(params)>4, params[5], 5 )
-				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r12(spec, peaks, params[1], params[2], J, nbpeaks, snrthres) }, 
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r9(spec, peaks, params[1], params[2], J, nbpeaks, snrthres) }, 
 									error = function(e) { return(NULL) })
 				next
 			}
@@ -906,4 +817,42 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds)
 	groups
 })
 
-
+# Find the list of compounds in the request zones
+# output : a list of compound => (list of peaks)
+internalClass$set("private", "find_compounds_by_zone", function(spec, peaks, zones)
+{
+	groups <- NULL
+	if (!is.null(zones) && is.numeric(zones) && zones %in% PROFILE$quantif$zone)
+	{
+		groups <- list()
+		for(k in 1:length(zones)) {
+			P <- PROFILE$quantif[PROFILE$quantif$zone==zones[k],,drop=F]
+			for(i in 1:nrow(P)) {
+				if (grepl(',',P$P3[i])) {
+					P3 <- as.numeric(simplify2array(strsplit(P$P3[i],',')))
+				} else {
+					P3 <- as.numeric(P$P3[i])
+				}
+				P4 <- 0
+				if (grepl(',',P$P4[i])) {
+					type <- 's'
+					V <- as.vector(simplify2array(strsplit(P$P4[i],',')))
+					if (length(V)>3 && V[4] %in% c('s','d')) {
+						type <- V[4]
+						V[4] <- ifelse(type=='d', 1, 0)
+					}
+					P4 <- as.numeric(V)
+				}
+			    L <- find_compounds(spec, peaks, list('C1'=c(P$pattern[i], P$P1[i], P$P2[i], P3)), P4)
+				if (!is.null(L))
+					if (P$compound[i] %in% names(groups)) {
+						groups[[P$compound[i]]] <- c(groups[[P$compound[i]]], L$C1)
+					} else {
+						groups[[P$compound[i]]] <- L$C1
+					}
+			}
+		}
+		if (length(groups)==0) groups <- NULL
+	}
+	groups
+})

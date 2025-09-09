@@ -560,6 +560,7 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
   plotresidus = FALSE,
   plotzones = TRUE,
   tags = "none",
+  lw = 2,
   showlegend = TRUE,
   legendhoriz = FALSE,
   showgrid = TRUE,
@@ -584,6 +585,8 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
 \item{\code{plotzones}}{If TRUE, add a semi-transparent rectangle superimposed on each fit zone.}
 
 \item{\code{tags}}{add an arrow annotation on each peak resulting from the deconvolution. Among the possible values: 1) 'id' adds the number of the compound to which the peak belongs, 2) 'name' adds the name of the compound to which the peak belongs, 'auto' adds either the number if multiple zones, or the name of the compound, 3) 'none' adds no arrow annotation.}
+
+\item{\code{lw}}{line width in pixels}
 
 \item{\code{showlegend}}{If TRUE, show the legend}
 

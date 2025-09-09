@@ -327,7 +327,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 #=====================================================================
 
 # View spectra along with models & compounds
-internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE)
+internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE)
 {
 	if (! res$proctype %in% c('integration', 'quantification') || length(specList)==0)
 		stop_quietly(paste0("ERROR : Integrals or quantification must be computed before !\n"))
@@ -367,7 +367,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 
 	names(colspecs) <- ynames
 	if (is.null(title)) title <- S
-	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=colspecs, title=title)
+	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=colspecs, lw=lw, title=title)
 	arrColors <- colspecs
 
   # Get the fitting zones
