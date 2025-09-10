@@ -28,10 +28,9 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 		if (pattern == 'r3')	dppm <- 0.75*P2/SFO1
 		if (pattern == 'r4')	dppm <- 0.75*P2/SFO1
 		if (pattern == 'r5')	dppm <- 0.75*P2/SFO1
-		if (pattern == 'r6')	dppm <- 0.75*P2/SFO1
+		if (pattern == 'r6')	V <- rbind( V, c(P1, P2) )
 		if (pattern == 'r7')	V <- rbind( V, c(P1, P2) )
 		if (pattern == 'r8')	V <- rbind( V, c(P1, P2) )
-		if (pattern == 'r9')	V <- rbind( V, c(P1, P2) )
 		if (pattern == 'b')	 	V <- rbind( V, c(P1, P2) )
 		if (pattern == 's')		dppm <- 1.5*P2
 		if (pattern == 'd')		dppm <- 0.75*P2/SFO1
@@ -506,21 +505,8 @@ internalClass$set("private", "find_peaks_rule_r5", function(spec, peaks, ppm0, J
 	groups
 })
 
-# Rule r6 : Find the doublet according to the parameters ppm0 and J but with the J value in the interval J +/- dJ.
-internalClass$set("private", "find_peaks_rule_r6", function(spec, peaks, ppm0, J, dJ, sel=0)
-{
-	groups <- NULL
-	g <- unique( find_pattern_d (spec, peaks, ppm0, J, sel, ratio=2, full=T) )
-	if (!is.null(g) && nrow(g)>0) {
-		if (nrow(g)>0) g <- g[ as.numeric(g[,3])>(J-dJ) & as.numeric(g[,3])<(J+dJ), , drop=F]
-		if (nrow(g)>1) g <- g[ order(as.numeric(g[,8])),  ]
-		if (nrow(g)>0) groups <- g[1, c(1:2)]
-	}
-	groups
-})
-
-# Rule r7 : Find a multiplet having N peaks (nbpeaks) separated by at most D Hz (dist) and at least 1 Hz. Peaks must be contiguous
-internalClass$set("private", "find_peaks_rule_r7", function(spec, peaks, ppm1, ppm2, nbpeaks=2, dist=2)
+# Rule r6 : Find a multiplet having N peaks (nbpeaks) separated by at most D Hz (dist) and at least 1 Hz. Peaks must be contiguous
+internalClass$set("private", "find_peaks_rule_r6", function(spec, peaks, ppm1, ppm2, nbpeaks=2, dist=2)
 {
 	groups <- NULL
 	repeat {
@@ -549,8 +535,8 @@ internalClass$set("private", "find_peaks_rule_r7", function(spec, peaks, ppm1, p
 })
 
 
-# Rule r8 : Take the highest intensity peak in the selected area. Then if the some peaks are close to the first one in intensity (ratio<2) and in distance (dist Hz) then also take these peaks.
-internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, ppm2, ratio=2, dist=1.2)
+# Rule r7 : Take the highest intensity peak in the selected area. Then if the some peaks are close to the first one in intensity (ratio<2) and in distance (dist Hz) then also take these peaks.
+internalClass$set("private", "find_peaks_rule_r7", function(spec, peaks, ppm1, ppm2, ratio=2, dist=1.2)
 {
 	groups <- NULL
 	repeat {
@@ -570,8 +556,8 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 	groups
 })
 
-# r9: find 'nbpeaks' consecutive peaks in the ppm range (e.g shikimic acid)
-internalClass$set("private", "find_peaks_rule_r9", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, snrthres=5)
+# r8: find 'nbpeaks' consecutive peaks in the ppm range (e.g shikimic acid)
+internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, snrthres=5)
 {
 	Dmax <- 1.02*(nbpeaks-1)*J
 	Dmin <- 0.9*(nbpeaks-1)*J
@@ -776,6 +762,11 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds, 
 									error = function(e) { return(NULL) })
 				next
 			}
+			if (pattern == 'r1') {
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r1(spec, peaks, params[1], params[2], params[3]) },
+									error = function(e) { return(NULL) })
+				next
+			}
 			if (pattern == 'r2') {
 				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r2(spec, peaks, params[1], params[2], params[3], params[4]) },
 									error = function(e) { return(NULL) })
@@ -796,16 +787,21 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds, 
 									error = function(e) { return(NULL) })
 				next
 			}
+			if (pattern == 'r6') {
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r6(spec, peaks, params[1], params[2], params[3], params[4]) },
+									error = function(e) { return(NULL) })
+				next
+			}
 			if (pattern == 'r7') {
 				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r7(spec, peaks, params[1], params[2], params[3], params[4]) },
 									error = function(e) { return(NULL) })
 				next
 			}
-			if (pattern == 'r9') {
+			if (pattern == 'r8') {
 				J        <- ifelse( length(params)>2, params[3], 2 )
 				nbpeaks  <- ifelse( length(params)>3, params[4], 5 )
 				snrthres <- ifelse( length(params)>4, params[5], 5 )
-				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r9(spec, peaks, params[1], params[2], J, nbpeaks, snrthres) }, 
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r8(spec, peaks, params[1], params[2], J, nbpeaks, snrthres) }, 
 									error = function(e) { return(NULL) })
 				next
 			}
