@@ -131,10 +131,11 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 	}
 
 	# Initialize variables
-	Ymodel <- Y <- spec$int <- spec$intcorr  # Store intensity and corrected intensity values
+	Ymodel <- Y <- spec$int <- spec$intcorr  # Store corrected intensity values
 	Peaks <- infos <- NULL  # To store peak fitting results and metadata
 	BLSIG <- 10             # Baseline significance threshold
 	WS <- 0                 # Window Size for smoothing (before=5)
+	Order <- 2              # BL parameter for airPLS method
 
 	# Loop through each peak fitting range
 	for (k in 1:nrow(pkfit)) {
@@ -172,9 +173,12 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 			spec$int <- spec$intcorr
 			if (opars.loc$qbl == 1) {
 				BL <- qnmrbc(spec, ppmrange, BLSIG, WS) 
+				cat('BL Parameters: Method: qNMR, BLSIG =', BLSIG,', WS =', WS, "\n")
 			} else { 
-				BL <- getBLexternal(spec, opars.loc$qbl, 2, ppmrange) 
+				BL <- getBLexternal(spec, opars.loc$qbl, Order, ppmrange) 
+				cat('BL Parameters: Method: airPLS, lambda =', opars.loc$qbl,', Order =', Order, "\n")
 			}
+			cat("\n")
 			spec$int <- spec$int - BL
 			Y <- Y - BL
 		}
@@ -279,6 +283,8 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 
 	# Constants for baseline correction and peak fitting
 	BLSIG <- 10             # Baseline significance threshold
+	WS <- 0                 # Window Size for smoothing (before=5)
+	Order <- 2              # BL parameter for airPLS method
 
 	# Function to merge peak fitting results from parallel computations
 	combine_list <- function(LL1, LL2) {
@@ -338,9 +344,15 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		if (verbose) cat('filter =',paste(filters$main,collapse=','),"\n")
 
 	# Apply baseline correction (qbl) if necessary
-		if (opars.loc$qbl) {
-			if (opars.loc$qbl==1) { BL <- priv$qnmrbc(spec, ppmrange, BLSIG, 5) }
-			else                  { BL <- priv$getBLexternal(spec, opars.loc$qbl, 2, ppmrange) }
+		if (opars.loc$qbl  != 0) {
+			if (opars.loc$qbl == 1) {
+				BL <- qnmrbc(spec, ppmrange, BLSIG, WS) 
+				cat('BL Parameters: Method: qNMR, BLSIG =', BLSIG,', WS =', WS, "\n")
+			} else { 
+				BL <- getBLexternal(spec, opars.loc$qbl, Order, ppmrange) 
+				cat('BL Parameters: Method: airPLS, lambda =', opars.loc$qbl,', Order =', Order, "\n")
+			}
+			cat("\n")
 			spec$int <- spec$int - BL
 			Y <- Y - BL
 			LB <- BL
