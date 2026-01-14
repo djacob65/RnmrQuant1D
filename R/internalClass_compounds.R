@@ -284,8 +284,6 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 			groups <- L
 		}
 		# Criterion on amplitude (1, 3, 3, 1)
-		#if (length(L)==4 && mean(peaks$amp[L[order(L)][2:3]])<mean(peaks$amp[L[order(L)][c(1,4)]]))
-		#	groups <- NULL
 		pAM <- peaks$amp[L[order(L)][2:3]]
 		pAm <- peaks$amp[L[order(L)][c(1,4)]]
 		if (length(L)==4 && (mean(pAM)<1.5*mean(pAm) || (max(pAM)/min(pAM))>2.5 || (max(pAm)/min(pAm))>2.5))
@@ -395,11 +393,10 @@ internalClass$set("private", "find_peaks_range", function(spec, peaks, ppm1, ppm
 })
 
 # Rule r1 : Among the peaks having a S/N greater than 25 (default), take the nth peak (rank) in increasing ppm order, otherwise in decreasing ppm order
-internalClass$set("private", "find_peaks_rule_r1", function(spec, peaks, ppm1, ppm2, rank)
+internalClass$set("private", "find_peaks_rule_r1", function(spec, peaks, ppm1, ppm2, rank, ratioPN=25)
 {
 	groups <- NULL
 	P1 <- peaks[peaks$ppm>ppm1 & peaks$ppm<ppm2, , drop=F]
-	ratioPN <- 25
 	repeat {
 		if (rank==0 || is.null(P1) || nrow(P1)==0) break
 		pk <- Rnmr1D::peakFiltering(spec,P1, ratioPN)        # take peaks only with S/N above ratioPN
@@ -413,11 +410,10 @@ internalClass$set("private", "find_peaks_rule_r1", function(spec, peaks, ppm1, p
 })
 
 # Rule r2:  Among the peaks having a S/N greater than 65 (default), take the first peak which is distant at least Jmin Hz but not more than Jmax Hz from the first peak of the selected ppm interval. If Jmin is positive, consider the first peak from the smallest ppm, otherwise from the largest ppm. Jmax will have automatically the same sign that Jmin.
-internalClass$set("private", "find_peaks_rule_r2", function(spec, peaks, ppm1, ppm2, Jmin, Jmax=4)
+internalClass$set("private", "find_peaks_rule_r2", function(spec, peaks, ppm1, ppm2, Jmin, Jmax=4, ratioPN=25)
 {
 	groups <- NULL
 	P1 <- peaks[peaks$ppm>ppm1 & peaks$ppm<ppm2, , drop=F]
-	ratioPN <- 65
 	repeat {
 		if (is.null(P1) || nrow(P1)<2) break
 		pk <- Rnmr1D::peakFiltering(spec, P1, ratioPN)        # take peaks only with S/N above ratioPN
@@ -659,6 +655,12 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 			if (nloop>2) break
 		}
 
+		# Pattern validation
+		if (nbpeaks>2) {
+			n <- length(gn)
+			if (mean(peaks$amp[gn[2:(n-1)]])<mean(peaks$amp[gn[c(1,n)]])) break
+		}
+
 		gn <- (min(gn):max(gn))
 		groups <- as.character(gn)
 		break
@@ -792,12 +794,14 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds, 
 				next
 			}
 			if (pattern == 'r1') {
-				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r1(spec, peaks, params[1], params[2], params[3]) },
+				ratioPN <- ifelse( length(params)>3, params[4], 25 )
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r1(spec, peaks, params[1], params[2], params[3], ratioPN) },
 									error = function(e) { return(NULL) })
 				next
 			}
 			if (pattern == 'r2') {
-				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r2(spec, peaks, params[1], params[2], params[3], params[4]) },
+				ratioPN <- ifelse( length(params)>4, params[4], 25 )
+				groups[[cmpd]] <- tryCatch({ find_peaks_rule_r2(spec, peaks, params[1], params[2], params[3], params[4], ratioPN) },
 									error = function(e) { return(NULL) })
 				next
 			}
@@ -840,6 +844,21 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds, 
 	if (!is.null(groups))
 		groups <- merge_compounds(groups)
 	groups
+})
+
+# Calculate the signal-to-noise ratio (SNR) for a given pattern.
+# 'idpeaks' represents the peak numbers included in the pattern.
+internalClass$set("private", "snr_pattern", function(spec, idpeaks, pattern)
+{
+	Vnoise <- get_Vnoise(spec, PPM_NOISE)
+	peaks <- spec$fit$peaks
+	rownames(peaks) <- 1:nrow(peaks)
+	P <- peaks[rownames(peaks)[idpeaks], ]
+	if (pattern %in% c('r8'))
+		SNR <- round(max(P$amp)/(2*Vnoise))
+	else
+		SNR <- round(median(P$amp)/(2*Vnoise))
+	SNR
 })
 
 # Find the list of compounds in the request zones

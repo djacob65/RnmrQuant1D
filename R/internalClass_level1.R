@@ -554,7 +554,7 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 	# Compute Signal-to-Noise Ratio (SNR) using the average of peak intensities
 		PKlist <- SNR <- NA
 		if (!is.null(PKZQ)) {
-			SNR <- round(median(peaks[rownames(peaks)[PKZQ], ]$amp)/(2*Vnoise))
+			SNR <- snr_pattern(spec, PKZQ, Pattern)
 		}
 		if (!is.na(SNR) && SNR<mean(ZQ$snrmin)) {
 			ISUM <- NA
