@@ -110,8 +110,10 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 						crit <- abs((Jij-J)/(Jij+J)) + abs((Xm-ppm0)/(Xm+ppm0))
 					} else if (sel==1) {
 						crit <- abs((Jij-J)/(Jij+J)) + 2*abs((Xm-ppm0)/(Xm+ppm0)) + 0.5*(Aratio-1)*(Aratio-1)
-					} else {
+					} else if (sel==2) {
 						crit <- abs((Jij-J)/(Jij+J)) + 0.5*(Aratio-1)*(Aratio-1)
+					} else if (sel==3) {
+						crit <- abs((Xm-ppm0)/(Xm+ppm0))
 					}
 					JL <- rbind(JL, c(rownames(P2)[i],rownames(P2)[j], round(Jij,2), round(Xm,4), round(Am,4), round(Aratio,4), round(dSigma,4), round(crit,4)) )
 				}
@@ -120,8 +122,8 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,6]))<(ratio+dA), , drop=F] # criterion based on the ratio
 		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,7]))<dS, , drop=F] # criterion based on dSigma
 		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,4])-ppm0)<dppm0, , drop=F] # criterion based on ppm0
-		if (nrow(JL)>1 && sel<2) JL <- JL[order(as.numeric(JL[,8])), ] # order by increasing criterion
-		if (nrow(JL)>1 && sel>1) JL <- JL[order(as.numeric(JL[,5]), decreasing=T), ] # order by decreasing intensities
+		if (nrow(JL)>1 && sel %in% c(0,1,3)) JL <- JL[order(as.numeric(JL[,8])), ] # order by increasing criterion
+		if (nrow(JL)>1 && sel == 2) JL <- JL[order(as.numeric(JL[,5]), decreasing=T), ] # order by decreasing intensities
 		if (nrow(JL)<1) { JL <- NULL; break }
 		if (!full) {
 			if (nrow(JL)>2) JL <- JL[1:2,, drop=F] # take the 2 doublets having the smallest criteria/intensities values
@@ -282,7 +284,11 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 			groups <- L
 		}
 		# Criterion on amplitude (1, 3, 3, 1)
-		if (length(L)==4 && mean(peaks$amp[L[order(L)][2:3]])<mean(peaks$amp[L[order(L)][c(1,4)]]))
+		#if (length(L)==4 && mean(peaks$amp[L[order(L)][2:3]])<mean(peaks$amp[L[order(L)][c(1,4)]]))
+		#	groups <- NULL
+		pAM <- peaks$amp[L[order(L)][2:3]]
+		pAm <- peaks$amp[L[order(L)][c(1,4)]]
+		if (length(L)==4 && (mean(pAM)<1.5*mean(pAm) || (max(pAM)/min(pAM))>2.5 || (max(pAm)/min(pAm))>2.5))
 			groups <- NULL
 
 		break

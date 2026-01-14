@@ -185,12 +185,12 @@ internalClass$set("private", "qnmrbc", function(spec, ppmrange, CSIG=5, NLOOP=5,
 			Y <- Y - bci
 			bc <- bc + bci
 		}
-		BLext[iseq] <- bc
+		BLext[iseq] <- bc # - 2*specSig
    }
    BLext
 })
 
-internalClass$set("private", "getBLexternal", function(spec, blset, porder=1, ppmrange=NULL, WS=30)
+internalClass$set("private", "getBLexternal", function(spec, blset, porder=1, ppmrange=NULL, WS=0)
 {
 	# external baseline at zero by default
 	BLext <- rep(0,length(spec$int))
@@ -201,12 +201,12 @@ internalClass$set("private", "getBLexternal", function(spec, blset, porder=1, pp
 		if (is.null(ppmrange)) {
 			Y <- spec$int
 			if (WS>0) Y <- Rnmr1D:::Smooth(Y,WS)
-			BLext <- Rnmr1D:::.airPLS(Y, lambda=10^lambda, porder=porder)
+			BLext <- Rnmr1D:::.airPLS(Y, lambda=10^lambda, porder=porder) - 2*spec$B
 		} else {
 			iseq <- getseq(spec,ppmrange)
 			Y <- spec$int[iseq]
 			if (WS>0) Y <- Rnmr1D:::Smooth(Y,WS)
-			BLext[iseq] <- Rnmr1D:::.airPLS(Y, lambda=10^lambda, porder=porder)
+			BLext[iseq] <- Rnmr1D:::.airPLS(Y, lambda=10^lambda, porder=porder) - 2*spec$B
 		}
 	}
 	BLext

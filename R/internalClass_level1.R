@@ -175,8 +175,8 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 				BL <- qnmrbc(spec, ppmrange, BLSIG, WS) 
 				cat('BL Parameters: Method: qNMR, BLSIG =', BLSIG,', WS =', WS, "\n")
 			} else { 
-				BL <- getBLexternal(spec, opars.loc$qbl, Order, ppmrange) 
-				cat('BL Parameters: Method: airPLS, lambda =', opars.loc$qbl,', Order =', Order, "\n")
+				BL <- getBLexternal(spec, opars.loc$qbl, Order, ppmrange, WS) 
+				cat('BL Parameters: Method: airPLS, blset =', opars.loc$qbl,', Order =', Order,', WS =', WS, "\n")
 			}
 			cat("\n")
 			spec$int <- spec$int - BL
@@ -193,17 +193,17 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		# If the first fit doesn't meet the R² threshold, try alternative filters
 		opars.loc <- opars.save
 		if (is.null(model) || (!is.null(model) && model$R2 < opars.loc$R2limit)) {
-			t <- system.time({
-				opars.loc$peaks <- NULL
-				others_filters <- filters$others[!filters$others %in% filters$main]
-				model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
-
-				# Choose the best model (if model2 has a better R², use it)
-				if ((is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2 > model$R2)) {
-					model <- model2
-				}
-			})
-			if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
+			opars.loc$peaks <- NULL
+			others_filters <- filters$others[!filters$others %in% filters$main]
+			if (length(others_filters))
+				t <- system.time({
+					model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
+					# Choose the best model (if model2 has a better R², use it)
+					if ((is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2 > model$R2)) {
+						model <- model2
+					}
+					if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
+				})
 		}
 
 		# If no peaks were found, store default info and continue to the next range
@@ -368,14 +368,15 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	# In case R2 was under R2limit, proceed peak fitting based on the alternative filters
 		opars.loc <- opars.save
 		if (is.null(model) || (!is.null(model) && model$R2<opars.loc$R2limit)) {
-			t<-system.time({
-				opars.loc$peaks <- NULL
-				others_filters <- filters$others[! filters$others %in% filters$main]
-				model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
-				if ( (is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2>model$R2) )
+			opars.loc$peaks <- NULL
+			others_filters <- filters$others[! filters$others %in% filters$main]
+			if (length(others_filters))
+				t<-system.time({
+					model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
+					if ( (is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2>model$R2) )
 						model <- model2
-			})
-			if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
+					if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
+				})
 		}
 
 		if (!is.null(model) && nrow(model$peaks)>0) {
