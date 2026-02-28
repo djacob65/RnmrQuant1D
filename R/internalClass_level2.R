@@ -2,12 +2,12 @@
 # High level functions for Quantification
 #=====================================================================
 
-internalClass$set("private", "standardQuantification", function(stds_loc, samplename, thresfP=5, deconv=TRUE, verbose=1)
+internalClass$set("private", "standardQuantification", function(stds_loc, samplename, thresfP=5, deconv=TRUE, qbl=FALSE, verbose=1)
 {
 	# Filtering
 	filter <- 'none'
 
-	# Local baseline order
+	# baseline order
 	obl <- 0
 
 	# Ratio Peak/Noise : Only keep the highest peaks
@@ -19,6 +19,10 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	# Retrieve preprocessing parameters from PROFILE and disable MVPZTSP correction
 	procPars <- get_procParams(PROFILE)
 	procPars$MVPZTSP <- FALSE
+
+	# Initialize variables
+	BLSIG <- 10             # Baseline significance threshold
+	WS <- 0                 # Window Size for smoothing (before=5)
 
 	# Define deconvolution parameters for peak fitting
 	Opars <- list(ratioPN=ratioPN, oneblk=1, pvoigt=1, oeta=1, oasym=1, asymmax=5000, spcv=0.001, d2cv=0.05,
@@ -89,6 +93,12 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 			if (verbose) cat("-------------------\n")
 			if (verbose) cat(cmpd,": PPM range = [", ppmrange[1],',',ppmrange[2],"]","\n")
 			if (verbose) cat("Max Spec  = ", max(spec$int[getseq(spec,ppmrange)]),"\n")
+
+			# Perform baseline correction
+			if (qbl) {
+				spec$int <- spec$int - qnmrbc(spec, ppmrange, BLSIG, WS) 
+				if (verbose) cat('BL Parameters: Method: qNMR, BLSIG =', BLSIG,', WS =', WS, "\n")
+			}
 
 			# Perform peak deconvolution or direct integration
 			if (deconv) {

@@ -1,7 +1,7 @@
 Package: RnmrQuant1D
 Type: Package
 Title: Package dedicated to quantification from 1D NMR spectra
-Version: 1.1.2
+Version: 1.1.4
 Authors@R: c(
     person("Daniel", "Jacob", email="daniel.jacob@inrae.fr", role=c("cre", "aut"), comment=c(ORCID="0000-0002-6687-7169")))
 Copyright: Institut National de la Recherche pout l’Agriculture, l’Alimentation et l'Environnment (INRAE)
@@ -13,7 +13,7 @@ Description: Package dedicated to quantification from 1D NMR spectra
 Depends: R (>= 3.6.0)
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
-Imports: R6, Rnmr1D (>= 1.6.0), foreach (>= 1.5.2), doParallel (>= 1.0.17), magrittr (>= 2.0.3), DT (>= 0.29), plotly (>= 4.8.0), openxlsx (>= 4.2.0),  webshot2 (>= 0.1.1)
+Imports: R6, Rnmr1D (>= 1.6.0), foreach (>= 1.5.2), doParallel (>= 1.0.17), doSNOW (>= 1.0.20), magrittr (>= 2.0.3), DT (>= 0.29), plotly (>= 4.8.0), openxlsx (>= 4.2.0),  webshot2 (>= 0.1.1)
 Suggests: knitr,
     rmarkdown
 VignetteBuilder: knitr

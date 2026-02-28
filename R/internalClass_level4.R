@@ -41,21 +41,17 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 			LOGFILE <- file.path(TMPDIR,"proc_Integrals_par.log")
 			if (file.exists(LOGFILE)) unlink(LOGFILE)
 			cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
-			doParallel::registerDoParallel(cl)
+			doSNOW::registerDoSNOW(cl)
 			parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
 			on.exit({ parallel::stopCluster(cl); rm(cl) })
 		} else if (ncpu==1) {
 			foreach::registerDoSEQ()
 		}
-
 	})
 	if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n")
 
 	# Process all samples in parallel
-	out <- foreach::foreach(ID=1:nrow(Slist),
-		.combine=combine_list,
-		.packages=c("Rnmr1D")) %dopar%
-	{
+	funcpar <- function (ID) {
 		priv <- rq1d$.__enclos_env__$private
 
 		# Directory of the raw spectrum
@@ -111,6 +107,18 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		return(mylist)
 	}
 
+	if (verbose && ncpu>1) {
+		pb <- txtProgressBar(max = nrow(Slist), style = 3)
+		progress <- function(n) setTxtProgressBar(pb, n)
+		out <- foreach::foreach(ID=1:nrow(Slist),
+			.combine=combine_list,.options.snow = list(progress = progress),
+			.packages=c("Rnmr1D")) %dopar% funcpar(ID)
+	} else {
+		out <- foreach::foreach(ID=1:nrow(Slist),
+			.combine=combine_list,
+			.packages=c("Rnmr1D")) %dopar% funcpar(ID)
+	}
+
 	# Results proc-process
 	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
 	specList <<- list()
@@ -146,7 +154,7 @@ internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=T
 	unlink(LogFile)
 	t <- system.time({
 		sink(LogFile)
-		calib <- standardQuantification(stds, QSname, thresfP, deconv, verbose)
+		calib <- standardQuantification(stds, QSname, thresfP, deconv, verbose=verbose)
 		if (is.nan(calib$fPUL$mean)) {
 			fP <<- list()
 			stop_quietly(paste0("Error: the spectrum '",QSname,"' does not appear to contain the correct quantification standards."))

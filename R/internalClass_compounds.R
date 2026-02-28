@@ -887,7 +887,12 @@ internalClass$set("private", "find_compounds_by_zone", function(spec, peaks, zon
 					}
 					P4 <- as.numeric(V)
 				}
-			    L <- find_compounds(spec, peaks, list('C1'=c(P$pattern[i], P$P1[i], P$P2[i], P3)), P4)
+				if (P$pattern[i]=='dd') {
+					J <- as.numeric(simplify2array(strsplit(P$P2[i],',')))
+					L <- priv$find_compounds(spec, peaks, list('C1'=c(P$pattern[i], P$P1[i], J, P3)), P4)
+				} else {
+					L <- priv$find_compounds(spec, peaks, list('C1'=c(P$pattern[i], P$P1[i], P$P2[i], P3)), P4)
+				}
 				if (!is.null(L))
 					if (P$compound[i] %in% names(groups)) {
 						groups[[P$compound[i]]] <- c(groups[[P$compound[i]]], L$C1)

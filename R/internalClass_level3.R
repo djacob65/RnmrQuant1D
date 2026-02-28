@@ -42,7 +42,7 @@ internalClass$set("public", "get_response_factors", function(sampletype,  sample
 	if (verbose) cat(samplename, "/",SEQUENCE,"...\n");
 	stds_profil_sub <- CALIBRATION[ CALIBRATION$Type==sampletype, , drop=F]
 
-	out <- standardQuantification(stds_profil_sub, samplename, thresfP, deconv=deconv, verbose=(verbose>1))
+	out <- standardQuantification(stds_profil_sub, samplename, thresfP, deconv, verbose=(verbose>1))
 	V <- apply(out$fP,1,mean)
 	fP_CV <- sd(V)/mean(V)
 	fPUL <- list(mean=mean(V), CV=round(100*fP_CV,2))
