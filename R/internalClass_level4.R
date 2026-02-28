@@ -37,7 +37,8 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		rq1d <<- self
 		ncpu <- min(nrow(SAMPLES), max(ncpu,2))
 		if (ncpu>1) {
-			cltype <- ifelse(.Platform$OS.type == "unix", "FORK", "PSOCK")
+			#cltype <- ifelse(.Platform$OS.type == "unix", "FORK", "PSOCK")
+			cltype <- "PSOCK"
 			LOGFILE <- file.path(TMPDIR,"proc_Integrals_par.log")
 			if (file.exists(LOGFILE)) unlink(LOGFILE)
 			cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
