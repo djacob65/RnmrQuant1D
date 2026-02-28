@@ -37,11 +37,9 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		rq1d <<- self
 		ncpu <- min(nrow(SAMPLES), max(ncpu,2))
 		if (ncpu>1) {
-			#cltype <- ifelse(.Platform$OS.type == "unix", "FORK", "PSOCK")
-			cltype <- "PSOCK"
 			LOGFILE <- file.path(TMPDIR,"proc_Integrals_par.log")
 			if (file.exists(LOGFILE)) unlink(LOGFILE)
-			cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
+			cl <- parallel::makeCluster(ncpu, type="PSOCK", outfile=LOGFILE)
 			doSNOW::registerDoSNOW(cl)
 			parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
 			on.exit({ parallel::stopCluster(cl); rm(cl) })
@@ -202,10 +200,9 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 		# Start Cluster
 		rq1d <<- self
 		if (ncpu>1) {
-			cltype <- ifelse(.Platform$OS.type == "unix", "FORK", "PSOCK")
 			LOGFILE <- file.path(TMPDIR,"proc_Quantif_par.log")
 			if (file.exists(LOGFILE)) unlink(LOGFILE)
-			cl <- parallel::makeCluster(ncpu, type=cltype, outfile=LOGFILE)
+			cl <- parallel::makeCluster(ncpu, type="PSOCK", outfile=LOGFILE)
 			doParallel::registerDoParallel(cl)
 			parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
 			on.exit({ parallel::stopCluster(cl); rm(cl) })
