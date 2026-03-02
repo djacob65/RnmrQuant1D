@@ -169,7 +169,7 @@ internalClass$set("public", "check_profile", function(zones=NULL, verbose=FALSE)
 			sum(QZ$ppm1>FZ$ppm1[1] & QZ$ppm2<FZ$ppm2[1])==nrow(QZ)
 	}))
 	if (sum(L)<nrow(fit))
-		stop_quietly(paste0("Error: The ppm ranges in the quantif section are not included in those corresponding to the fitting section for zone(s) '",paste0(which(!L),collapse=','),"'"))
+		stop_quietly(paste0("Error: The ppm ranges in the quantif section are not included in those corresponding to the fitting section for zone(s) '",paste0(unique(Q$zone)[which(!L)],collapse=','),"'"))
 
 	# Check if all quantif compound match with a compound line
 	L <- PROFILE$quantif$compound %in% PROFILE$compound$name

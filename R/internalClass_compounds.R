@@ -35,7 +35,7 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 		if (pattern == 's')		dppm <- 1.5*P2
 		if (pattern == 'd')		dppm <- 0.75*P2/SFO1
 		if (pattern == 't')		dppm <- 1.35*P2/SFO1
-		if (pattern == 'dd')	dppm <- (0.5*P2[1]+P2[2])/SFO1
+		if (pattern == 'dd')	dppm <- 0.5*(P2[1]+P2[2])/SFO1
 		if (pattern == 'q')		dppm <- 2*P2/SFO1
 		if (pattern == 'm')		dppm <- 2.5*P2/SFO1
 		if (pattern == 'm2')	dppm <- 2.5*P2/SFO1
