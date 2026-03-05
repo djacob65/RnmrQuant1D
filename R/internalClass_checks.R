@@ -107,7 +107,8 @@ internalClass$set("public", "check_calibration", function(QC=NULL, QS=NULL, sequ
 
 	# Check if QCname corresponds to some spectra under QSDIR
 	if (!is.null(QC)) {
-		M2c <- M2b[ M2b[,1]==QC, , drop=F]
+		#M2c <- M2b[ M2b[,1]==QC, , drop=F]
+		M2c <- M2b[ grep(pattern=paste0('^',QC), M2b[,1], value=FALSE), , drop=F]
 		if (nrow(M2c)==0)
 			stop_quietly(paste0("Error: No spectrum ",QC," seems to match a spectrum under ", QSDIR))
 		if (verbose) cat(paste0("OK: some spectra under ",QSDIR," correspond to ",QC,"\n"))
@@ -115,7 +116,8 @@ internalClass$set("public", "check_calibration", function(QC=NULL, QS=NULL, sequ
 
 	# Check if QCname corresponds to some spectra under QSDIR
 	if (!is.null(QS)) {
-		M2c <- M2b[ M2b[,1]==QS, , drop=F]
+		#M2c <- M2b[ M2b[,1]==QS, , drop=F]
+		M2c <- M2b[ grep(pattern=paste0('^',QS), M2b[,1], value=FALSE), , drop=F]
 		if (nrow(M2c)==0)
 			stop_quietly(paste0("Error: No spectrum ",QS," seems to match a spectrum under ", QSDIR))
 		if (verbose) cat(paste0("OK: some spectra under ",QSDIR," correspond to ",QS,"\n"))

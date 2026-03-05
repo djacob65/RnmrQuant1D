@@ -90,6 +90,7 @@ internalClass <- R6Class("internalClass",
 			procParams$ADJPZTSP <<- TRUE
 			procParams$MVPZTSP <<- TRUE
 			procParams$MVPZFAC <<- 10
+			procParams$DPHCPZTSP <<- 1.2
 			procParams$DHZPZRANGE <<- 323
 
 			# Filters

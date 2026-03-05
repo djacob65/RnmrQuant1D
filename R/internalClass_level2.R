@@ -35,7 +35,9 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	if (verbose) cat('filter =',paste(filters$main,collapse=','),"\n")
 
 	# Retrieve spectra names for the given samplename
-	spectra <- get_list_spectrum(QSDIR, samplename)
+	L2 <- get_list_samples(QSDIR)
+	samplelist <- L2[ grep(pattern=paste0('^',samplename), L2, value=FALSE) ]
+	spectra <- get_list_spectrum(QSDIR, samplelist)
 	M <- spectra[ spectra[,3]==SEQUENCE, , drop=F]
 	dirs <- list.dirs(QSDIR, recursive = TRUE, full.names = TRUE)
 
@@ -56,8 +58,8 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 		if (verbose) cat("\n-------------------\n")
 		expno <- M[k,2]
 		expno_list <- c(expno_list, expno)
-		if (verbose) cat(samplename,', expno=',expno,', sequence =',SEQUENCE,': ')
-		ACQDIR <- file.path(dirs[basename(dirs) == samplename],expno)
+		if (verbose) cat(M[k,1],', expno=',expno,', sequence =',SEQUENCE,': ')
+		ACQDIR <- file.path(dirs[basename(dirs) == M[k,1]],expno)
 		spec <- Rnmr1D::readSpectrum(ACQDIR, procPars, PPM_NOISE, NULL, SCALE_INT, verbose= (verbose>1))
 	# Display information if verbose
 		if (verbose) cat("Path:", ACQDIR,"\n")

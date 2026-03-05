@@ -5,6 +5,7 @@
 #      * ZFFAC : Zone filling factor
 #      * TSPPHC : parameters to improve phasing : MVPZTSP,DHZPZRANGE
 #      * CALIBRATION : parameters for calibration : pzone1,pzone1,p0,shape otherwise 0
+#      * PARAMS : additional parameters, given in the form PARAM=value, separated by a comma if there are multiple ones
 #   'exclude'  : zones to be excluded for all processing steps (deprecated)
 #   'zeroneg'  : zones to zero before the baseline correction (deprecated)
 #   'baseline' : zones for baseline correction along with their airPLS parameters (lambda & order) (deprecated)
@@ -75,6 +76,13 @@ internalClass$set("public", "readProfile", function(PROFILE)
 				}
 				if (length(cmdPars) > 4 && grepl(',',cmdPars[5])) {
 					preprocess$CALIB <- as.vector(simplify2array(strsplit(cmdPars[5],',')))
+				}
+				if (length(cmdPars) > 5) {
+					if (grepl(',',cmdPars[6])) {
+						preprocess$ADDPARAMS <- strsplit(cmdPars[6],',')
+					} else {
+						preprocess$ADDPARAMS <- cmdPars[6]
+					}
 				}
 				CMD <- CMD[-1]  # Remove processed line
 				break

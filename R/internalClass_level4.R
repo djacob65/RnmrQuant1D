@@ -158,6 +158,7 @@ internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=T
 			fP <<- list()
 			stop_quietly(paste0("Error: the spectrum '",QSname,"' does not appear to contain the correct quantification standards."))
 		}
+		calib$sampletype <- QStype
 		if (verbose) print(calib)
 		Mat <- get_factor_table(calib)
 		sink()

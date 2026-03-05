@@ -32,6 +32,12 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 		if (!is.null(profile$preprocess$DHZPZRANGE)) {
 			procParams$DHZPZRANGE <<- profile$preprocess$DHZPZRANGE
 		}
+		if (!is.null(profile$preprocess$ADDPARAMS)) {
+			for(s in unlist(profile$preprocess$ADDPARAMS)) {
+				V <- unlist(strsplit(s,'='))
+				procParams[V[1]] <<- ifelse( is.na(as.numeric(V[2])), V[2] , as.numeric(V[2]) )
+			}
+		}
 	}
 	procParams
 })

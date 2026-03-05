@@ -30,7 +30,9 @@ internalClass$set("public", "get_samples_table", function(sequence=NULL, infos=F
 
 internalClass$set("public", "get_response_factors", function(sampletype,  samplename, thresfP=5, deconv=TRUE, verbose=1)
 {
-	if (is.null(get_list_spectrum(QSDIR, samplename)))
+	L2 <- get_list_samples(QSDIR)
+	samplelist <- L2[ grep(pattern=paste0('^',samplename), L2, value=FALSE) ]
+	if (is.null(get_list_spectrum(QSDIR, samplelist)))
 		stop_quietly("Error: ",samplename,"is not a valid spectrum name.\n")
 
 	if (!sampletype %in% c(QCtype, QStype))
