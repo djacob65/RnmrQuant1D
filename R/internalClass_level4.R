@@ -73,12 +73,6 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		# Baseline correction
 		spec <- priv$applyBLcorrection(spec, verbose=verbose)
 
-		# TSP width
-		spec$TSPwidth <- priv$get_TSP_width(spec)
-		if (verbose) cat("TSP width:", spec$TSPwidth,"Hz\n")
-		if (spec$TSPwidth>rq1d$TSPwidthMax && verbose)
-			cat("ERROR : TSP width too large\n")
-
 		# Peak fitting
 		Opars <- rq1d$opars
 		Opars$peaks <- NULL
@@ -87,7 +81,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		# Quantification
 		if (!is.null(spec$fit$peaks)) {
 			if (verbose) { print(spec$fit$infos); cat("\n") }
-			Q <- priv$applyQuantification(spec, verbose=verbose)
+			Q <- priv$applyQuantification(spec, fullPattern=TRUE, verbose=verbose)
 			print(Q$quantification); cat("\n")
 			print(Q$peaklist); cat("\n")
 		}

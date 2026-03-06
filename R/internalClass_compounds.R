@@ -260,10 +260,13 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 		G <- NULL; k <- 0
 		for (j in 1:length(L)) if (length(L[[j]])==4) { k<-k+1; G[[k]] <- L[[j]] }
 		if (is.null(G)) break
+		G <- unique(G)
+print(G)
 	## In case there are 2 or more peak lists, take the one with the highest sum of amplitudes
 		v <- sapply(1:length(G), function(k) sum(peaks[as.numeric(G[[k]]), ]$amp))
 		L <- sort(as.numeric(G[[which(v==max(v))]]))
 		if (length(L)<4) break
+print(L)
 		if (length(L)>4) {
 	# Criterion on J (J +/- dJ)
 			M <- matrix(rep(0,length(L)*length(L)), nrow=length(L), byrow=T)
@@ -283,6 +286,7 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 		} else {
 			groups <- L
 		}
+print(L)
 		# Criterion on amplitude (1, 3, 3, 1)
 		pAM <- peaks$amp[L[order(L)][2:3]]
 		pAm <- peaks$amp[L[order(L)][c(1,4)]]

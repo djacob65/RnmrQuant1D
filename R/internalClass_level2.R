@@ -57,7 +57,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	# Read spectrum
 		if (verbose) cat("\n-------------------\n")
 		expno <- M[k,2]
-		expno_list <- c(expno_list, expno)
+		expno_list <- c(expno_list, paste0(M[k,1],'/',expno))
 		if (verbose) cat(M[k,1],', expno=',expno,', sequence =',SEQUENCE,': ')
 		ACQDIR <- file.path(dirs[basename(dirs) == M[k,1]],expno)
 		spec <- Rnmr1D::readSpectrum(ACQDIR, procPars, PPM_NOISE, NULL, SCALE_INT, verbose= (verbose>1))

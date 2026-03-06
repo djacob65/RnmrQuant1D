@@ -107,13 +107,17 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples)
 
 internalClass$set("private", "get_TSP_width", function(spec)
 {
-	ppmrange <- c(-0.2,0.2)
-	iseq <- getseq(spec,ppmrange)
+	# Local baseline correction 
+	BLext <- rep(0,length(spec$int))
+	iseq <- getseq(spec,c(-0.5,0.5))
+	BLext[iseq] <- Rnmr1D:::.airPLS(spec$int[iseq], lambda=10^9, porder=2)
+	spec$int <- spec$int - BLext
+	# Find the two points for which the spectrum intensity is equal to A/2 knowing that A is the max amplitude of the TSP peak
+	iseq <- getseq(spec,c(-0.05,0.05))
 	n <-  iseq[1] + which(spec$int[iseq]==max(spec$int[iseq])) - 1
 	Vs <- iseq[1] + which(spec$int[iseq]>=spec$int[n]/2) - 1
 	dv <- spec$ppm[ c( Vs[1], Vs[length(Vs)] ) ]
-	TSPWIDTH <- round(sum(abs(dv))*spec$acq$SFO1,3)
-	TSPWIDTH
+	round(sum(abs(dv))*spec$acq$SFO1,3)
 })
 
 # Compute Noise level - based on Bruker algo
