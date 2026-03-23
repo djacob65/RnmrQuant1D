@@ -25,6 +25,7 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 	if (!is.null(profile) && !is.null(profile$preprocess)) {
 		procParams$LB <<- profile$preprocess$LB
 		procParams$ZFFAC <<- profile$preprocess$ZFFAC
+		procParams$TSP <<-  ifelse(profile$preprocess$TSP==1, TRUE, FALSE)
 		if (profile$preprocess$ZFFAC==0) procParams$ZEROFILLING <<- FALSE
 		if (!is.null(profile$preprocess$MVPZTSP)) {
 			procParams$MVPZTSP <<- ifelse( profile$preprocess$MVPZTSP != 0, 1, 0)

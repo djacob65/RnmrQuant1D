@@ -51,6 +51,9 @@ internalClass <- R6Class("internalClass",
 	# Calibration compound names
 		calib_cmpd_names  = c('TSP','TMSP','DSS'),
 
+	# Default settings (P3) for metabolite identification rules/patterns
+		patterns_defpars = list(),
+
 	# Results proc-process
 		specList     = list(),
 		res          = list(),
@@ -86,7 +89,7 @@ internalClass <- R6Class("internalClass",
 			procParams$OPTPHC1 <<- FALSE
 			procParams$ZEROFILLING <<- TRUE
 			procParams$ZFFAC <<- 4
-			procParams$TSP <<- TRUE
+			procParams$TSP <<- FALSE
 			procParams$ADJPZTSP <<- TRUE
 			procParams$MVPZTSP <<- TRUE
 			procParams$MVPZFAC <<- 10
@@ -110,6 +113,26 @@ internalClass <- R6Class("internalClass",
 			quantpars <<- list(cmpdlist=NULL, zones=NULL, tottime=0)
 			specList <<- list()
 
+			# Default settings (P3) for metabolite identification rules/patterns
+			# See find_compounds()
+			patterns_defpars <<- list(
+				'b'  = c(0, 5),                  # nbpeaks, ratioPN
+				's'  = c(1),                     # rank
+				'd'  = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
+				't'  = c(0, 1.3, 0.35),          # criterion, ratioA, dJ
+				'q'  = c(0, 3, 0.3),             # criterion, ratioA, dJ
+				'dd' = c(0, 2.2),                # criterion, ratioA
+				'm'  = c(0, 1.1, 0.3),           # criterion, ratioA, dJ
+				'm2' = c(0, 1.1, 0.3),           # criterion, ratioA, dJ
+				'r1' = c(1, 25),                 # rank, ratioPN
+				'r2' = c(2, 4, 25),              # Jmin, Jmax, ratioPN
+				'r3' = c(1.4),                   # ratioA
+				'r4' = c(3),                     # dJ
+				'r5' = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
+				'r6' = c(2, 2),                  # nbpeaks, dist
+				'r7' = c(2, 1.2),                # ratioA, dist
+				'r8' = c(2, 5, 5)                # J, nbpeaks, snrthres
+			)
 		}
 	)
 

@@ -12,10 +12,13 @@ internalClass$set("private", "applyReadSpectrum", function(ACQDIR, verbose=1)
 	spec <- Rnmr1D::readSpectrum(ACQDIR, procParams, PPM_NOISE, NULL, SCALE_INT, verbose=verbose)
 
 	# TSP width
-	spec$TSPwidth <- get_TSP_width(spec)
-	if (verbose) cat("TSP width:", spec$TSPwidth,"Hz\n")
-	if (spec$TSPwidth>TSPwidthMax && verbose)
-		cat("ERROR : TSP width too large\n")
+	spec$TSPwidth <- 0
+	if (procParams$TSP) {
+		spec$TSPwidth <- get_TSP_width(spec)
+		if (verbose) cat("TSP width:", spec$TSPwidth,"Hz\n")
+		if (spec$TSPwidth>TSPwidthMax && verbose)
+			cat("ERROR : TSP width too large\n")
+	}
 
 	# if defined, calibrate the spectrum
 	if (!is.null(PROFILE$preprocess$CALIB)) {

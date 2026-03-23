@@ -67,10 +67,11 @@ internalClass$set("public", "readProfile", function(PROFILE)
 				# Extract preprocessing parameters
 				preprocess <- list(LB=as.numeric(cmdPars[2]), ZFFAC=as.numeric(cmdPars[3]), MVPZTSP=NULL, DHZPZRANGE=NULL, CALIB=NULL)
 				if (length(cmdPars) > 3 && ! grepl(',',cmdPars[4])) {
-					preprocess$MVPZTSP <- as.numeric(cmdPars[4])
+					preprocess$TSP <- as.numeric(cmdPars[4])
 				}
 				if (length(cmdPars) > 3 && grepl(',',cmdPars[4])) {
 					V <- as.numeric(simplify2array(strsplit(cmdPars[4],',')))
+					preprocess$TSP <- 1
 					preprocess$MVPZTSP <- as.numeric(V[1])
 					preprocess$DHZPZRANGE <- as.numeric(V[2])
 				}
