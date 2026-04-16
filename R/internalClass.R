@@ -68,7 +68,8 @@ internalClass <- R6Class("internalClass",
 	# Initialization
 	#=====================================================================
 
-		initialize = function() {
+		initialize = function(vendor='bruker')
+		{
 			options(stringsAsFactors=FALSE)
 			options(warn=-1)
 			options(warnings=-1)
@@ -82,7 +83,7 @@ internalClass <- R6Class("internalClass",
 			procParams <<- Rnmr1D::Spec1rProcpar
 			procParams$DEBUG <<- TRUE
 			procParams$LOGFILE <<- ""
-			procParams$VENDOR <<- 'bruker'
+			procParams$REVPPM <<- FALSE
 			procParams$INPUT_SIGNAL <<- 'fid'
 			procParams$LB <<- 0.25
 			procParams$OPTPHC0 <<- TRUE
@@ -96,6 +97,14 @@ internalClass <- R6Class("internalClass",
 			procParams$DPHCPZTSP <<- 1.2
 			procParams$DHZPZRANGE <<- 323
 
+			vendor_list <- c('bruker','varian')
+			if (!vendor %in% vendor_list)
+				stop('vendor must be one of the following: ',paste(vendor_list, collapse = ", "))
+
+			procParams$VENDOR <<- vendor
+			if (vendor == 'varian')
+				procParams$REVPPM <<- TRUE
+
 			# Filters
 			filters1 <- list(main=c('daub8'), others=c('symlet8', 'smooth1'))
 			filters2 <- list(main=c('smooth0'), others=c('smooth1'))
@@ -103,7 +112,7 @@ internalClass <- R6Class("internalClass",
 			filtersets <<- list(filters1,filters2,filters3)
 			filters  <<- filters1
 
-			# Deconvolution Parameters
+			# Default Fitting Parameters
 			opars <<- list(ratioPN=1, oneblk=1, pvoigt=1, oeta=1, oasym=1, asymmax=250, spcv=0.001, d2cv=0.05,
 						lowPeaks=1, distPeaks=0.5, addPeaks=1, sndpass=0,  sigma_min=0.00025, addPsigmin=0.0005,
 						R2limit=0.995)
@@ -121,17 +130,17 @@ internalClass <- R6Class("internalClass",
 				'd'  = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
 				't'  = c(0, 1.3, 0.35),          # criterion, ratioA, dJ
 				'q'  = c(0, 3, 0.3),             # criterion, ratioA, dJ
-				'dd' = c(0, 2.2),                # criterion, ratioA
+				'dd' = c(0, 2.2, 0.18),          # criterion, ratioA, dJ2
 				'm'  = c(0, 1.1, 0.3),           # criterion, ratioA, dJ
 				'm2' = c(0, 1.1, 0.3),           # criterion, ratioA, dJ
 				'r1' = c(1, 25),                 # rank, ratioPN
 				'r2' = c(2, 4, 25),              # Jmin, Jmax, ratioPN
 				'r3' = c(1.4),                   # ratioA
-				'r4' = c(3),                     # dJ
+				'r4' = c(0,1.4,0.3),             # criterion, ratioA, dJ
 				'r5' = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
 				'r6' = c(2, 2),                  # nbpeaks, dist
 				'r7' = c(2, 1.2),                # ratioA, dist
-				'r8' = c(2, 5, 5)                # J, nbpeaks, snrthres
+				'r8' = c(2, 5, 5)                # J, nbpeaks, ratioPN
 			)
 		}
 	)

@@ -13,12 +13,11 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	# Ratio Peak/Noise : Only keep the highest peaks
 	ratioPN <- 1800
 
-	# lower limit of the ratio of negative intensities to positive intensities between -0.5 and 4.0 ppm
-	thresNeg <- 0.25
+	# limit of the ratio of negative intensities (percent) to positive intensities on the interest zone
+	thresRneg <- 0.2
 
 	# Retrieve preprocessing parameters from PROFILE and disable MVPZTSP correction
 	procPars <- get_procParams(PROFILE)
-	procPars$MVPZTSP <- FALSE
 
 	# Initialize variables
 	BLSIG <- 10             # Baseline significance threshold
@@ -38,15 +37,14 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	L2 <- get_list_samples(QSDIR)
 	samplelist <- L2[ grep(pattern=paste0('^',samplename), L2, value=FALSE) ]
 	spectra <- get_list_spectrum(QSDIR, samplelist)
-	M <- spectra[ spectra[,3]==SEQUENCE, , drop=F]
-	dirs <- list.dirs(QSDIR, recursive = TRUE, full.names = TRUE)
+	spectra <- spectra[ spectra$sequence==SEQUENCE, , drop=F]
 
 	# Remove TSP/TMSP/DSS from the standard compounds
 	stds_loc <- stds_loc[! stds_loc$Compound %in% calib_cmpd_names, , drop=F]
 
 	# Internal matrices to store all results
 	P <- nrow(stds_loc) # Nb standards
-	N <- nrow(M)           # N spectra
+	N <- nrow(spectra)  # N spectra
 	fPl <- fR <- Mint <- matrix(rep(0,N*P), nrow=N)
 	fK <- 0
 	bad_rows <- NULL
@@ -56,10 +54,10 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	for (k in 1:N) {
 	# Read spectrum
 		if (verbose) cat("\n-------------------\n")
-		expno <- M[k,2]
-		expno_list <- c(expno_list, paste0(M[k,1],'/',expno))
-		if (verbose) cat(M[k,1],', expno=',expno,', sequence =',SEQUENCE,': ')
-		ACQDIR <- file.path(dirs[basename(dirs) == M[k,1]],expno)
+		expno <- spectra[k,]$expno
+		expno_list <- c(expno_list, paste0(spectra[k,1],'/',expno))
+		if (verbose) cat(spectra[k,1],', expno=',expno,', sequence =',SEQUENCE,': ')
+		ACQDIR <- spectra[k,]$path
 		spec <- Rnmr1D::readSpectrum(ACQDIR, procPars, PPM_NOISE, NULL, SCALE_INT, verbose= (verbose>1))
 	# Display information if verbose
 		if (verbose) cat("Path:", ACQDIR,"\n")
@@ -67,8 +65,8 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 		if (verbose) cat("SW =",round(spec$acq$SW,4),", SI =",spec$proc$SI,"\n")
 		if (verbose) cat("PW =",round(spec$acq$PULSEWIDTH,4),", NS =",spec$acq$NUMBEROFSCANS,"\n")
 	# Check if the phasing is correct
-		Y <- spec$int[getseq(spec,c(-0.5,4))]
-		if (abs(sum(Y[Y<0]))>thresNeg*sum(Y[Y>0])) {
+		Rneg <- get_negRatio(spec, c(min(as.vector(stds_loc$PPM1)), max(as.vector(stds_loc$PPM2))))
+		if (Rneg>thresRneg) {
 			if (verbose)  cat("ERROR : Phasing failed\n")
 			if (verbose)  cat("\n-----------------\n\n")
 			bad_rows <- c(bad_rows, k)
@@ -187,8 +185,8 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 
 	# Preprocessing: Read and process the raw spectrum (fid)
 	if (verbose) cat(samplename,', expno=',expno,': ')
-	dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
-	ACQDIR <- file.path(dirs[basename(dirs) == samplename],expno)
+	L1 <- get_list_spectrum(RAWDIR, get_list_samples(RAWDIR), sequence=SEQUENCE)
+	ACQDIR <- L1[ L1$Spectrum == samplename & L1$expno==expno, ,drop=F]$path
 	spec <- applyReadSpectrum(ACQDIR)
 	if (verbose) cat("Path:", ACQDIR,"\n")
 	if (verbose) cat("Sequence:",spec$acq$PULSE,"\n")

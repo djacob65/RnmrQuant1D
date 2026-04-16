@@ -4,56 +4,15 @@
 
 internalClass$set("private", "check_sequence", function()
 {
-	# Check if the sequence is recognized
-	if (! SEQUENCE %in% c('zg','zgpr', 'noesy'))
+	# Check if the sequence is recognized - See get_list_spectrum()
+	if (procParams$VENDOR == 'bruker' && ! SEQUENCE %in% c('zg','zgpr', 'noesy'))
 		stop_quietly(paste0("Error: ", SEQUENCE, "is not valid. Only 'zg','zgpr', 'noesy' are recognized."))
 })
 
 internalClass$set("public", "check_samples", function(verbose=FALSE)
 {
-	# Check if RAWDIR exist
-	if (!dir.exists(RAWDIR)) 
-		stop_quietly(paste0("Error: ", RAWDIR, " does not exist."))
-
-	# Check if RAWDIR empty
-	L1 <- get_list_samples(RAWDIR)
-	if (length(L1)==0)
-		stop_quietly(paste0("Error: ", RAWDIR, " is empty."))
-
-	# Check if RAWDIR contains some bruker spectra
-	M1 <- get_list_spectrum(RAWDIR, L1)
-	if (is.null(M1))
-		stop_quietly(paste0("Error: ", RAWDIR, " must contain some Bruker spectra."))
-
 	# Check if the sequence is recognized
 	check_sequence()
-
-	# Check if RAWDIR contain some Bruker spectra acquired with the request sequence
-	M1b <- M1[ M1[,3] == SEQUENCE, ,drop=F]
-	if (nrow(M1b)==0)
-		stop_quietly(paste0("Error: ", RAWDIR, " must contain some Bruker spectra acquired with a ",SEQUENCE," sequence"))
-	if (verbose) cat(paste0("OK: ", RAWDIR, " contains some Bruker spectra acquired with a ",SEQUENCE," sequence\n"))
-
-	# Check if som spectra in sample tables match a spectrum under RAWDIR
-	M1c <- M1b[ M1b[,1] %in% SAMPLES[,1],, drop=F]
-	if (nrow(M1c)==0)
-		stop_quietly(paste0("Error: No spectrum declared in the sample table seems to match a spectrum under ", RAWDIR))
-
-	# Check if there are more samples than spectra under RAWDIR
-	if (nrow(SAMPLES)>nrow(M1c))
-		stop_quietly(paste0("Error: there are more samples than spectra under ", RAWDIR))
-	if (verbose) cat(paste0("OK: all spectra reported in the sample table appear to match a spectrum under ", RAWDIR, "\n"))
-
-	# Check if the samples table has at least NCMIN columns and a 'F_dilition' columns
-	NCMIN <- 4
-	if (!ncol(SAMPLES)>=NCMIN)
-		stop_quietly(paste0("Error: the sample table must have at least ",NCMIN," columns : Spectrum, Samplecode, ",FDILfield))
-
-	# Check if the sample names in the sample table match the same expno as found previously
-	V1 <- simplify2array(lapply(1:nrow(M1b), function(k){paste0(M1b[k,1],'-',M1b[k,2])}))
-	V2 <- simplify2array(lapply(1:nrow(SAMPLES), function(k){paste0(SAMPLES[k,1],'-',SAMPLES[k,3])}))
-	if (sum(V2 %in% V1) != nrow(SAMPLES))
-		stop_quietly(paste0("Error: Some EXPNO numbers in the sample table  do not match the provided sequence"))
 
 	# Check if the samples table has a 'F_dilition' columns
 	if (! FDILfield %in% colnames(SAMPLES))
@@ -63,8 +22,54 @@ internalClass$set("public", "check_samples", function(verbose=FALSE)
 	if (length(unique(SAMPLES[,2])) != nrow(SAMPLES))
 		stop_quietly(paste0("Error: the samplenames (column 2) must be unique in the sample table"))
 
+	# Check if the samples table has at least NCMIN columns and a 'F_dilition' columns
+	switch( procParams$VENDOR,
+		'bruker'= { NCMIN <- 4; colstr <- "Spectrum, Samplecode, EXPNO" },
+		'varian'= { NCMIN <- 3; colstr <- "Spectrum, Samplecode" }
+	)
+	if (!ncol(SAMPLES)>=NCMIN)
+		stop_quietly(paste0("Error: the sample table must have at least ",NCMIN," columns : ",colstr,", ",FDILfield))
+
 	if (verbose) cat(paste0("OK: the sample table has at least ",NCMIN," columns with one named '", FDILfield, "'\n"))
 
+	# Check if RAWDIR exist
+	if (!dir.exists(RAWDIR)) 
+		stop_quietly(paste0("Error: ", RAWDIR, " does not exist."))
+
+	# Check if RAWDIR empty
+	L1 <- get_list_samples(RAWDIR)
+	if (length(L1)==0)
+		stop_quietly(paste0("Error: ", RAWDIR, " is empty."))
+
+	# Check if RAWDIR contains some vendor spectra
+	M1 <- get_list_spectrum(RAWDIR, L1)
+	if (is.null(M1))
+		stop_quietly(paste0("Error: ", RAWDIR, " must contain some ",procParams$VENDOR," spectra."))
+
+	# Check if RAWDIR contain some vendor spectra acquired with the request sequence
+	M1b <- M1[ M1[,4] == SEQUENCE, ,drop=F]
+	if (nrow(M1b)==0)
+		stop_quietly(paste0("Error: ", RAWDIR, " must contain some ",procParams$VENDOR," spectra acquired with a ",SEQUENCE," sequence"))
+	if (verbose) cat(paste0("OK: ", RAWDIR, " contains some ",procParams$VENDOR," spectra acquired with a ",SEQUENCE," sequence\n"))
+
+	if (procParams$VENDOR == 'bruker') {
+		# Check if the sample names in the sample table match the same expno as found previously
+		V1 <- M1b[,2]
+		V2 <- simplify2array(lapply(1:nrow(SAMPLES), function(k){paste0(SAMPLES[k,1],'-',SAMPLES[k,3])}))
+		if (sum(V2 %in% V1) != nrow(SAMPLES))
+			stop_quietly(paste0("Error: Some EXPNO numbers in the sample table  do not match the provided sequence"))
+	}
+
+	# Check if some spectra in sample tables match a spectrum under RAWDIR
+	M1c <- M1b[ M1b[,1] %in% SAMPLES[,1],, drop=F]
+	if (nrow(M1c)==0)
+		stop_quietly(paste0("Error: No spectrum declared in the sample table seems to match a spectrum under ", RAWDIR))
+
+	# Check if there are more samples than spectra under RAWDIR
+	if (nrow(SAMPLES)>nrow(M1c))
+		stop_quietly(paste0("Error: there are more samples than spectra under ", RAWDIR))
+
+	if (verbose) cat(paste0("OK: all spectra reported in the sample table appear to match a spectrum under ", RAWDIR, "\n"))
 })
 
 internalClass$set("public", "check_calibration", function(QC=NULL, QS=NULL, sequence=NULL, verbose=FALSE)
@@ -89,7 +94,7 @@ internalClass$set("public", "check_calibration", function(QC=NULL, QS=NULL, sequ
 		stop_quietly(paste0("Error: ", QSDIR, " must contain some Bruker spectra."))
 
 	# Check if RAWDIR contain some Bruker spectra acquired with the request sequence
-	M2b <- M2[ M2[,3] == sequence, ,drop=F]
+	M2b <- M2[ M2[,4] == sequence, ,drop=F]
 	if (nrow(M2b)==0)
 		stop_quietly(paste0("Error: ", QSDIR, " must contain some Bruker spectra acquired with a ",sequence," sequence"))
 

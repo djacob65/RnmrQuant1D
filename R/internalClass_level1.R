@@ -83,10 +83,6 @@ internalClass$set("private", "applyBLcorrection", function(spec, verbose=1)
 			spec$int <- spec$int - BLk
 			BL <- BL + BLk
 		}
-		# Apply an additional baseline correction offset based on the mean intensity in the noisy ppm range
-		BL0 <- 0.25*mean(spec$int[getseq(spec,c(9.5,10))])
-		spec$int <- spec$int - BL0
-		BL <- BL + BL0
 	}
 
 	# Step 5: Store the corrected intensity and baseline in the spectrum object
@@ -193,32 +189,37 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		}
 
 		# Perform peak fitting using the selected filters
-		opars.save <- opars.loc  # Save parameters before running peak fitting
-		t <- system.time({
-			model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
-		})
-		if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
+		model <- NULL
+		tryCatch({
+			opars.save <- opars.loc  # Save parameters before running peak fitting
+			t <- system.time({
+				model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
+			})
+			if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
 
-		# If the first fit doesn't meet the R² threshold, try alternative filters
-		opars.loc <- opars.save
-		if (is.null(model) || (!is.null(model) && model$R2 < opars.loc$R2limit)) {
-			opars.loc$peaks <- NULL
-			others_filters <- filters$others[!filters$others %in% filters$main]
-			if (length(others_filters))
-				t <- system.time({
-					model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
-					# Choose the best model (if model2 has a better R², use it)
-					if ((is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2 > model$R2)) {
-						model <- model2
-					}
-					if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
-				})
-		}
+			# If the first fit doesn't meet the R² threshold, try alternative filters
+			opars.loc <- opars.save
+			if (is.null(model) || (!is.null(model) && model$R2 < opars.loc$R2limit)) {
+				opars.loc$peaks <- NULL
+				others_filters <- filters$others[!filters$others %in% filters$main]
+				if (length(others_filters))
+					t <- system.time({
+						model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
+						# Choose the best model (if model2 has a better R², use it)
+						if ((is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2 > model$R2)) {
+							model <- model2
+						}
+						if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
+					})
+			}
+		}, error=function(e){})
 
 		# If no peaks were found, store default info and continue to the next range
 		if (is.null(model) || nrow(model$peaks) == 0) {
 			asym <- ifelse(opars.loc$oasym > 0, opars.loc$asymmax, 0)
-			infos <- rbind(infos, c(pkfit[k,9], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, 0, 100, 100))
+			infos <- rbind(infos, c(spec$expno,  pkfit[k,9], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, obl, opars.loc$qbl, 0, 100))
+			infos <- data.frame(infos[,1:ncol(infos)])
+			colnames(infos) <- c('expno', 'zone', 'ppm1', 'ppm2', 'nbpeaks', 'addpeaks', 'asym', 'obl', 'qbl', 'R2', 'Int. Diff. %')
 			next
 		}
 
@@ -368,25 +369,28 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		}
 
 	# Perform peak fitting using Rnmr1D::LSDeconv function
-		opars.save <- opars.loc
-		t <- system.time({
-			model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
-		})
-		if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
+		model <- NULL
+		tryCatch({
+			opars.save <- opars.loc
+			t <- system.time({
+				model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
+			})
+			if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
 
 	# In case R2 was under R2limit, proceed peak fitting based on the alternative filters
-		opars.loc <- opars.save
-		if (is.null(model) || (!is.null(model) && model$R2<opars.loc$R2limit)) {
-			opars.loc$peaks <- NULL
-			others_filters <- filters$others[! filters$others %in% filters$main]
-			if (length(others_filters))
-				t<-system.time({
-					model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
-					if ( (is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2>model$R2) )
-						model <- model2
-					if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
-				})
-		}
+			opars.loc <- opars.save
+			if (is.null(model) || (!is.null(model) && model$R2<opars.loc$R2limit)) {
+				opars.loc$peaks <- NULL
+				others_filters <- filters$others[! filters$others %in% filters$main]
+				if (length(others_filters))
+					t<-system.time({
+						model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
+						if ( (is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2>model$R2) )
+							model <- model2
+						if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
+					})
+			}
+		}, error=function(e){})
 
 		if (!is.null(model) && nrow(model$peaks)>0) {
 			# Accumulating fitting results
@@ -413,7 +417,9 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		} else  {
 			Peaks <- NULL
 			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
-			infos <- c(spec$expno, pkfit[k,9], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, 0, opars.loc$qbl, 0, 100, round(t[3],2))
+			infos <- c(spec$expno, pkfit[k,9], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, 0, opars.loc$qbl, 0, 100)
+			infos <- data.frame(infos[,1:ncol(infos)])
+			colnames(infos) <- c('expno', 'zone', 'ppm1', 'ppm2', 'nbpeaks', 'addpeaks', 'asym', 'obl', 'qbl', 'R2', 'Int. Diff. %')
 		}
 		if (verbose) cat("-------------------\n")
 
@@ -464,14 +470,14 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 	quantifs <- cbind( PROFILE$quantif, get_quantif_ppmrange(spec, PROFILE) )
 	pkcmpd <- quantifs[ quantifs$P1>ppmview[1] & quantifs$P1<ppmview[2], ]
 
-	idxint <- 7 # # Index for accessing peak intensity in the peak list
+	idxint <- 7  # Index for accessing peak intensity in the peak list
 
 	# Identify unique compounds in the quantification zones
 	cmpds <- unique(sort(pkcmpd$compound))
 
 	# Extract the peak list from the spectrum fit
 	peaks <- spec$fit$peaks
-	rownames(peaks) <- 1:nrow(peaks)
+	if (!is.null(peaks) && nrow(peaks)>0) rownames(peaks) <- 1:nrow(peaks)
 
 	# Compute the noise level (Vnoise) for peak intensity thresholding
 	Vnoise <- get_Vnoise(spec, PPM_NOISE)
@@ -521,6 +527,12 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				P4 <- 0
 			}
 
+			# Update ppm range covered by the compound
+			ppmrange <- c( min(ppmrange[1], ppm1), max(ppmrange[2], ppm2) )
+
+			# Exit loop if no peaks
+			if (is.null(peaks) || nrow(peaks)==0) break
+
 		# peaks within a range (block)
 			if (Pattern == 'b') {
 				if (verbose) cat("\t\tPPM pattern = ", Pattern, ", Range = [",ppm1,",",ppm2,"], Np=",ZQ$np[i],", Nb=",P3,"\n")
@@ -546,9 +558,6 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				if (verbose) cat("\t\tPattern not found\n")
 			}
 
-		# Update ppm range covered by the compound
-			ppmrange <- c( min(ppmrange[1], ppm1), max(ppmrange[2], ppm2) )
-
 		# Store identified peaks if found
 			if (!is.null(PK)) {
 				PKZQ <- c(PKZQ, PK)
@@ -559,9 +568,11 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				if (fullPattern) break
 			}
 		}
+		if (is.null(peaks) || nrow(peaks)==0) ISUM <- NA
 
 	# Compute Signal-to-Noise Ratio (SNR) using the average of peak intensities
-		PKlist <- SNR <- NA
+		PKlist <- ""
+		SNR <- NA
 		if (!is.null(PKZQ)) {
 			SNR <- snr_pattern(spec, PKZQ, Pattern)
 		}

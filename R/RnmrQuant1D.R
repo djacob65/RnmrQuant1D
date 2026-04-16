@@ -92,9 +92,10 @@ public = list(
 
 #' @description Class Constructor - Initializes internal parameters for preprocessing and deconvolution.
 #' @param self the RnmrQuant1D instance
+#' @param vendor specifies the supplier of the instrument. It must be "bruker" or "varian".
 #' @return a RnmrQuant1D instance
-	initialize = function() {
-		super$initialize()
+	initialize = function(vendor='bruker') {
+		super$initialize(vendor)
 	},
 
 #' @description
@@ -181,10 +182,11 @@ public = list(
 #' @param samplename a valid sample name under the spectra directory (QSDIR)
 #' @param thresfP defines the threshold of the CV (in percentage) of the response factor below which the spectrum (repetition) will not be taken into consideration. 
 #' @param deconv defines whether the integration is calculated by deconvolution or by the Simpson approach.
+#' @param qbl defines whether a baseline correction is applied to each calibration zone
 #' @param verbose if TRUE, some messages are displayed
 #' @return a response factor object, i.e a list with some attributes: fPUL, fP, fR, MC, INTG, fK
-	get_response_factors = function(sampletype,  samplename, thresfP=5, deconv=TRUE, verbose=1) {
-		super$get_response_factors(sampletype,  samplename, thresfP, deconv, verbose)
+	get_response_factors = function(sampletype,  samplename, thresfP=5, deconv=TRUE, qbl=FALSE, verbose=1) {
+		super$get_response_factors(sampletype,  samplename, thresfP, deconv, qbl, verbose)
 	},
 
 #' @description
@@ -242,6 +244,14 @@ public = list(
 #' @return the SNR matrix
 	get_Matrix_SNR = function() {
 		super$get_Matrix_SNR()
+	},
+
+#' @description
+#' Obtain a matrix summarizing all results computed by \href{#method-RnmrQuant1D-proc_Integrals}{\code{proc_Integrals()}} along with indicators and other contextual information.
+#' @param self The RnmrQuant1D instance 
+#' @return the SNR matrix
+	get_Matrix_Summary = function() {
+		super$get_Matrix_Summary()
 	},
 
 #' @description

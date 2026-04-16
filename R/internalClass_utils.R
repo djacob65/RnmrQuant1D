@@ -51,8 +51,9 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 internalClass$set("private", "get_list_dirs", function(DIR=NULL)
 {
 	LIST <- NULL
+	pfile <- ifelse( procParams$VENDOR=='bruker', "audita.txt$", "procpar$")
 	if (DIR != RAWDIR || is.null(RAWDIR_SLIST)) {
-		LIST <- unique(dirname(list.files(path = DIR, pattern = "audita.txt$", all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
+		LIST <- unique(dirname(list.files(path = DIR, pattern = pfile, all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
 	} else {
 		LIST <- RAWDIR_SLIST
 	}
@@ -65,46 +66,116 @@ internalClass$set("private", "get_list_dirs", function(DIR=NULL)
 internalClass$set("private", "get_list_samples", function(DIR=NULL)
 {
 	LIST <- get_list_dirs(DIR)
-	unique(basename(dirname(LIST)))
+	if (procParams$VENDOR=='bruker')
+		LIST <- unique(basename(dirname(LIST)))
+	else
+		LIST <- unique(basename(LIST))
+	LIST
 })
 
 # Get matrix of spectra for each samples under DIR
-internalClass$set("private", "get_list_spectrum", function(DIR, samples)
+internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequence=NULL)
 {
+	bruker_spectra_list <- function(S)
+	{
+		L <- grep(paste0('/',S,'/'), dirs, value = TRUE)
+		Sexp <- unique(basename(L), dirs, value = TRUE)
+		if (sum(is.na(as.numeric(Sexp)))>0) next # Non-Bruker Spectra
+		SDIR <- unique(dirname(L))[1]
+		for (id in Sexp) {
+			ACQDIR <- file.path(SDIR,id)
+			ACQFILE <- file.path(ACQDIR,'acqus')
+			if (!file.exists(ACQFILE)) next
+			ACQ <- readLines(ACQFILE)
+			Pstr <- Rnmr1D:::.bruker.get_param(ACQ,"PULPROG",type="string")
+			PULSE <- NULL
+			if (length(grep('^zg[0-9]{0,2}$',Pstr))) PULSE <- 'zg'
+			if (length(grep('^zgpr',Pstr))) PULSE <- 'zgpr'
+			if (length(grep('^noesy',Pstr))) PULSE <- 'noesy'
+			if (is.null(PULSE)) next
+			if (!is.null(sequence) && sequence != PULSE) next
+			cnt <<- cnt + 1
+			M[cnt, 1:5] <<- c(S, paste(S,id, sep="-"),id, PULSE, ACQDIR)
+			if (cnt==nrow(M)) break
+		}
+	}
+
+	varian_spectra_list <- function(S)
+	{
+		L <- grep(paste0('/',S), dirs, value = TRUE)
+		ACQDIR <- unique(L)[1]
+		ACQFILE <- file.path(ACQDIR,'procpar')
+		if (file.exists(ACQFILE)) {
+			ACQ <- readLines(ACQFILE)
+			PULSE <- Rnmr1D:::.varian.get_param(ACQ,"pslabel",type="string")
+			if (!is.null(PULSE) && (is.null(sequence) || (!is.null(sequence) && sequence == PULSE)))  {
+				cnt <<- cnt + 1
+				M[cnt, 1:5] <<- c(S, paste(S,1, sep="-"),1, PULSE, ACQDIR)
+			}
+		}
+	}
+
 	M <- NULL
-	if (! is.null(DIR) && dir.exists(DIR)) {
+	if (! is.null(DIR) && dir.exists(DIR))
+	{
 		dirs <- get_list_dirs(DIR)
-		M <- matrix(0, nrow=length(dirs), ncol=3)
+		M <- matrix(0, nrow=length(dirs), ncol=5)
 		cnt <- 0
 		for (S in samples) {
-			L <- grep(paste0('/',S,'/'), dirs, value = TRUE)
-			SDIR <- unique(dirname(L))[1]
-			Sexp <- unique(basename(L), dirs, value = TRUE)
-			for (id in Sexp) {
-				ACQDIR <- file.path(SDIR,id)
-				ACQFILE <- file.path(ACQDIR,'acqus')
-				if (!file.exists(ACQFILE)) next
-				ACQ <- readLines(ACQFILE)
-				Pstr <- Rnmr1D:::.bruker.get_param(ACQ,"PULPROG",type="string")
-				PULSE <- NULL
-				if (length(grep('^zg[0-9]{0,2}$',Pstr))) PULSE <- 'zg'
-				if (length(grep('^zgpr',Pstr))) PULSE <- 'zgpr'
-				if (length(grep('^noesy',Pstr))) PULSE <- 'noesy'
-				if (is.null(PULSE)) next
-				cnt <- cnt + 1
-				M[cnt, 1:3] <- c(S, id, PULSE)
-				if (cnt==nrow(M)) break
-			}
+			if (procParams$VENDOR=='bruker')
+				bruker_spectra_list(S)
+			else
+				varian_spectra_list(S)
+			if (cnt==nrow(M)) break
 		}
 		if (cnt>0) { M <- M[1:cnt, , drop=F] }
 		else       { M <- NULL }
+		if (!is.null(M)) {
+			colnames(M) <- c('Spectrum', 'Samplename', 'expno', 'sequence', 'path')
+			M <- as.data.frame(M)
+		}
 	}
 	M
+})
+
+# Get the samplecode from SAMPLES based on the ID in the matrix of spectra
+internalClass$set("private", "get_samplecode_by_ID", function(Slist, ID)
+{
+	if (procParams$VENDOR=='bruker')
+		samplecode <- SAMPLES[which(paste(SAMPLES[,1], SAMPLES[,3],sep="-") == Slist[ID,2]), 2]
+	else
+		samplecode <- SAMPLES[SAMPLES[,1] == Slist[ID,1], 2]
+	samplecode
+})
+
+# Filter the matrix of spectra based on SAMPLES
+internalClass$set("private", "get_spectralist_by_SAMPLES", function(Slist)
+{
+	Slist <- Slist[ Slist[,1] %in% SAMPLES[,1], , drop=F]
+	if (procParams$VENDOR=='bruker')
+		Slist <- Slist[Slist[,2] %in% paste(SAMPLES[,1], SAMPLES[,3],sep="-"), , drop=F]
+	Slist
 })
 
 #=====================================================================
 # Some functions about spectral information
 #=====================================================================
+
+internalClass$set("private", "get_negRatio", function(spec, ppmrange, dppm=0.1)
+{
+	is <- getseq(spec,ppmrange)
+	S <- spec$int
+	a <- (S[is[1]] - S[is[length(is)]])/(ppmrange[1]-ppmrange[2])
+	b <- S[is[1]] - a*ppmrange[1]
+	k <- which(S[is]==min(S[is]))+is[1]
+	x0 <- spec$ppm[k]
+	Y0 <- 0.9*(a*x0 + b)
+	Ymin <- S[k]
+	is <- getseq(spec,c(x0-dppm,x0+dppm))
+	Ymax <- S[which(S[is]==max(S[is]))+is[1]]
+	ifelse( (Ymax/abs(Ymin))>10, 100*(Y0-Ymin)/(Ymax-Y0), 0 )
+
+})
 
 internalClass$set("private", "get_TSP_width", function(spec)
 {
@@ -196,7 +267,7 @@ internalClass$set("private", "qnmrbc", function(spec, ppmrange, CSIG=5, NLOOP=5,
 			Y <- Y - bci
 			bc <- bc + bci
 		}
-		BLext[iseq] <- bc # - 2*specSig
+		BLext[iseq] <- bc # + 2*specSig
    }
    BLext
 })
@@ -217,7 +288,7 @@ internalClass$set("private", "getBLexternal", function(spec, blset, porder=1, pp
 			iseq <- getseq(spec,ppmrange)
 			Y <- spec$int[iseq]
 			if (WS>0) Y <- Rnmr1D:::Smooth(Y,WS)
-			BLext[iseq] <- Rnmr1D:::.airPLS(Y, lambda=10^lambda, porder=porder) - 2*spec$B
+			BLext[iseq] <- Rnmr1D:::.airPLS(Y, lambda=10^lambda, porder=porder) + spec$B
 		}
 	}
 	BLext

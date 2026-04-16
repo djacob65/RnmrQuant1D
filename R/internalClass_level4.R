@@ -24,10 +24,8 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 
 	t <- system.time({
 		rownames(SAMPLES) <<- 1:nrow(SAMPLES)
-		dirs <- list.dirs(RAWDIR, recursive = TRUE, full.names = TRUE)
-		Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR))
-		Slist <- Slist[ Slist[,1] %in% SAMPLES[,1] & Slist[,3] == SEQUENCE, 1:2, drop=F]
-		Slist <- Slist[paste0(Slist[,1], Slist[,2],sep="-") %in% paste0(SAMPLES[,1], SAMPLES[,3],sep="-"), , drop=F]
+		Slist <- get_list_spectrum(RAWDIR,get_list_samples(RAWDIR), sequence=SEQUENCE)
+		Slist <- get_spectralist_by_SAMPLES(Slist)
 	})
 	if (verbose>1) cat('Time taken to obtain the sample list (s) =', round(t[3], 2), "\n")
 
@@ -47,27 +45,27 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 			foreach::registerDoSEQ()
 		}
 	})
-	if (verbose>1) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n")
+	if (verbose>1) cat('Time taken to initialise the cluster (s) =', round(t[3], 2), "\n")
 
 	# Process all samples in parallel
 	funcpar <- function (ID) {
 		priv <- rq1d$.__enclos_env__$private
 
 		# Directory of the raw spectrum
-		samplename <- paste(Slist[ID,],collapse="/")
-		print(paste0(ID,"/",nrow(Slist),': ',Slist[ID,2]," ..."))
-		sink(file = paste0(rq1d$TMPDIR,"/log-",Slist[ID,1],"-",Slist[ID,2],".txt"), append = FALSE, type = c("output", "message"), split = FALSE)
+		samplename <- Slist[ID,2]
+		print(paste0(ID,"/",nrow(Slist),': ',samplename," ..."))
+
+		sink(file = paste0(rq1d$TMPDIR,"/log-",samplename,".txt"), append = FALSE, type = c("output", "message"), split = FALSE)
 
 		# Read the preprocessed spectrum (1r)
 		cat(samplename,': ')
-		ACQDIR <- file.path(dirs[basename(dirs) == Slist[ID,1]],Slist[ID,2])
+		ACQDIR <- Slist[ID,5]
 		spec <- priv$applyReadSpectrum(ACQDIR, verbose=verbose)
 		if (verbose) cat("Path:", ACQDIR,"\n")
 		if (verbose) cat("Sequence:",spec$acq$PULSE,"\n")
 		spec$samplename <- Slist[ID,1]
-		spec$expno <- Slist[ID,2]
-		SID <- paste0(spec$samplename, spec$expno, sep="-")
-		spec$samplecode <- rq1d$SAMPLES[which(paste0(rq1d$SAMPLES[,1], rq1d$SAMPLES[,3],sep="-") %in% SID ),2]
+		spec$expno <- Slist[ID,3]
+		spec$samplecode <- priv$get_samplecode_by_ID(Slist, ID)
 		if (verbose && !is.null(rq1d$PROFILE$preprocess$CALIB)) cat('PPM shift =', round(spec$ppm_shift,4), "\n")
 
 		# Baseline correction
@@ -78,25 +76,20 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		Opars$peaks <- NULL
 		spec <- priv$applyPeakFitting(spec, Opars, zones=zones, ncpu=1, verbose=verbose)
 
-		# Quantification
-		if (!is.null(spec$fit$peaks)) {
-			if (verbose) { print(spec$fit$infos); cat("\n") }
-			Q <- priv$applyQuantification(spec, fullPattern=TRUE, verbose=verbose)
-			print(Q$quantification); cat("\n")
-			print(Q$peaklist); cat("\n")
-		}
+		# Identification / Integratgion
+		if (verbose) { print(spec$fit$infos); cat("\n") }
+		Q <- priv$applyQuantification(spec, fullPattern=TRUE, verbose=verbose)
+		print(Q$quantification); cat("\n")
+		print(Q$peaklist); cat("\n")
+
 		sink()
 
 		# Accumulating results
 		mylist <- list()
-		if (!is.null(spec$fit$peaks)) {
-			Tinfos <- cbind( rep(spec$samplecode, nrow(spec$fit$infos)), spec$fit$infos, spec$TSPwidth )
-			colnames(Tinfos)[1] <- 'Samplecode'
-			colnames(Tinfos)[length(Tinfos)] <- 'TSPwidth'
-			mylist[[paste0('S',ID)]] <- list( id=paste0('S',ID), spec=spec, quantif=Q$quantification, peaklist=Q$peaklist, infos=Tinfos)
-		} else {
-			mylist[[paste0('S',ID)]] <- list( id=paste0('S',ID), spec=spec, quantif=NULL, peaklist=NULL, infos=NULL )
-		}
+		Tinfos <- cbind(spec$samplecode, spec$fit$infos, spec$TSPwidth)
+		colnames(Tinfos)[1] <- 'Samplecode'
+		colnames(Tinfos)[length(Tinfos)] <- 'TSPwidth'
+		mylist[[paste0('S',ID)]] <- list( id=paste0('S',ID), spec=spec, quantif=Q$quantification, peaklist=Q$peaklist, infos=Tinfos)
 		return(mylist)
 	}
 
@@ -115,6 +108,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	# Results proc-process
 	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
 	specList <<- list()
+
 
 	# Merging results
 	for(k in 1:length(out)) {
@@ -214,24 +208,21 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	# For each samples
 	rownames(SAMPLES) <<- 1:nrow(SAMPLES)
 	samplelist <- SAMPLES[,1]
-	expnolist <<- character(0)
 	cnt <- 0
 	tottime <- 0
 	totcnt <- length(samplelist)
 	for (samplename in unique(samplelist))
 	{
-		slist <- get_list_spectrum(RAWDIR, samplename)
-		if (!SEQUENCE %in% unique(slist[,3])) next
-		slist <- slist[ slist[,3] == SEQUENCE, , drop=F]
-		slist <- slist[paste0(slist[,1],slist[,2],sep="-") %in% paste0(SAMPLES[,1],SAMPLES[,3],sep="-"), ]
+		slist <- get_list_spectrum(RAWDIR, samplename, sequence=SEQUENCE)
+		if (nrow(slist)==0) next
+		slist <- get_spectralist_by_SAMPLES(slist)
 		sampleid <- which(samplename==samplelist)
 		fdil <- SAMPLES[FDILfield][sampleid,1]
 		# # Process all expno in parallel
 		for (k in 1:nrow(slist))
 		{
 			cnt <- cnt + 1
-			expno <- slist[k,2]
-			expnolist <<- c(expnolist, expno)
+			expno <- slist[k,3]
 			RDataFile <- paste0(RDATADIR, '/',samplename,'-',expno,'.RData')
 			if (file.exists(RDataFile)) { totcnt <- totcnt - 1; next }
 			if (verbose) cat(sprintf("%3d out of %3d - ", cnt, length(samplelist)))
@@ -247,7 +238,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 				SNR <- out$SNR
 				spec <- out$spec
 				spec$sampleidx <- sampleid[k]
-				spec$samplecode <- SAMPLES[which(paste0(SAMPLES[,1], SAMPLES[,3],sep="-") %in% paste0(samplename, expno, sep="-") ),2]
+				spec$samplecode <- get_samplecode_by_ID(slist, k)
 				spec$peaklist <- spec$Q$peaklist
 				spec$Q <- NULL
 				absQuantMat <- NULL

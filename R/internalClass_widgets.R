@@ -39,22 +39,20 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 		suppressWarnings(dir.create(tmpdir))
 		setwd(tmpdir)
 		IMGfile <- paste0(IMGname, ".",type)
-		#sink(file.path(tmpdir,'error.txt'), append = FALSE)
 		tryCatch({
 			plotly::orca(widget, file=IMGfile, width=width, height=height, verbose=FALSE, debug=FALSE)
 		}, error=function(cond) { cat("Failed:", paste0(cond, collapse="\n"), "\n"); sink(); } )
-		#sink()
 		if (!file.exists(IMGfile)) IMGfile <- paste0(IMGname, "_1.",type)
 		repeat {
 			if (! file.exists(IMGfile)) break
 			# Jupyter : return the figure
-			if (.Platform$GUI != "RStudio" & !interactive()) {
+			if (.Platform$GUI != "RStudio" & !interactive()) { suppressWarnings({
 				IRdisplay::display_html(paste0('<style type="text/css">div.output_',type,', img { max-width: 100%; height: ',height,'; }</style>'))
 				if (type == "png") IRdisplay::display_png(file=IMGfile)
 				if (type == "jpeg") IRdisplay::display_jpeg(file=IMGfile)
 				if (type == "svg") IRdisplay::display_svg(file=IMGfile)
 				break
-			}
+			})}
 			# RStudio or R GUI
 			if (type=='svg' && (.Platform$GUI == "RStudio" || interactive())) {
 				if ('svgtools' %in% installed.packages()) {
@@ -104,6 +102,9 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', c
 	if (type == "html") {
 		displayWidget(m)
 	} else {
+		if (is.null(tmpdir))
+			tmpdir <- paste0("tmp", floor(runif(1, 0, 10^12)))
+		suppressWarnings(dir.create(tmpdir))
 		IMGname <- floor(runif(1, 0, 10^12))
 		IMGhtml <- file.path(tmpdir,paste0(IMGname, ".html"))
 		saveWidgetFix(m, IMGhtml)

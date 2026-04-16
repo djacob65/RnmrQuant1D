@@ -8,7 +8,9 @@
 #      * PARAMS : additional parameters, given in the form PARAM=value, separated by a comma if there are multiple ones
 #   'exclude'  : zones to be excluded for all processing steps (deprecated)
 #   'zeroneg'  : zones to zero before the baseline correction (deprecated)
-#   'baseline' : zones for baseline correction along with their airPLS parameters (lambda & order) (deprecated)
+#   'baseline' : zones for baseline correction along with their airPLS parameters (lambda & order)
+#      * lambda : smoothing parameter
+#      * order : polynomial order of the correction
 #   'fitting'  : zones for deconvolution (peak fitting) along with their parameters
 #      * obl : polynomial order for a local baseline correction optimized at the same time that the peak fitting (default:0)
 #      * qbl : indicates if a q-NMR baseline correction will be applied before deconvolution
@@ -29,6 +31,15 @@
 #   'compound' : list of compounds along with their Molecular Weight (MW)
 #=====================================================================
 
+internalClass$set("private", "is_xlsx", function(file)
+{
+	con <- file(file, "rb")
+	sig <- readBin(con, "raw", n = 4)
+	close(con)  
+	# Signature ZIP : 50 4B 03 04
+	identical(sig, as.raw(c(0x50, 0x4B, 0x03, 0x04)))
+})
+
 internalClass$set("public", "readProfile", function(PROFILE)
 {
 	# Check if the profile file exists
@@ -37,9 +48,14 @@ internalClass$set("public", "readProfile", function(PROFILE)
 
 	# Try to read the profile file, stop execution if an error occurs
 	CMDTEXT <- tryCatch({
-		readLines(PROFILE)  # Read file contents
-	},
-	error=function(cond) {
+		if (is_xlsx(PROFILE)) {
+			df <- openxlsx::read.xlsx(PROFILE, sheet=1)
+			tsv_text <- paste( apply(df, 1, function(row) paste(row, collapse = "\t")),  collapse = "\n")
+			gsub("\tNA", "", strsplit(tsv_text, "\n")[[1]])
+		} else {
+			readLines(PROFILE)  # Read file contents
+		}
+	}, error=function(cond) {
 		stop(cond)
 	})
 
@@ -102,10 +118,10 @@ internalClass$set("public", "readProfile", function(PROFILE)
 				CMD <- CMD[-1]
 				break
 			}
-			# deprecated : this section will not be supported in the futur
-			if (type == 'baseline' && length(cmdPars) > 5) {
+			if (type == 'baseline' && length(cmdPars) > 4) {
 				# Store baseline correction parameters
-				baseline <- rbind(baseline, cmdPars[2:6])
+				if (length(cmdPars) == 5) baseline <- rbind(baseline, c(cmdPars[2:5],0))
+				if (length(cmdPars) == 6) baseline <- rbind(baseline, cmdPars[2:6])
 				CMD <- CMD[-1]
 				break
 			}
@@ -167,6 +183,7 @@ internalClass$set("public", "readProfile", function(PROFILE)
 
 	if (!is.null(quantif)) {
 		quantif <- numformat(data.frame(quantif, stringsAsFactors = FALSE), c(3,7:10))
+		quantif[4] <- sapply(quantif[4], function(s){ ifelse(!grepl(',',s),round(as.numeric(s),3),s) })
 		colnames(quantif) <- c('compound', 'pattern', 'P1', 'P2', 'P3', 'P4','snrmin','np', 'factor', 'zone')
 	}
 

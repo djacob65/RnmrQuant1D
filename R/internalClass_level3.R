@@ -5,10 +5,8 @@
 # Get the sample table under RAWDIR
 internalClass$set("public", "get_samples_table", function(sequence=NULL, infos=FALSE)
 {
-	tbl <- get_list_spectrum(RAWDIR, get_list_samples(RAWDIR))
 	seq <- ifelse(is.null(sequence), self$SEQUENCE, sequence)
-	tbl <- tbl[ tbl[,3] %in% seq, ]
-	tbl <- cbind(tbl[,1], sapply(1:nrow(tbl), function(x) { paste(tbl[x,1:2], collapse='-') }), tbl[,2:3])
+	tbl <- get_list_spectrum(RAWDIR, get_list_samples(RAWDIR), sequence=seq)
 	tbl <- cbind(tbl[,1:3], rep(0,nrow(tbl)), tbl[,4])
 	colnames(tbl) <- c('Spectrum', 'Samplecode', 'EXPNO', 'PROCNO', 'PULSE')
 	if (infos) {
@@ -28,7 +26,7 @@ internalClass$set("public", "get_samples_table", function(sequence=NULL, infos=F
 # User functions for calibration using QC-QS
 #=====================================================================
 
-internalClass$set("public", "get_response_factors", function(sampletype,  samplename, thresfP=5, deconv=TRUE, verbose=1)
+internalClass$set("public", "get_response_factors", function(sampletype,  samplename, thresfP=5, deconv=TRUE, qbl=FALSE, verbose=1)
 {
 	L2 <- get_list_samples(QSDIR)
 	samplelist <- L2[ grep(pattern=paste0('^',samplename), L2, value=FALSE) ]
@@ -44,7 +42,7 @@ internalClass$set("public", "get_response_factors", function(sampletype,  sample
 	if (verbose) cat(samplename, "/",SEQUENCE,"...\n");
 	stds_profil_sub <- CALIBRATION[ CALIBRATION$Type==sampletype, , drop=F]
 
-	out <- standardQuantification(stds_profil_sub, samplename, thresfP, deconv, verbose=(verbose>1))
+	out <- standardQuantification(stds_profil_sub, samplename, thresfP, deconv, qbl=qbl, verbose=(verbose>1))
 	V <- apply(out$fP,1,mean)
 	fP_CV <- sd(V)/mean(V)
 	fPUL <- list(mean=mean(V), CV=round(100*fP_CV,2))
@@ -132,6 +130,9 @@ internalClass$set("public", "get_Matrix_Integrals", function()
 	if (res$proctype != 'integration')
 		stop_quietly(paste0("ERROR : Integrals must be computed with the proc_Integrals() method before !\n"))
 
+	if (is.null(res$allquantifs))
+		stop_quietly(paste0("ERROR : No integration / quantification !\n"))
+
 	S <-unique(res$allquantifs[,1])
 	cmpds <- unique(res$allquantifs[,3])
 
@@ -166,6 +167,9 @@ internalClass$set("public", "get_Matrix_SNR", function()
 {
 	if (res$proctype != 'integration')
 		stop_quietly(paste0("ERROR : Integrals must be computed with the proc_Integrals() method before !\n"))
+
+	if (is.null(res$allquantifs))
+		stop_quietly(paste0("ERROR : No integration / quantification !\n"))
 
 	S <-unique(res$allquantifs[,1])
 	cmpds <- unique(res$allquantifs[,3])
@@ -231,6 +235,27 @@ internalClass$set("public", "get_Matrix_CV", function(MatInt=NULL)
 	MatCV
 })
 
+# Get a summary 
+internalClass$set("public", "get_Matrix_Summary", function()
+{
+	if (is.null(res$allquantifs))
+		stop_quietly(paste0("ERROR : No integration / quantification !\n"))
+
+	INT <- get_Matrix_Integrals()
+	SNR <- get_Matrix_SNR()
+	M1 <- cbind(res$infos[,c(1,3,4,5,6,11,12)])
+	M2 <- NULL; for (k in 1:nrow(INT)) M2 <- rbind(M2, cbind(INT[k,],SNR[k,]))
+	if (is.null(rownames(M2))) {
+		M <- cbind(M1,M2)
+		colnames(M)[(ncol(M)-1):ncol(M)] <- c('INT','SNR')
+	} else {
+		M <- cbind(M1,rownames(M2),M2)
+		colnames(M)[(ncol(M)-2):ncol(M)] <- c('Compound', 'INT','SNR')
+	}
+	rownames(M) <- NULL
+	as.data.frame(M)
+})
+
 internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 {
 	# Styles
@@ -276,7 +301,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 		c("SampleFile", ifelse(is.list(filelist) && !is.null(filelist$SAMPLEFILE), filelist$SAMPLEFILE,'-')),
 		c("Profile", ifelse(is.list(filelist) && !is.null(filelist$PROFILE), filelist$PROFILE,'-')),
 		c("Instrument Field", FIELD),
-		c("Wine Type", TYPE),
+		c("Sample Type", TYPE),
 		c("Pulse Sequence", SEQUENCE),
 		c("",""),
 		c("",""),
