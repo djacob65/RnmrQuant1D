@@ -289,10 +289,11 @@ public = list(
 #' @param title If NULL, the title will be the sample code. Otherwise, it will be the specified string. If you don't want a title, enter an empty string.
 #' @param colspecs specifies the array of colors for the original spectrum and the model. Only the two first colors will be used.
 #' @param colcpmds specifies the array of colors for the compounds (i.e. patterns). If the number of colors specified is not sufficient, the colors will be repeated.
+#' @param opacity specifies the opacity of compound colors (default 0.7))
 #' @param verbose If TRUE, The peak list will be displayed
 #' @return a \href{https://plotly.com/r/}{plotly} graph
-	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE) {
-		super$view_spectra(id, plotmodel, plotTrueSpec, plotresidus, plotzones, tags, lw, showlegend, legendhoriz, showgrid, title, colspecs, colcpmds, verbose)
+	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE) {
+		super$view_spectra(id, plotmodel, plotTrueSpec, plotresidus, plotzones, tags, lw, showlegend, legendhoriz, showgrid, title, colspecs, colcpmds, opacity, verbose)
 	},
 
 #' @description
@@ -301,10 +302,11 @@ public = list(
 #' @param QSname a valid QS sample name under the spectra directory (QSDIR)
 #' @param thresfP defines the threshold of the CV (in percentage) of the response factor below which the spectrum (repetition) will not be taken into consideration. 
 #' @param deconv defines whether the integration is calculated by deconvolution or by the Simpson approach.
+#' @param qbl defines whether a baseline is applied or not
 #' @param verbose if TRUE, some messages are displayed
 #' @return he resulting object (fP) will be stored in the RnmrQuant1D instance.
-	proc_fPULCON = function(QSname, thresfP=5, deconv=TRUE, verbose=1) {
-		super$proc_fPULCON(QSname, thresfP, deconv, verbose)
+	proc_fPULCON = function(QSname, thresfP=5, deconv=FALSE, qbl=FALSE, verbose=1) {
+		super$proc_fPULCON(QSname, thresfP, deconv, qbl, verbose)
 	},
 
 #' @description

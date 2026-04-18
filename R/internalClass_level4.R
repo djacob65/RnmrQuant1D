@@ -129,7 +129,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 # User functions for quantification computing
 #=====================================================================
 
-internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=TRUE, verbose=1)
+internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=FALSE, qbl=FALSE, verbose=1)
 {
 	if (verbose) cat("Compute the PULCON factor ...\n")
 	check_calibration(QS=QSname)
@@ -141,7 +141,7 @@ internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=T
 	unlink(LogFile)
 	t <- system.time({
 		sink(LogFile)
-		calib <- standardQuantification(stds, QSname, thresfP, deconv, verbose=verbose)
+		calib <- standardQuantification(stds, QSname, thresfP, deconv, qbl, verbose=verbose)
 		if (is.nan(calib$fPUL$mean)) {
 			fP <<- list()
 			stop_quietly(paste0("Error: the spectrum '",QSname,"' does not appear to contain the correct quantification standards."))

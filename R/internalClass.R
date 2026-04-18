@@ -89,13 +89,13 @@ internalClass <- R6Class("internalClass",
 			procParams$OPTPHC0 <<- TRUE
 			procParams$OPTPHC1 <<- FALSE
 			procParams$ZEROFILLING <<- TRUE
-			procParams$ZFFAC <<- 4
+			procParams$ZFFAC <<- 2
 			procParams$TSP <<- FALSE
 			procParams$ADJPZTSP <<- TRUE
 			procParams$MVPZTSP <<- TRUE
-			procParams$MVPZFAC <<- 10
+			procParams$MVPZFAC <<- 1
 			procParams$DPHCPZTSP <<- 1.2
-			procParams$DHZPZRANGE <<- 323
+			procParams$DHZPZRANGE <<- 250
 
 			vendor_list <- c('bruker','varian')
 			if (!vendor %in% vendor_list)

@@ -1,5 +1,5 @@
 #=====================================================================
-# Intermediate level functions for Processing / Deconvolution / Quantification
+# Intermediate level functions for Processing / Fitting / Quantification
 #=====================================================================
 
 internalClass$set("private", "applyReadSpectrum", function(ACQDIR, verbose=1)
@@ -511,6 +511,7 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 			} else {
 				P3 <- as.numeric(ZQ$P3[i])
 			}
+		# Extract calibration parameters, which type may be singulet or doublet
 			if (grepl(',',ZQ$P4[i])) {
 				type <- 's'
 				V <- as.vector(simplify2array(strsplit(ZQ$P4[i],',')))
@@ -527,7 +528,7 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				P4 <- 0
 			}
 
-			# Update ppm range covered by the compound
+		# Update ppm range covered by the compound
 			ppmrange <- c( min(ppmrange[1], ppm1), max(ppmrange[2], ppm2) )
 
 			# Exit loop if no peaks

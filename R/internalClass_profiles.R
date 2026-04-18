@@ -1,9 +1,9 @@
 #=====================================================================
-# Read the different sections defining the profile, namely :
+# Sections defining the profile, namely :
 #   'preprocess' : parameters for preprocessing (only one line is required)
 #      * LB : Line Broadening value
 #      * ZFFAC : Zone filling factor
-#      * TSPPHC : parameters to improve phasing : MVPZTSP,DHZPZRANGE
+#      * TSPPHC : parameters to improve phasing : MVPZTSP,DHZPZRANGE otherwise 0
 #      * CALIBRATION : parameters for calibration : pzone1,pzone1,p0,shape otherwise 0
 #      * PARAMS : additional parameters, given in the form PARAM=value, separated by a comma if there are multiple ones
 #   'exclude'  : zones to be excluded for all processing steps (deprecated)
@@ -29,6 +29,8 @@
 #      * CP : correction factor to be applied to the final concentration
 #      * zone : defines a zone id corresponding to a fitting zone
 #   'compound' : list of compounds along with their Molecular Weight (MW)
+#
+# Note: each empty line or starting with a ‘#’ will be ignored
 #=====================================================================
 
 internalClass$set("private", "is_xlsx", function(file)

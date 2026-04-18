@@ -277,7 +277,7 @@ internalClass$set("private", "getBLexternal", function(spec, blset, porder=1, pp
 	# external baseline at zero by default
 	BLext <- rep(0,length(spec$int))
 	if (blset != 0 ) {
-		cmax <- switch(porder, 6, 7, 8)
+		cmax <- switch( min(max(round(porder),1),3), 6, 7, 8 )
 		lambda <- ifelse( blset>0, cmax-blset, abs(blset) )
 		# Estimation of a baseline correction
 		if (is.null(ppmrange)) {

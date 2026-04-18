@@ -260,12 +260,10 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 		for (j in 1:length(L)) if (length(L[[j]])==4) { k<-k+1; G[[k]] <- L[[j]] }
 		if (is.null(G)) break
 		G <- unique(G)
-print(G)
 	## In case there are 2 or more peak lists, take the one with the highest sum of amplitudes
 		v <- sapply(1:length(G), function(k) sum(peaks[as.numeric(G[[k]]), ]$amp))
 		L <- sort(as.numeric(G[[which(v==max(v))]]))
 		if (length(L)<4) break
-print(L)
 		if (length(L)>4) {
 	# Criterion on J (J +/- dJ)
 			M <- matrix(rep(0,length(L)*length(L)), nrow=length(L), byrow=T)
@@ -285,11 +283,10 @@ print(L)
 		} else {
 			groups <- L
 		}
-print(L)
 		# Criterion on amplitude (1, 3, 3, 1)
 		pAM <- peaks$amp[L[order(L)][2:3]]
 		pAm <- peaks$amp[L[order(L)][c(1,4)]]
-		if (length(L)==4 && (mean(pAM)<1.5*mean(pAm) || (max(pAM)/min(pAM))>2.5 || (max(pAm)/min(pAm))>2.5))
+		if (length(L)==4 && (mean(pAM)<1.5*mean(pAm) || (max(pAM)/min(pAM))>2.5))
 			groups <- NULL
 
 		break
@@ -661,15 +658,6 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 	groups
 })
 
-# Merge all cmpds with the same name but having a different index as postfix
-internalClass$set("private", "merge_compounds", function(groups)
-{
-	g2 <- groups[!grepl("*[2-9]", names(groups))]
-	for (ng in names(groups)[grepl("*[2-9]", names(groups))])
-		g2[[gsub("[2-9]$", "", ng)]] <- c(g2[[gsub("[2-9]$", "", ng)]], groups[[ng]])
-	g2
-})
-
 # Find a list of compounds based on their pattern
 # Ex: compound <- list(
 #         'C1'=c('d',3.365,6.7),        # doublet (d), central ppm, J
@@ -737,8 +725,14 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds, 
 		}
 	}
 
-	if (!is.null(groups))
-		groups <- merge_compounds(groups)
+	# Merge all cmpds with the same name but having a different index as postfix
+	if (!is.null(groups)) {
+		g2 <- groups[!grepl("*[2-9]", names(groups))]
+		for (ng in names(groups)[grepl("*[2-9]", names(groups))])
+			g2[[gsub("[2-9]$", "", ng)]] <- c(g2[[gsub("[2-9]$", "", ng)]], groups[[ng]])
+		groups <- g2
+	}
+
 	groups
 })
 

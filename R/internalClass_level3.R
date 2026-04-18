@@ -354,7 +354,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 #=====================================================================
 
 # View spectra along with models & compounds
-internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, verbose=FALSE)
+internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE)
 {
 	if (! res$proctype %in% c('integration', 'quantification') || length(specList)==0)
 		stop_quietly(paste0("ERROR : Integrals or quantification must be computed before !\n"))
@@ -438,7 +438,8 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 				fmodel[iseq] <- apply(V,1,sum)
 				if (sum(fmodel)>0 && min(ppm[iseq])>=ppmview[1] && max(ppm[iseq])<=ppmview[2]) {
 					df <- data.frame(x=ppm[iseq], y=fmodel[iseq])
-					p <- plotly::add_trace(p, data=df, x = ~x, y = ~y, name=cmpdlist[k,1], mode = 'lines', fill = 'tozeroy', fillcolor=colcpmds[k])
+					fcol <- paste0('rgba(',paste(c(as.vector(col2rgb(colcpmds[k])), opacity), collapse=','),')')
+					p <- plotly::add_trace(p, data=df, x = ~x, y = ~y, name=cmpdlist[k,1], mode = 'lines', fill = 'tozeroy', fillcolor = fcol)
 					arrColors <- c(arrColors, colcpmds[k])
 					names(arrColors)[length(arrColors)] <- cmpdlist[k,1]
 				}

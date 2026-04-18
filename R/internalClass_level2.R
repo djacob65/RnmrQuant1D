@@ -18,6 +18,8 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 
 	# Retrieve preprocessing parameters from PROFILE and disable MVPZTSP correction
 	procPars <- get_procParams(PROFILE)
+	procPars$TSP <- TRUE
+	procPars$DHZPZRANGE <- 330
 
 	# Initialize variables
 	BLSIG <- 10             # Baseline significance threshold
@@ -64,6 +66,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 		if (verbose) cat("Sequence:",spec$acq$PULSE,"\n")
 		if (verbose) cat("SW =",round(spec$acq$SW,4),", SI =",spec$proc$SI,"\n")
 		if (verbose) cat("PW =",round(spec$acq$PULSEWIDTH,4),", NS =",spec$acq$NUMBEROFSCANS,"\n")
+
 	# Check if the phasing is correct
 		Rneg <- get_negRatio(spec, c(min(as.vector(stds_loc$PPM1)), max(as.vector(stds_loc$PPM2))))
 		if (Rneg>thresRneg) {
