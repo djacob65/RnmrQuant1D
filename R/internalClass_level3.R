@@ -241,19 +241,30 @@ internalClass$set("public", "get_Matrix_Summary", function()
 	if (is.null(res$allquantifs))
 		stop_quietly(paste0("ERROR : No integration / quantification !\n"))
 
-	INT <- get_Matrix_Integrals()
-	SNR <- get_Matrix_SNR()
-	M1 <- cbind(res$infos[,c(1,3,4,5,6,11,12)])
-	M2 <- NULL; for (k in 1:nrow(INT)) M2 <- rbind(M2, cbind(INT[k,],SNR[k,]))
-	if (is.null(rownames(M2))) {
-		M <- cbind(M1,M2)
-		colnames(M)[(ncol(M)-1):ncol(M)] <- c('INT','SNR')
-	} else {
-		M <- cbind(M1,rownames(M2),M2)
-		colnames(M)[(ncol(M)-2):ncol(M)] <- c('Compound', 'INT','SNR')
+	M1 <- res$infos[,c(1,3,4,5,6,11,12)]
+	M2 <- res$allquantifs[,c(2,3,6,7)]
+	CZ <- unique(PROFILE$quantif[PROFILE$quantif$compound %in% M2$Compound, c('compound','zone'), drop=F])
+	M <- NULL
+	for(S in unique(M1$Samplecode)) {
+		M1b <- M1[M1[,1] == S,,drop=F ]
+		M2b <- M2[M2[,1] == S,,drop=F ]
+		for (k in 1:nrow(M1b)) {
+			n <- sum(CZ$zone %in% M1b$zone[k])
+			M <- rbind(M, cbind( matrix(rep(M1b[k,],n), ncol=ncol(M1b), nrow=n, byrow=T), 
+					M2b[ M2b$Compound %in% unique(CZ[CZ$zone %in% M1b$zone[k], 1]), -1, drop=F ] ))
+		}
 	}
+	colnames(M) <- c( colnames(M1), colnames(M2)[-1] )
+	M$ppm1 <- unlist(M$ppm1)
+	M$ppm2 <- unlist(M$ppm2)
+	M$zone <- unlist(M$zone)
+	M$nbpeaks <- unlist(M$nbpeaks)
+	M$R2 <- unlist(M$R2)
+	M['Int. Diff. %'] <- unlist(M['Int. Diff. %'])
+	M$Integral <- unlist(M$Integral)
+	M$SNR <- unlist(M$SNR)
 	rownames(M) <- NULL
-	as.data.frame(M)
+	M
 })
 
 internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
@@ -451,7 +462,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 			Ymax <- max(spec$int[iseq])
 			lshapes <- list()
 			for (k in 1:nrow(fit)) {
-					lshapes[[k]] <- list(type="rect", fillcolor="blue", line=list(color="blue"), opacity=0.2,
+					lshapes[[k]] <- list(type="rect", fillcolor="gray", line=list(color="gray"), opacity=0.1,
 									x0 = fit$ppm1[k], x1 = fit$ppm2[k], y0 = 0, y1 = Ymax)
 			}
 			p <- plotly::layout(p, shapes=lshapes)
@@ -471,7 +482,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 			if (tags=='name')
 				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$lab),
 					showarrow = TRUE, arrowcolor='red', textangle=-30,
-					font = list(color = 'black', family = 'sans serif', size = 16))
+					font = list(color = 'black', family = 'sans serif', size = 12))
 			if (tags=='id')
 				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$tags),
 					showarrow = TRUE, arrowcolor='red', hovertext=data$lab,

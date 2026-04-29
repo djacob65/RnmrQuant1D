@@ -242,7 +242,7 @@ internalClass$set("private", "smoothSpec", function(spec, ppmrange, WS=30)
 {
 	# Smooth the PPM range
 	iseq <- getseq(spec,ppmrange)
-	V <- Smooth(spec$int[iseq], WS)
+	V <- Rnmr1D::Smooth(spec$int[iseq], WS)
 	n2 <- length(V); n1 <- n2 - WS + 1
 	a <- (V[n2]-V[n1])/(n2-n1)
 	for (j in n1:n2) V[j] <- a*(j-n1) + V[n1]
@@ -299,11 +299,11 @@ internalClass$set("private", "filterSpectrum", function(spec, filter)
 {
 	specInt <- spec$int
 	if (filter %in% c('daub8', 'symlet8')) {
-		specInt <- filterByWT(spec$int, filter, threshold = 0.5)
+		specInt <- Rnmr1D::filterByWT(spec$int, filter, threshold = 0.5)
 	}
 	if (filter %in% length(grep('smooth*', filter))) {
 		fsavgol <- Rnmr1D::getDeconvParams()$flist[[filter]]
-		specInt <- filterSavGol(spec$int, fsavgol$m, fsavgol$nl, fsavgol$nr)
+		specInt <- Rnmr1D::filterSavGol(spec$int, fsavgol$m, fsavgol$nl, fsavgol$nr)
 	}
 	specInt
 })

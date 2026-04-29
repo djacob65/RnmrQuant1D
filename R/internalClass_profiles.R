@@ -258,7 +258,8 @@ internalClass$set("public", "saveProfile", function(PROFILENAME)
 # Get quantif parameters as a list for a given zone
 internalClass$set("private", "get_quantif_cmpds", function(profil, zone)
 {
-	quantifs <- PROFILE$quantif[ PROFILE$quantif$zone == zone, ]
+	if (is.null(zone)) zone <- unique(PROFILE$fitting$zone)
+	quantifs <- PROFILE$quantif[ PROFILE$quantif$zone %in% zone, ]
 	cmpds <- list()
 	if (nrow(quantifs)==0) return(cmpds)
 	n <- 1

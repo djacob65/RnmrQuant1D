@@ -197,7 +197,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 			})
 			if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
 
-			# If the first fit doesn't meet the R² threshold, try alternative filters
+			# In case R2 was under R2limit, proceed peak fitting based on the alternative filters
 			opars.loc <- opars.save
 			if (is.null(model) || (!is.null(model) && model$R2 < opars.loc$R2limit)) {
 				opars.loc$peaks <- NULL
@@ -274,7 +274,8 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	# Print default parameters if verbosity is enabled
 	if (verbose) {
 		cat("-------------------\n")
-		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
+		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,
+			', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
 		cat("NCPU =",ncpu,"\n")
 		cat("-------------------\n")
 	}
@@ -304,12 +305,6 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		for ( i in 1:length(LL2) ) mylist[[LL2[[i]]$id]] <- getList(LL2[[i]])
 		return(mylist)
 	}
-
-	# Initialize parallel processing cluster
-	#NCPU <- min(nrow(pkfit), ncpu)
-	#cl <- parallel::makeCluster(NCPU)
-	#doParallel::registerDoParallel(cl)
-	#Sys.sleep(1)
 
 	# Process all peak fitting zones in parallel
 	rq1d <- self
@@ -356,10 +351,10 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	# Apply baseline correction (qbl) if necessary
 		if (opars.loc$qbl  != 0) {
 			if (opars.loc$qbl == 1) {
-				BL <- qnmrbc(spec, ppmrange, BLSIG, WS) 
+				BL <- priv$qnmrbc(spec, ppmrange, BLSIG, WS) 
 				cat('BL Parameters: Method: qNMR, BLSIG =', BLSIG,', WS =', WS, "\n")
 			} else { 
-				BL <- getBLexternal(spec, opars.loc$qbl, Order, ppmrange) 
+				BL <- priv$getBLexternal(spec, opars.loc$qbl, Order, ppmrange) 
 				cat('BL Parameters: Method: airPLS, lambda =', opars.loc$qbl,', Order =', Order, "\n")
 			}
 			cat("\n")
@@ -368,10 +363,10 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 			LB <- BL
 		}
 
-	# Perform peak fitting using Rnmr1D::LSDeconv function
+	# Perform peak fitting using the selected filters
 		model <- NULL
 		tryCatch({
-			opars.save <- opars.loc
+			opars.save <- opars.loc  # Save parameters before running peak fitting
 			t <- system.time({
 				model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
 			})
@@ -385,6 +380,7 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 				if (length(others_filters))
 					t<-system.time({
 						model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
+						# Choose the best model (if model2 has a better R², use it)
 						if ( (is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2>model$R2) )
 							model <- model2
 						if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
@@ -450,7 +446,8 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	spec$BL <- NULL
 
 	infos <- data.frame(infos[,1:ncol(infos)])
-	colnames(infos) <- c('expno','zone','ppm1','ppm2','nbpeaks','addpeaks','asym','obl','qbl','R2','Int. Diff. %','Time')
+	colnames(infos) <- c('expno', 'zone', 'ppm1', 'ppm2', 'nbpeaks', 'addpeaks', 'asym', 'obl', 'qbl', 'R2', 'Int. Diff. %', 'Time')
+
 
 	# Format the peak fitting information table
 	if (!is.null(Peaks))
@@ -473,7 +470,7 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 	idxint <- 7  # Index for accessing peak intensity in the peak list
 
 	# Identify unique compounds in the quantification zones
-	cmpds <- unique(sort(pkcmpd$compound))
+	cmpds <- unique(pkcmpd$compound)
 
 	# Extract the peak list from the spectrum fit
 	peaks <- spec$fit$peaks

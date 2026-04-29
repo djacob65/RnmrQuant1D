@@ -8,7 +8,13 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	check_profile(zones)
 
 	pkfit <- PROFILE$fitting
-	if (!is.null(zones)) pkfit <- pkfit[ pkfit$zone %in% zones, , drop=F]
+
+	# If no specific quantification zones are provided, use the default ones from PROFILE
+	if (is.null(zones))
+		zones <- unique(pkfit$zone)
+	else
+		pkfit <- pkfit[ pkfit$zone %in% zones, , drop=F]
+
 	if (nrow(pkfit)==0)
 		stop_quietly(paste0("Error: there no zone(s) '",paste0(collapse=","),"' defined in the fitting section in the quantification profile"))
 	ppm_range <<- c(min(pkfit[,1]), max(pkfit[,2]))
@@ -74,7 +80,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		# Peak fitting
 		Opars <- rq1d$opars
 		Opars$peaks <- NULL
-		spec <- priv$applyPeakFitting(spec, Opars, zones=zones, ncpu=1, verbose=verbose)
+		spec <- priv$applyPeakFitting(spec, Opars, zones=zones, ncpu=ncpu, verbose=verbose)
 
 		# Identification / Integratgion
 		if (verbose) { print(spec$fit$infos); cat("\n") }
@@ -94,21 +100,20 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	}
 
 	if (verbose && ncpu>1) {
-		pb <- txtProgressBar(max = nrow(Slist), style = 3)
+		pb <- utils::txtProgressBar(max = nrow(Slist), style = 3, width=128)
 		progress <- function(n) setTxtProgressBar(pb, n)
 		out <- foreach::foreach(ID=1:nrow(Slist),
-			.combine=combine_list,.options.snow = list(progress = progress),
-			.packages=c("Rnmr1D")) %dopar% funcpar(ID)
+				.combine=combine_list, .options.snow = list(progress = progress),
+				.packages=c("Rnmr1D")) %dopar% funcpar(ID)
 	} else {
 		out <- foreach::foreach(ID=1:nrow(Slist),
-			.combine=combine_list,
-			.packages=c("Rnmr1D")) %dopar% funcpar(ID)
+				.combine=combine_list,
+				.packages=c("Rnmr1D")) %dopar% funcpar(ID)
 	}
 
 	# Results proc-process
 	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
 	specList <<- list()
-
 
 	# Merging results
 	for(k in 1:length(out)) {
@@ -281,8 +286,7 @@ internalClass$set("private", "get_results_for_all_samples", function()
 	repeat {
 		if (length(Rdata)<1) break
 		for (sample in Rdata) {
-			DIR <- file.path(RAWDIR,gsub('-[0-9]+$','', sample))
-			if (sample == 'RQ1D' || !dir.exists(DIR)) next
+			if (sample == 'RQ1D') next
 			load(file = paste0(file.path(RDATADIR,sample),'.RData'))
 			samplenames <- c(samplenames, quantParams[['samplename']])
 			infos <- c(spec$TSPwidth, spec$acq$PULSEWIDTH, spec$acq$NUMBEROFSCANS, spec$acq$SW, spec$proc$SI)
@@ -432,8 +436,8 @@ internalClass$set("public", "save_Results", function(file, filelist=NULL)
 	Spectrum <- results$samples[,2]
 	openxlsx::writeData(wb, Tid, x = results$samples, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
 	openxlsx::addStyle(wb, Tid, style = styBH, rows = 1, cols = c(1:ncol(results$samples)), gridExpand = TRUE)
-	openxlsx::conditionalFormatting(wb, Tid, rows = c(2:nrow(results$samples)), cols = ncol(results$samples)-4,
-						rule=">1", style = styWarn)
+	openxlsx::conditionalFormatting(wb, Tid, rows = c(2:(nrow(results$samples)+1)), cols = ncol(results$samples)-4,
+						rule=paste0(">",TSPwidthMax), style = styWarn)
 	openxlsx::setColWidths(wb, Tid, cols=1, widths=30,  ignoreMergedCells = FALSE)
 
 	Tid <- Tid + 1 # Integrals

@@ -752,7 +752,8 @@ internalClass$set("private", "snr_pattern", function(spec, idpeaks, pattern)
 internalClass$set("private", "find_compounds_by_zone", function(spec, peaks, zones)
 {
 	groups <- NULL
-	if (!is.null(zones) && is.numeric(zones) && zones %in% PROFILE$quantif$zone)
+	if (is.null(zones)) zones <- unique(PROFILE$fitting$zone)
+	if (!is.null(zones) && is.numeric(zones) && sum(zones %in% PROFILE$quantif$zone) == length(zones))
 	{
 		groups <- list()
 		for(k in 1:length(zones)) {
