@@ -32,7 +32,7 @@
 #'
 #' @references
 #'
-#' Guillaume Leleu et al. (2024) Development of a standardized method for metabolite analysis by NMR to assess wine authenticity, IVES Conference Series, OIV, DOI:10.58233/IMGGSIME
+#' Leleu G, Butelle R, Jacob D, et al. (2026) 1H-NMR Analysis of Wine Metabolites: Method Development and Validation. Molecules 31(1):65; doi:10.3390/molecules31010065
 #'
 #' Teipel et al. (2020) Application of 1H Nuclear Magnetic Resonance Spectroscopy as Spirit Drinks Screener for Quality and Authenticity Control, Food 9, 1355; doi:10.3390/foods9101355
 #'
@@ -185,7 +185,7 @@ public = list(
 #' @param qbl defines whether a baseline correction is applied to each calibration zone
 #' @param verbose if TRUE, some messages are displayed
 #' @return a response factor object, i.e a list with some attributes: fPUL, fP, fR, MC, INTG, fK
-	get_response_factors = function(sampletype,  samplename, thresfP=5, deconv=TRUE, qbl=FALSE, verbose=1) {
+	get_response_factors = function(sampletype,  samplename, thresfP=5, deconv=FALSE, qbl=FALSE, verbose=1) {
 		super$get_response_factors(sampletype,  samplename, thresfP, deconv, qbl, verbose)
 	},
 
@@ -360,14 +360,35 @@ public = list(
 	},
 
 #' @description
+#' Wrapper for the \href{#method-RnmrQuant1D-view_spectra}{\code{view_spectra()}} method.  
+#' @param id Either the order number (numeric) of the spectrum in the sample table or the samplecode (string), i.e the 2nd column in the sample table.
+#' @param zones The zones list to plotted.
+#' @param params a list of selected plot parameters.  See \href{#method-RnmrQuant1D-view_spectra}{\code{view_spectra()}} method.
+#' @return a \href{https://plotly.com/r/}{plotly} graph
+	plot_zones = function(id, zones, params=NULL) {
+		super$plotZones(id, zones, params)
+	},
+
+#' @description
+#' Wrapper for the \href{#method-RnmrQuant1D-plot_spectra}{\code{plot_spectra()}} method.  
+#' @param id Either the order number (numeric) of the spectrum in the sample table or the samplecode (string), i.e the 2nd column in the sample table.
+#' @param cmpds The compound list to plotted.
+#' @param params a list of selected plot parameters.  See \href{#method-RnmrQuant1D-view_spectra}{\code{view_spectra()}} method.
+#' @return a \href{https://plotly.com/r/}{plotly} graph
+	plot_cmpds = function(id, cmpds, params=NULL) {
+		super$plotCmpds(id, cmpds, params)
+	},
+
+#' @description
 #' Displays a widget (e.g. a plotly graph) - Depending on the OutType attribute in the RnmrQuant1D instance, returns a \href{https://plotly.com/r/}{plotly} graph (html) or displays the image (png,svg, ...)
 #' @param widget a plotly graph
 #' @param tmpdir the directory to temporarily save the image before displaying it (png,svg, ...)
 #' @param width the width of the output image
 #' @param height the height of the output image
+#' @param filename output image file name. By default, an arbitrary name is generated.
 #' @return depending on the OutType attribute in the RnmrQuant1D instance, returns a \href{https://plotly.com/r/}{plotly} graph (html) or display the image (png,svg, ...)
-	displayWidget = function(widget, tmpdir='tmp', width='auto', height=400) {
-		super$displayWidget(widget, tmpdir, width, height)
+	displayWidget = function(widget, tmpdir='tmp', width='auto', height=400, filename=NULL) {
+		super$displayWidget(widget, tmpdir, width, height, filename)
 	},
 
 #' @description

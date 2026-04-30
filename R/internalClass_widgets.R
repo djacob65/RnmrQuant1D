@@ -27,20 +27,20 @@ internalClass$set("public", "saveWidgetFix", function(widget,file, ...)
 # echo '#!/bin/bash' > /usr/bin/orca
 # echo 'xvfb-run -a /usr/bin/orca-1.3.1.AppImage "$@"' >> /usr/bin/orca
 # chmod +x /usr/bin/orca
-internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', width='auto', height=400)
+internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', width='auto', height=400, filename=NULL)
 {
 	type <- OUTTYPE
 	if (!is.null(widget) && type %in% c("png", "jpeg", "svg")) {
 		wd<-getwd()
 		on.exit(setwd(wd))
-		IMGname <- floor(runif(1, 0, 10^12))
+		IMGname <- ifelse(is.null(filename), floor(runif(1, 0, 10^12)), filename)
 		if (is.null(tmpdir))
 			tmpdir <- paste0("tmp", floor(runif(1, 0, 10^12)))
 		suppressWarnings(dir.create(tmpdir))
 		setwd(tmpdir)
 		IMGfile <- paste0(IMGname, ".",type)
 		tryCatch({
-			plotly::orca(widget, file=IMGfile, width=width, height=height, verbose=FALSE, debug=FALSE)
+			suppressWarnings(plotly::orca(widget, file=IMGfile, width=width, height=height, verbose=FALSE, debug=FALSE))
 		}, error=function(cond) { cat("Failed:", paste0(cond, collapse="\n"), "\n"); sink(); } )
 		if (!file.exists(IMGfile)) IMGfile <- paste0(IMGname, "_1.",type)
 		repeat {

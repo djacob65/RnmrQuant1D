@@ -29,7 +29,7 @@ The user can refer to the \href{https://github.com/djacob65/RnmrQuant1D/wiki/}{o
 It was implemented based on the object-oriented programming using the R6 class.
 }
 \references{
-Guillaume Leleu et al. (2024) Development of a standardized method for metabolite analysis by NMR to assess wine authenticity, IVES Conference Series, OIV, DOI:10.58233/IMGGSIME
+Leleu G, Butelle R, Jacob D, et al. (2026) 1H-NMR Analysis of Wine Metabolites: Method Development and Validation. Molecules 31(1):65; doi:10.3390/molecules31010065
 
 Teipel et al. (2020) Application of 1H Nuclear Magnetic Resonance Spectroscopy as Spirit Drinks Screener for Quality and Authenticity Control, Food 9, 1355; doi:10.3390/foods9101355
 }
@@ -93,6 +93,7 @@ Daniel Jacob - (C) INRAE 2025
 \item \href{#method-RnmrQuant1D-proc_Integrals}{\code{RnmrQuant1D$proc_Integrals()}}
 \item \href{#method-RnmrQuant1D-get_Matrix_Integrals}{\code{RnmrQuant1D$get_Matrix_Integrals()}}
 \item \href{#method-RnmrQuant1D-get_Matrix_SNR}{\code{RnmrQuant1D$get_Matrix_SNR()}}
+\item \href{#method-RnmrQuant1D-get_Matrix_Summary}{\code{RnmrQuant1D$get_Matrix_Summary()}}
 \item \href{#method-RnmrQuant1D-get_Matrix_CV}{\code{RnmrQuant1D$get_Matrix_CV()}}
 \item \href{#method-RnmrQuant1D-save_Matrices}{\code{RnmrQuant1D$save_Matrices()}}
 \item \href{#method-RnmrQuant1D-view_spectra}{\code{RnmrQuant1D$view_spectra()}}
@@ -102,6 +103,8 @@ Daniel Jacob - (C) INRAE 2025
 \item \href{#method-RnmrQuant1D-get_spectra_data}{\code{RnmrQuant1D$get_spectra_data()}}
 \item \href{#method-RnmrQuant1D-save_Results}{\code{RnmrQuant1D$save_Results()}}
 \item \href{#method-RnmrQuant1D-plot_spectra}{\code{RnmrQuant1D$plot_spectra()}}
+\item \href{#method-RnmrQuant1D-plot_zones}{\code{RnmrQuant1D$plot_zones()}}
+\item \href{#method-RnmrQuant1D-plot_cmpds}{\code{RnmrQuant1D$plot_cmpds()}}
 \item \href{#method-RnmrQuant1D-displayWidget}{\code{RnmrQuant1D$displayWidget()}}
 \item \href{#method-RnmrQuant1D-saveWidgetFix}{\code{RnmrQuant1D$saveWidgetFix()}}
 \item \href{#method-RnmrQuant1D-displayTable}{\code{RnmrQuant1D$displayTable()}}
@@ -111,6 +114,8 @@ Daniel Jacob - (C) INRAE 2025
 <details open><summary>Inherited methods</summary>
 <ul>
 <li><span class="pkg-link" data-pkg="RnmrQuant1D" data-topic="internalClass" data-id="get_Matrix_Stats"><a href='../../RnmrQuant1D/html/internalClass.html#method-internalClass-get_Matrix_Stats'><code>RnmrQuant1D::internalClass$get_Matrix_Stats()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="RnmrQuant1D" data-topic="internalClass" data-id="plotCmpds"><a href='../../RnmrQuant1D/html/internalClass.html#method-internalClass-plotCmpds'><code>RnmrQuant1D::internalClass$plotCmpds()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="RnmrQuant1D" data-topic="internalClass" data-id="plotZones"><a href='../../RnmrQuant1D/html/internalClass.html#method-internalClass-plotZones'><code>RnmrQuant1D::internalClass$plotZones()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="RnmrQuant1D" data-topic="internalClass" data-id="reorderProfile"><a href='../../RnmrQuant1D/html/internalClass.html#method-internalClass-reorderProfile'><code>RnmrQuant1D::internalClass$reorderProfile()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="RnmrQuant1D" data-topic="internalClass" data-id="saveProfile"><a href='../../RnmrQuant1D/html/internalClass.html#method-internalClass-saveProfile'><code>RnmrQuant1D::internalClass$saveProfile()</code></a></span></li>
 </ul>
@@ -122,12 +127,14 @@ Daniel Jacob - (C) INRAE 2025
 \subsection{Method \code{new()}}{
 Class Constructor - Initializes internal parameters for preprocessing and deconvolution.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$new()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$new(vendor = "bruker")}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{vendor}}{specifies the supplier of the instrument. It must be "bruker" or "varian".}
+
 \item{\code{self}}{the RnmrQuant1D instance}
 }
 \if{html}{\out{</div>}}
@@ -337,7 +344,8 @@ Calculates the response factors according to the sample type ('QC' or 'QS').
   sampletype,
   samplename,
   thresfP = 5,
-  deconv = TRUE,
+  deconv = FALSE,
+  qbl = FALSE,
   verbose = 1
 )}\if{html}{\out{</div>}}
 }
@@ -352,6 +360,8 @@ Calculates the response factors according to the sample type ('QC' or 'QS').
 \item{\code{thresfP}}{defines the threshold of the CV (in percentage) of the response factor below which the spectrum (repetition) will not be taken into consideration.}
 
 \item{\code{deconv}}{defines whether the integration is calculated by deconvolution or by the Simpson approach.}
+
+\item{\code{qbl}}{defines whether a baseline correction is applied to each calibration zone}
 
 \item{\code{verbose}}{if TRUE, some messages are displayed}
 
@@ -502,6 +512,26 @@ the SNR matrix
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-RnmrQuant1D-get_Matrix_Summary"></a>}}
+\if{latex}{\out{\hypertarget{method-RnmrQuant1D-get_Matrix_Summary}{}}}
+\subsection{Method \code{get_Matrix_Summary()}}{
+Obtain a matrix summarizing all results computed by \href{#method-RnmrQuant1D-proc_Integrals}{\code{proc_Integrals()}} along with indicators and other contextual information.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$get_Matrix_Summary()}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{self}}{The RnmrQuant1D instance}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+the SNR matrix
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-RnmrQuant1D-get_Matrix_CV"></a>}}
 \if{latex}{\out{\hypertarget{method-RnmrQuant1D-get_Matrix_CV}{}}}
 \subsection{Method \code{get_Matrix_CV()}}{
@@ -567,6 +597,7 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
   title = NULL,
   colspecs = NULL,
   colcpmds = NULL,
+  opacity = 0.7,
   verbose = FALSE
 )}\if{html}{\out{</div>}}
 }
@@ -600,6 +631,8 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
 
 \item{\code{colcpmds}}{specifies the array of colors for the compounds (i.e. patterns). If the number of colors specified is not sufficient, the colors will be repeated.}
 
+\item{\code{opacity}}{specifies the opacity of compound colors (default 0.7))}
+
 \item{\code{verbose}}{If TRUE, The peak list will be displayed}
 
 \item{\code{self}}{The RnmrQuant1D instance}
@@ -616,7 +649,13 @@ a \href{https://plotly.com/r/}{plotly} graph
 \subsection{Method \code{proc_fPULCON()}}{
 Computes the response factor for the QS sample.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$proc_fPULCON(QSname, thresfP = 5, deconv = TRUE, verbose = 1)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$proc_fPULCON(
+  QSname,
+  thresfP = 5,
+  deconv = FALSE,
+  qbl = FALSE,
+  verbose = 1
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -627,6 +666,8 @@ Computes the response factor for the QS sample.
 \item{\code{thresfP}}{defines the threshold of the CV (in percentage) of the response factor below which the spectrum (repetition) will not be taken into consideration.}
 
 \item{\code{deconv}}{defines whether the integration is calculated by deconvolution or by the Simpson approach.}
+
+\item{\code{qbl}}{defines whether a baseline is applied or not}
 
 \item{\code{verbose}}{if TRUE, some messages are displayed}
 
@@ -758,6 +799,54 @@ Visualizes the compound 'compound' for spectrum 'id', where id is the order numb
 \item{\code{compound}}{The compound name taken from quantpars$cmpdlist in the RnmrQuant1D instance.}
 
 \item{\code{...}}{Arguments to be passed to the \href{#method-RnmrQuant1D-view_spectra}{\code{view_spectra()}} method.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+a \href{https://plotly.com/r/}{plotly} graph
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-RnmrQuant1D-plot_zones"></a>}}
+\if{latex}{\out{\hypertarget{method-RnmrQuant1D-plot_zones}{}}}
+\subsection{Method \code{plot_zones()}}{
+Wrapper for the \href{#method-RnmrQuant1D-view_spectra}{\code{view_spectra()}} method.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$plot_zones(id, zones, params = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{id}}{Either the order number (numeric) of the spectrum in the sample table or the samplecode (string), i.e the 2nd column in the sample table.}
+
+\item{\code{zones}}{The zones list to plotted.}
+
+\item{\code{params}}{a list of selected plot parameters.  See \href{#method-RnmrQuant1D-view_spectra}{\code{view_spectra()}} method.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+a \href{https://plotly.com/r/}{plotly} graph
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-RnmrQuant1D-plot_cmpds"></a>}}
+\if{latex}{\out{\hypertarget{method-RnmrQuant1D-plot_cmpds}{}}}
+\subsection{Method \code{plot_cmpds()}}{
+Wrapper for the \href{#method-RnmrQuant1D-plot_spectra}{\code{plot_spectra()}} method.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$plot_cmpds(id, cmpds, params = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{id}}{Either the order number (numeric) of the spectrum in the sample table or the samplecode (string), i.e the 2nd column in the sample table.}
+
+\item{\code{cmpds}}{The compound list to plotted.}
+
+\item{\code{params}}{a list of selected plot parameters.  See \href{#method-RnmrQuant1D-view_spectra}{\code{view_spectra()}} method.}
 }
 \if{html}{\out{</div>}}
 }
