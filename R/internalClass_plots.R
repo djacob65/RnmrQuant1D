@@ -69,11 +69,12 @@ internalClass$set("public", "plotZones", function(ID, zones, params=NULL)
 	if (sum(zones %in% res$zones) != length(zones))
 		stop('Error: some zones are not included in the spectra set',"\n")
 
+	S <- ifelse( is.numeric(ID), specList[[ID]]$samplecode, ID )
 	if (is.null(g$filename)) {
 		if (length(zones)>1)
-			g$filename <- paste(specList[[ID]]$samplecode, min(zones), max(zones), sep='_')
+			g$filename <- paste(S, min(zones), max(zones), sep='_')
 		else
-			g$filename <- paste(specList[[ID]]$samplecode, zones, sep='_')
+			g$filename <- paste(S, zones, sep='_')
 	}
 
 	pkfit <- PROFILE$fitting
@@ -94,12 +95,12 @@ internalClass$set("public", "plotCmpds", function(ID, cpmd, params=NULL)
 {
 	g <- getPlotParams(params)
 
+	S <- ifelse( is.numeric(ID), specList[[ID]]$samplecode, ID )
 	if (is.null(g$filename)) {
 		if (length(cpmd)>1)
-			g$filename <- paste(specList[[ID]]$samplecode,
-						paste(sapply(cpmd, function(s) { substring(s,1,1) }), collapse='_'), sep='_')
+			g$filename <- paste(S, paste(sapply(cpmd, function(s) { substring(s,1,1) }), collapse='_'), sep='_')
 		else
-			g$filename <- paste(specList[[ID]]$samplecode, cpmd, sep='_')
+			g$filename <- paste(S, cpmd, sep='_')
 	}
 
 	fig <- plot_spectra(ID, cpmd, plotmodel=g$plotmodel, plotTrueSpec=g$plotTrueSpec, 

@@ -105,6 +105,9 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', c
 		if (type == "html") {
 			displayWidget(m)
 		} else {
+			if (is.null(tmpdir))
+				tmpdir <- paste0("tmp", floor(runif(1, 0, 10^12)))
+			suppressWarnings(dir.create(tmpdir))
 			IMGname <- floor(runif(1, 0, 10^12))
 			IMGhtml <- file.path(tmpdir,paste0(IMGname, ".html"))
 			saveWidgetFix(m, IMGhtml)
