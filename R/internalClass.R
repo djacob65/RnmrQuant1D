@@ -140,7 +140,7 @@ internalClass <- R6Class("internalClass",
 				'r5' = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
 				'r6' = c(2, 2),                  # nbpeaks, dist
 				'r7' = c(2, 1.2),                # ratioA, dist
-				'r8' = c(2, 5, 5)                # J, nbpeaks, ratioPN
+				'r8' = c(2, 5, 3)                # J, nbpeaks, ratioPN
 			)
 		}
 	)

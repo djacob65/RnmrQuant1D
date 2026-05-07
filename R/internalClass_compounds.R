@@ -87,7 +87,6 @@ internalClass$set("private", "find_pattern_s", function(spec, peaks, ppm0, dppm=
 internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, sel=0, ratio=1.4, dJ=0.3, dS=65, full=FALSE)
 {
 	# Tolerance settings
-	dA <- 0 # 0.25*ratio
 	dppm0 <- 5/spec$acq$SFO1
 	dppm <- dppm0 +0.5*J/spec$acq$SFO1
 
@@ -118,7 +117,7 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 				}
 			}
 		if (is.null(JL)) break
-		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,6]))<(ratio+dA), , drop=F] # criterion based on the ratio
+		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,6]))<ratio, , drop=F] # criterion based on the ratio
 		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,7]))<dS, , drop=F] # criterion based on dSigma
 		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,4])-ppm0)<dppm0, , drop=F] # criterion based on ppm0
 		if (nrow(JL)>1 && sel %in% c(0,1,3)) JL <- JL[order(as.numeric(JL[,8])), ] # order by increasing criterion
@@ -546,12 +545,11 @@ internalClass$set("private", "find_peaks_rule_r7", function(spec, peaks, ppm1, p
 })
 
 # r8: find 'nbpeaks' consecutive peaks in the ppm range (e.g shikimic acid)
-internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, ratioPN=5)
+internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, ppm2, J=2, nbpeaks=5, ratioPN=3)
 {
 	Dmax <- 1.02*(nbpeaks-1)*J
 	Dmin <- 0.9*(nbpeaks-1)*J
 	facJ <- 1.05
-	ratioPN <- 1
 
 	distHz <- function(gn, n1, n2) { (peaks$ppm[gn[n2]] - peaks$ppm[gn[n1]])*spec$acq$SFO1 }
 	is_snr <- function(n) { (peaks$amp[n]/spec$Noise)<ratioPN }
