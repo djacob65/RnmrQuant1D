@@ -86,25 +86,26 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 
 internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', container=NULL)
 {
+	options(DT.options = list(pageLength = nrow(M)))
+	optstyle <- DT::JS(
+		"function(settings, json){$(this.api().table().header()).css({'font-size':'12px', 'background-color':'#c2d1f0', 'color':'#000'});}"
+	)
 	type <- OUTTYPE
 	df=as.data.frame(M)
-	rownames(M) <- NULL
+	if (is.null(container))
+		container <- htmltools::tags$table(DT::tableHeader(c(colnames(df)), TRUE), class = 'display')
+	rownames(df) <- NULL
 	V <- sapply(df, is.numeric)
 	for (k in 1:length(V)) if (V[k]) df[names(V)[k]] <- round(df[names(V)[k]],nbdec)
 	if (type == "svg") {
 		df
 	} else {
-		options(DT.options = list(pageLength = nrow(df)))
-		optstyle <- DT::JS(
-			"function(settings, json){$(this.api().table().header()).css({'font-size':'12px', 'background-color':'#c2d1f0', 'color':'#000'});}"
-		)
-		if (is.null(container))
-			container <- htmltools::tags$table(DT::tableHeader(c('ID',colnames(df)), TRUE), class = 'display')
-		m <- DT::datatable(df, options = list(dom = 't', initComplete = optstyle), container=container) |>
-				DT::formatStyle( names(df), `font-size` = '12px') |>
-				DT::formatStyle( 0, `font-size` = '12px')
+		m <- DT::datatable(df, options = list(scrollX = FALSE, scrollY = FALSE, autoWidth = TRUE, dom = 't', initComplete = optstyle),
+				rownames=FALSE, container = container) |>
+			DT::formatStyle( names(df), `font-size` = '12px') |>
+			DT::formatStyle( 0, `font-size` = '12px')
 		if (type == "html") {
-			displayWidget(m)
+			if (!is.null(m)) m
 		} else {
 			if (is.null(tmpdir))
 				tmpdir <- paste0("tmp", floor(runif(1, 0, 10^12)))
