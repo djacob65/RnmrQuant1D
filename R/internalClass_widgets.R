@@ -86,37 +86,39 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 
 internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', container=NULL)
 {
+	type <- OUTTYPE
 	options(DT.options = list(pageLength = nrow(M)))
 	optstyle <- DT::JS(
 		"function(settings, json){$(this.api().table().header()).css({'font-size':'12px', 'background-color':'#c2d1f0', 'color':'#000'});}"
 	)
-	type <- OUTTYPE
+
+	# Format
 	df=as.data.frame(M)
 	if (is.null(container))
 		container <- htmltools::tags$table(DT::tableHeader(c(colnames(df)), TRUE), class = 'display')
 	rownames(df) <- NULL
 	V <- sapply(df, is.numeric)
 	for (k in 1:length(V)) if (V[k]) df[names(V)[k]] <- round(df[names(V)[k]],nbdec)
-	if (type == "svg") {
-		df
-	} else {
-		m <- DT::datatable(df, options = list(scrollX = FALSE, scrollY = FALSE, autoWidth = TRUE, dom = 't', initComplete = optstyle),
-				rownames=FALSE, container = container) |>
-			DT::formatStyle( names(df), `font-size` = '12px') |>
-			DT::formatStyle( 0, `font-size` = '12px')
-		if (type == "html") {
-			if (!is.null(m)) m
-		} else {
-			if (is.null(tmpdir))
-				tmpdir <- paste0("tmp", floor(runif(1, 0, 10^12)))
-			suppressWarnings(dir.create(tmpdir))
-			IMGname <- floor(runif(1, 0, 10^12))
-			IMGhtml <- file.path(tmpdir,paste0(IMGname, ".html"))
-			saveWidgetFix(m, IMGhtml)
-			IMGfile <- file.path(tmpdir,paste0(IMGname, ".",type))
-			tryCatch(webshot2::webshot(IMGhtml, IMGfile), error=function(e){})
-			if (type == "png") IRdisplay::display_png(file=IMGfile)
-			if (type == "jpeg") IRdisplay::display_jpeg(file=IMGfile)
-		}
-	}
+
+	# SVG
+	if (type == "svg") return(df)
+
+	# HTML
+	m <- DT::datatable(df, options = list(scrollX = FALSE, scrollY = FALSE, autoWidth = TRUE, dom = 't', initComplete = optstyle),
+			rownames=FALSE, container = container) |>
+		DT::formatStyle( names(df), `font-size` = '12px') |>
+		DT::formatStyle( 0, `font-size` = '12px')
+	if (type == "html" && !is.null(m)) return(m)
+
+	# PNG, JPEG
+	if (is.null(tmpdir))
+		tmpdir <- paste0("tmp", floor(runif(1, 0, 10^12)))
+	suppressWarnings(dir.create(tmpdir))
+	IMGname <- floor(runif(1, 0, 10^12))
+	IMGhtml <- file.path(tmpdir,paste0(IMGname, ".html"))
+	saveWidgetFix(m, IMGhtml)
+	IMGfile <- file.path(tmpdir,paste0(IMGname, ".",type))
+	tryCatch(webshot2::webshot(IMGhtml, IMGfile), error=function(e){})
+	if (type == "png") IRdisplay::display_png(file=IMGfile)
+	if (type == "jpeg") IRdisplay::display_jpeg(file=IMGfile)
 })
