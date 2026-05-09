@@ -98,7 +98,7 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', c
 			"function(settings, json){$(this.api().table().header()).css({'font-size':'12px', 'background-color':'#c2d1f0', 'color':'#000'});}"
 		)
 		if (is.null(container))
-			container <- htmltools::tags$table(DT::tableHeader(c('ID',colnames(df)), TRUE), class = 'display')
+			container <- htmltools::tags$table(DT::tableHeader(c(colnames(df)), TRUE), class = 'display')
 		m <- DT::datatable(df, options = list(dom = 't', initComplete = optstyle), container=container) |>
 				DT::formatStyle( names(df), `font-size` = '12px') |>
 				DT::formatStyle( 0, `font-size` = '12px')
