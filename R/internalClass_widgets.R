@@ -40,7 +40,9 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 		setwd(tmpdir)
 		IMGfile <- paste0(IMGname, ".",type)
 		tryCatch({
-			suppressWarnings(plotly::orca(widget, file=IMGfile, width=width, height=height, verbose=FALSE, debug=FALSE))
+			suppressWarnings(suppressMessages(
+				plotly::orca(widget, file=IMGfile, width=width, height=height, verbose=FALSE, debug=FALSE)
+			))
 		}, error=function(cond) { cat("Failed:", paste0(cond, collapse="\n"), "\n"); sink(); } )
 		if (!file.exists(IMGfile)) IMGfile <- paste0(IMGname, "_1.",type)
 		repeat {
