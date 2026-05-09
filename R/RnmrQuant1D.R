@@ -406,9 +406,10 @@ public = list(
 #' @param M the matrix to be embellished with the DT package
 #' @param nbdec the number of decimal places for floating point numbers in the output table
 #' @param tmpdir the directory to temporarily save the image before displaying it
+#' @container A custom table container for displayTable function
 #' @return Depending on the OutType attribute in the RnmrQuant1D instance, returns a \href{https://plotly.com/r/}{plotly} graph (html) or displays the image (png,svg, ...)
-	displayTable = function(M, nbdec=2, tmpdir='tmp') {
-		super$displayTable(M, nbdec, tmpdir)
+	displayTable = function(M, nbdec=2, tmpdir='tmp', container=NULL) {
+		super$displayTable(M, nbdec, tmpdir, container)
 	}
 
 ))
