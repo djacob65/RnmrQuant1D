@@ -97,12 +97,12 @@ internalClass <- R6Class("internalClass",
 			procParams$DPHCPZTSP <<- 1.2
 			procParams$DHZPZRANGE <<- 250
 
-			vendor_list <- c('bruker','varian')
+			vendor_list <- c('bruker','varian','jeol')
 			if (!vendor %in% vendor_list)
 				stop('vendor must be one of the following: ',paste(vendor_list, collapse = ", "))
 
 			procParams$VENDOR <<- vendor
-			if (vendor == 'varian')
+			if (vendor %in% c('varian','jeol'))
 				procParams$REVPPM <<- TRUE
 
 			# Filters

@@ -25,7 +25,8 @@ internalClass$set("public", "check_samples", function(verbose=FALSE)
 	# Check if the samples table has at least NCMIN columns and a 'F_dilition' columns
 	switch( procParams$VENDOR,
 		'bruker'= { NCMIN <- 4; colstr <- "Spectrum, Samplecode, EXPNO" },
-		'varian'= { NCMIN <- 3; colstr <- "Spectrum, Samplecode" }
+		'varian'= { NCMIN <- 3; colstr <- "Spectrum, Samplecode" },
+		'jeol'= { NCMIN <- 3; colstr <- "Spectrum, Samplecode" }
 	)
 	if (!ncol(SAMPLES)>=NCMIN)
 		stop_quietly(paste0("Error: the sample table must have at least ",NCMIN," columns : ",colstr,", ",FDILfield))

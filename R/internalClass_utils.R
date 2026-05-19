@@ -48,12 +48,18 @@ internalClass$set("private", "get_procParams", function(profile=NULL)
 #=====================================================================
 
 # Get list of directories under DIR
-internalClass$set("private", "get_list_dirs", function(DIR=NULL)
+internalClass$set("private", "get_list_dirs", function(DIR)
 {
 	LIST <- NULL
-	pfile <- ifelse( procParams$VENDOR=='bruker', "audita.txt$", "procpar$")
+	if (is.null(DIR)) stop_quietly('Error: get_list_dirs function needs a valid path as input')
 	if (DIR != RAWDIR || is.null(RAWDIR_SLIST)) {
-		LIST <- unique(dirname(list.files(path = DIR, pattern = pfile, all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
+		if (procParams$VENDOR=='jeol') {
+			pfile <- "*.jdf$"
+			LIST <- unique(list.files(path = DIR, pattern = pfile, all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE))
+		} else {
+			pfile <- ifelse( procParams$VENDOR=='bruker', "audita.txt$", "procpar$")
+			LIST <- unique(dirname(list.files(path = DIR, pattern = pfile, all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
+		}
 	} else {
 		LIST <- RAWDIR_SLIST
 	}
@@ -115,6 +121,16 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequenc
 		}
 	}
 
+	jeol_spectra_list <- function(S)
+	{
+		L <- grep(paste0('/',S), dirs, value = TRUE)
+		ACQFILE <- unique(L)[1]
+		if (file.exists(ACQFILE)) {
+			cnt <<- cnt + 1
+			M[cnt, 1:5] <<- c(S, paste(S,1, sep="-"),1, SEQUENCE, ACQFILE)
+		}
+	}
+
 	M <- NULL
 	if (! is.null(DIR) && dir.exists(DIR))
 	{
@@ -124,8 +140,10 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequenc
 		for (S in samples) {
 			if (procParams$VENDOR=='bruker')
 				bruker_spectra_list(S)
-			else
+			if (procParams$VENDOR=='varian')
 				varian_spectra_list(S)
+			if (procParams$VENDOR=='jeol')
+				jeol_spectra_list(S)
 			if (cnt==nrow(M)) break
 		}
 		if (cnt>0) { M <- M[1:cnt, , drop=F] }
