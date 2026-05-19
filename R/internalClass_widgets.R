@@ -86,7 +86,7 @@ internalClass$set("public", "displayWidget", function(widget, tmpdir='tmp', widt
 })
 
 
-internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', container=NULL)
+internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', container=NULL, row.names=FALSE)
 {
 	type <- OUTTYPE
 	options(DT.options = list(pageLength = nrow(M)))
@@ -96,9 +96,11 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', c
 
 	# Format
 	df=as.data.frame(M)
-	if (is.null(container))
-		container <- htmltools::tags$table(DT::tableHeader(c(colnames(df)), TRUE), class = 'display')
-	rownames(df) <- NULL
+	if (is.null(container)) {
+		if (row.names) { cols <- c('id',colnames(df)) } else { cols <- c(colnames(df)) }
+		container <- htmltools::tags$table(DT::tableHeader(cols, TRUE), class = 'display')
+	}
+	if (!row.names) rownames(df) <- NULL
 	V <- sapply(df, is.numeric)
 	for (k in 1:length(V)) if (V[k]) df[names(V)[k]] <- round(df[names(V)[k]],nbdec)
 
@@ -107,7 +109,7 @@ internalClass$set("public", "displayTable", function(M, nbdec=2, tmpdir='tmp', c
 
 	# HTML
 	m <- DT::datatable(df, options = list(scrollX = FALSE, scrollY = FALSE, autoWidth = TRUE, dom = 't', initComplete = optstyle),
-			rownames=FALSE, container = container) |>
+			rownames=row.names, container = container) |>
 		DT::formatStyle( names(df), `font-size` = '12px') |>
 		DT::formatStyle( 0, `font-size` = '12px')
 	if (type == "html" && !is.null(m)) return(m)
