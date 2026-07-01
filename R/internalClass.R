@@ -61,9 +61,6 @@ internalClass <- R6Class("internalClass",
 		fP           = list(),
 		expnolist    = "",
  
-	# Internally initialized sample list in RAWDIR directory
-		RAWDIR_SLIST     = NULL,
-
 	#=====================================================================
 	# Initialization
 	#=====================================================================
@@ -143,10 +140,13 @@ internalClass <- R6Class("internalClass",
 				'r8' = c(2, 5, 3)                # J, nbpeaks, ratioPN
 			)
 		}
-	)
+	),
 
 	# -- Private Fields --
-	# private = list(	)
+	private = list(
+		# Internally initialized sample list in RAWDIR directory
+		RAWDIR_SLIST = NULL
+	)
 
 # -- End Public Class --
 )
