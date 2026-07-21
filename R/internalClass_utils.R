@@ -94,6 +94,8 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequenc
 			if (!file.exists(ACQFILE)) next
 			ACQ <- readLines(ACQFILE)
 			Pstr <- Rnmr1D:::.bruker.get_param(ACQ,"PULPROG",type="string")
+			FREQ <- Rnmr1D:::.bruker.get_param(ACQ,"SFO1")
+			TD <- Rnmr1D:::.bruker.get_param(ACQ,"TD")
 			PULSE <- NULL
 			if (length(grep('^zg[0-9]{0,2}$',Pstr))) PULSE <- 'zg'
 			if (length(grep('^zgpr',Pstr))) PULSE <- 'zgpr'
@@ -101,7 +103,7 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequenc
 			if (is.null(PULSE)) next
 			if (!is.null(sequence) && sequence != PULSE) next
 			cnt <<- cnt + 1
-			M[cnt, 1:5] <<- c(S, paste(S,id, sep="-"),id, PULSE, ACQDIR)
+			M[cnt, 1:7] <<- c(S, paste(S,id, sep="-"),id, PULSE, ACQDIR, FREQ, TD)
 			if (cnt==nrow(M)) break
 		}
 	}
@@ -112,11 +114,10 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequenc
 		ACQDIR <- unique(L)[1]
 		ACQFILE <- file.path(ACQDIR,'procpar')
 		if (file.exists(ACQFILE)) {
-			ACQ <- readLines(ACQFILE)
-			PULSE <- Rnmr1D:::.varian.get_param(ACQ,"pslabel",type="string")
-			if (!is.null(PULSE) && (is.null(sequence) || (!is.null(sequence) && sequence == PULSE)))  {
+			spec <- Rnmr1D:::.read.FID.varian(ACQDIR)
+			if (!is.null(spec$acq$PULSE) && (is.null(sequence) || (!is.null(sequence) && sequence == spec$acq$PULSE))) {
 				cnt <<- cnt + 1
-				M[cnt, 1:5] <<- c(S, paste(S,1, sep="-"),1, PULSE, ACQDIR)
+				M[cnt, 1:7] <<- c(S, paste(S,1, sep="-"),1, spec$acq$PULSE, ACQDIR, spec$acq$SFO1, spec$acq$TD)
 			}
 		}
 	}
@@ -126,8 +127,11 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequenc
 		L <- grep(paste0('/',S), dirs, value = TRUE)
 		ACQFILE <- unique(L)[1]
 		if (file.exists(ACQFILE)) {
-			cnt <<- cnt + 1
-			M[cnt, 1:5] <<- c(S, paste(S,1, sep="-"),1, SEQUENCE, ACQFILE)
+			spec <- Rnmr1D:::.read.FID.jeol(ACQFILE)
+			if (!is.null(spec$acq$PULSE) && (is.null(sequence) || (!is.null(sequence) && sequence == spec$acq$PULSE))) {
+				cnt <<- cnt + 1
+				M[cnt, 1:7] <<- c(S, paste(S,1, sep="-"),1, spec$acq$PULSE, ACQFILE, spec$acq$SFO1, spec$acq$TD)
+			}
 		}
 	}
 
@@ -135,7 +139,7 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequenc
 	if (! is.null(DIR) && dir.exists(DIR))
 	{
 		dirs <- get_list_dirs(DIR)
-		M <- matrix(0, nrow=length(dirs), ncol=5)
+		M <- matrix(0, nrow=length(dirs), ncol=7)
 		cnt <- 0
 		for (S in samples) {
 			if (procParams$VENDOR=='bruker')
@@ -149,7 +153,7 @@ internalClass$set("private", "get_list_spectrum", function(DIR, samples, sequenc
 		if (cnt>0) { M <- M[1:cnt, , drop=F] }
 		else       { M <- NULL }
 		if (!is.null(M)) {
-			colnames(M) <- c('Spectrum', 'Samplename', 'expno', 'sequence', 'path')
+			colnames(M) <- c('Spectrum', 'Samplename', 'expno', 'sequence', 'path', 'frequence', 'size')
 			M <- as.data.frame(M)
 		}
 	}

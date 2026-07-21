@@ -51,6 +51,9 @@ internalClass <- R6Class("internalClass",
 	# Calibration compound names
 		calib_cmpd_names  = c('TSP','TMSP','DSS'),
 
+	# Name of file for cluster status
+		cluster_status_file = 'cluster_status.out',
+
 	# Default settings (P3) for metabolite identification rules/patterns
 		patterns_defpars = list(),
 

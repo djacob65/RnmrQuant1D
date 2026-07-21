@@ -24,9 +24,9 @@ internalClass$set("public", "check_samples", function(verbose=FALSE)
 
 	# Check if the samples table has at least NCMIN columns and a 'F_dilition' columns
 	switch( procParams$VENDOR,
-		'bruker'= { NCMIN <- 4; colstr <- "Spectrum, Samplecode, EXPNO" },
-		'varian'= { NCMIN <- 3; colstr <- "Spectrum, Samplecode" },
-		'jeol'= { NCMIN <- 3; colstr <- "Spectrum, Samplecode" }
+		'bruker'= { NCMIN <- 4; colstr <- "Spectrum, Samplename, EXPNO" },
+		'varian'= { NCMIN <- 3; colstr <- "Spectrum, Samplename" },
+		'jeol'= { NCMIN <- 3; colstr <- "Spectrum, Samplename" }
 	)
 	if (!ncol(SAMPLES)>=NCMIN)
 		stop_quietly(paste0("Error: the sample table must have at least ",NCMIN," columns : ",colstr,", ",FDILfield))
@@ -241,13 +241,13 @@ internalClass$set("public", "check_all", function(verbose=FALSE)
 
 	# Check if Field is defined
 	if (is.na(as.numeric(FIELD))) {
-		cat("Warning : the field 'FIELD' is not defined. Useful for tracing")
+		cat("Warning : the field 'FIELD' is not defined. Useful for tracing\n")
 		warn_cnt <- warn_cnt + 1
 	}
 
 	# Check if Type is defined
 	if (TYPE == "unknown") {
-		cat("Warning : the field 'TYPE' is not defined. Useful for tracing")
+		cat("Warning : the field 'TYPE' is not defined. Useful for tracing\n")
 		warn_cnt <- warn_cnt + 1
 	}
 

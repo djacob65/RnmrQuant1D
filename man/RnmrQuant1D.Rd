@@ -451,7 +451,7 @@ a \href{https://plotly.com/r/}{plotly} graph
 \subsection{Method \code{proc_Integrals()}}{
 Performs the integration of all compounds defined by a pattern included in the specified zone(s).
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$proc_Integrals(zones, ncpu = 2, verbose = 1)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$proc_Integrals(zones, ncpu = 2, progress = TRUE, verbose = 1)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -460,6 +460,8 @@ Performs the integration of all compounds defined by a pattern included in the s
 \item{\code{zones}}{The selected zones for integration.}
 
 \item{\code{ncpu}}{The number of processors (cores) used for parallel computing.}
+
+\item{\code{progress}}{if TRUE, display messages as as progressing information}
 
 \item{\code{verbose}}{if TRUE, some messages are displayed}
 
@@ -593,6 +595,7 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
   lw = 2,
   showlegend = TRUE,
   legendhoriz = FALSE,
+  legendtop = FALSE,
   showgrid = TRUE,
   title = NULL,
   colspecs = NULL,
@@ -621,7 +624,9 @@ Plots the ppm range defined by 'RnmrQuant1D$ppm_range', the latter being positio
 
 \item{\code{showlegend}}{If TRUE, show the legend}
 
-\item{\code{legendhoriz}}{Put the legend at the bottom (TRUE) or at the left (FALSE) of the graph}
+\item{\code{legendhoriz}}{Put the legend at the top/bottom (TRUE) or at the left (FALSE) of the graph}
+
+\item{\code{legendtop}}{If legendhoriz equal to TRUE, put the legend at the top (TRUE) or at the bottom (FALSE) of the graph}
 
 \item{\code{showgrid}}{If TRUE, show the grid on the background}
 
@@ -690,6 +695,7 @@ Computes for each sample the concentration  of targeted compounds  based on the 
   zones = NULL,
   ncpu = 2,
   reset = FALSE,
+  progress = TRUE,
   CR = FALSE,
   verbose = 1
 )}\if{html}{\out{</div>}}
@@ -705,6 +711,8 @@ Computes for each sample the concentration  of targeted compounds  based on the 
 \item{\code{ncpu}}{The number of processors (cores) used for parallel computing.}
 
 \item{\code{reset}}{Indicates whether to delete all existing RData files or to proceed by accumulation. In this latter case, if some samples had already been processed then they will not be processed again.}
+
+\item{\code{progress}}{if TRUE, display messages as as progressing information}
 
 \item{\code{CR}}{Indicates whether to add a Carriage Return for a more presentable display (case with Jupyter notebooks)}
 
@@ -764,13 +772,15 @@ nothing
 \subsection{Method \code{save_Results()}}{
 Saves the result tables (samples, integration, SNR, quantifications) computed by \href{#method-RnmrQuant1D-proc_Quantification}{\code{proc_Quantification()}} and other information for tracing (calibration profile, quantification profile, R environment, ...) into a workbook (\href{https://docs.fileformat.com/spreadsheet/xlsx/}{XLSX format}).
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$save_Results(file, filelist = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$save_Results(file, results = NULL, filelist = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{file}}{the path to the output file}
+
+\item{\code{results}}{list of results provided by the \href{#method-RnmrQuant1D-get_output_results}{\code{get_output_results()}} method. The latter will be called if "results" is NULL.}
 
 \item{\code{filelist}}{a simple list containing three elements, just for tracing : 1) SAMPLEFILE, the path to the sample file, 2) PROFILE, the path to the quantification profile, 3) CALIBRATION, the path to the calibration profile}
 
@@ -860,7 +870,13 @@ a \href{https://plotly.com/r/}{plotly} graph
 \subsection{Method \code{displayWidget()}}{
 Displays a widget (e.g. a plotly graph) - Depending on the OutType attribute in the RnmrQuant1D instance, returns a \href{https://plotly.com/r/}{plotly} graph (html) or displays the image (png,svg, ...)
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$displayWidget(widget, tmpdir = "tmp", width = "auto", height = 400)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$displayWidget(
+  widget,
+  tmpdir = "tmp",
+  width = "auto",
+  height = 400,
+  filename = NULL
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -873,6 +889,8 @@ Displays a widget (e.g. a plotly graph) - Depending on the OutType attribute in 
 \item{\code{width}}{the width of the output image}
 
 \item{\code{height}}{the height of the output image}
+
+\item{\code{filename}}{output image file name. By default, an arbitrary name is generated.}
 }
 \if{html}{\out{</div>}}
 }
@@ -910,7 +928,13 @@ nothing
 \subsection{Method \code{displayTable()}}{
 Beautifies a matrix using the DT package before displaying it
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$displayTable(M, nbdec = 2, tmpdir = "tmp")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{RnmrQuant1D$displayTable(
+  M,
+  nbdec = 2,
+  tmpdir = "tmp",
+  container = NULL,
+  row.names = FALSE
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -921,6 +945,10 @@ Beautifies a matrix using the DT package before displaying it
 \item{\code{nbdec}}{the number of decimal places for floating point numbers in the output table}
 
 \item{\code{tmpdir}}{the directory to temporarily save the image before displaying it}
+
+\item{\code{container}}{A custom table container for displayTable function}
+
+\item{\code{row.names}}{indicates if row names are shown or not}
 }
 \if{html}{\out{</div>}}
 }

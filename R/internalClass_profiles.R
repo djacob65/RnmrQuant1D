@@ -58,7 +58,7 @@ internalClass$set("public", "readProfile", function(PROFILE)
 			readLines(PROFILE)  # Read file contents
 		}
 	}, error=function(cond) {
-		stop(cond)
+		stop_quietly(paste(cond, collapse="\n"))
 	})
 
 	# Filter out lines that start with tabs, commas, hash (#), or spaces

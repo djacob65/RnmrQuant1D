@@ -2,7 +2,7 @@
 #  User function  for Integration computing
 #=====================================================================
 
-internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
+internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=TRUE, verbose=1)
 {
 	# Check the quantification profile
 	check_profile(zones)
@@ -18,15 +18,6 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 	if (nrow(pkfit)==0)
 		stop_quietly(paste0("Error: there no zone(s) '",paste0(collapse=","),"' defined in the fitting section in the quantification profile"))
 	ppm_range <<- c(min(pkfit[,1]), max(pkfit[,2]))
-
-	# Function of combining results for parallelization
-	combine_list <- function(LL1, LL2) {
-		getList <- function(L) { list(id=L$id, spec=L$spec, quantif=L$quantif, peaklist=L$peaklist, infos=L$infos) }
-		mylist <- list()
-		for ( i in 1:length(LL1) ) mylist[[LL1[[i]]$id]] <- getList(LL1[[i]])
-		for ( i in 1:length(LL2) ) mylist[[LL2[[i]]$id]] <- getList(LL2[[i]])
-		return(mylist)
-	}
 
 	t <- system.time({
 		rownames(SAMPLES) <<- 1:nrow(SAMPLES)
@@ -52,14 +43,19 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		}
 	})
 	if (verbose>1) cat('Time taken to initialise the cluster (s) =', round(t[3], 2), "\n")
+	writeLines('ok', file.path(rq1d$TMPDIR, rq1d$cluster_status_file))
+
+	# Results proc-process
+	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
+	specList <<- list()
 
 	# Process all samples in parallel
-	funcpar <- function (ID) {
+	for( ID in 1:nrow(Slist)) {
 		priv <- rq1d$.__enclos_env__$private
 
 		# Directory of the raw spectrum
 		samplename <- Slist[ID,2]
-		print(paste0(ID,"/",nrow(Slist),': ',samplename," ..."))
+		if (progress) print(paste0(ID,"/",nrow(Slist),': ',samplename," ..."))
 
 		sink(file = paste0(rq1d$TMPDIR,"/log-",samplename,".txt"), append = FALSE, type = c("output", "message"), split = FALSE)
 
@@ -91,41 +87,18 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, verbose=1)
 		sink()
 
 		# Accumulating results
-		mylist <- list()
 		Tinfos <- cbind(spec$samplecode, spec$fit$infos, spec$TSPwidth)
 		colnames(Tinfos)[1] <- 'Samplecode'
 		colnames(Tinfos)[length(Tinfos)] <- 'TSPwidth'
-		mylist[[paste0('S',ID)]] <- list( id=paste0('S',ID), spec=spec, quantif=Q$quantification, peaklist=Q$peaklist, infos=Tinfos)
-		return(mylist)
-	}
 
-	if (verbose && ncpu>1) {
-		pb <- utils::txtProgressBar(max = nrow(Slist), style = 3, width=128)
-		progress <- function(n) setTxtProgressBar(pb, n)
-		out <- foreach::foreach(ID=1:nrow(Slist),
-				.combine=combine_list, .options.snow = list(progress = progress),
-				.packages=c("Rnmr1D")) %dopar% funcpar(ID)
-	} else {
-		out <- foreach::foreach(ID=1:nrow(Slist),
-				.combine=combine_list,
-				.packages=c("Rnmr1D")) %dopar% funcpar(ID)
-	}
-
-	# Results proc-process
-	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
-	specList <<- list()
-
-	# Merging results
-	for(k in 1:length(out)) {
-		spec <- out[[k]]$spec
-		if (!is.null(out[[k]]$quantif)) {
-			M <- matrix(rep('.',nrow(out[[k]]$quantif)*2), ncol=2)
+		if (!is.null(Q$quantification)) {
+			M <- matrix(rep('.',nrow(Q$quantification)*2), ncol=2)
 			M[,1] <- spec$samplename; M[,2] <- spec$samplecode
-			res$allquantifs <<- rbind(res$allquantifs, cbind(M, out[[k]]$quantif))
-			res$peaklist <<- rbind(res$peaklist, cbind(M, out[[k]]$peaklist))
-			res$infos <<- rbind(res$infos, out[[k]]$infos)
+			res$allquantifs <<- rbind(res$allquantifs, cbind(M, Q$quantification))
+			res$peaklist <<- rbind(res$peaklist, cbind(M, Q$peaklist))
+			res$infos <<- rbind(res$infos, Tinfos)
 		}
-		specList[[k]] <<- spec
+		specList[[ID]] <<- spec
 	}
 })
 
@@ -162,7 +135,7 @@ internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=F
 	if (verbose) cat('elapsed time =', round(t[3],2),"\n\n")
 })
 
-internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones=NULL, ncpu=2, reset=FALSE, CR=FALSE, verbose=1)
+internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones=NULL, ncpu=2, reset=FALSE, progress=TRUE, CR=FALSE, verbose=1)
 {
 	check_all()
 	if (is.null(cmpdlist) && ! is.null(zones)) check_profile(zones)
@@ -206,9 +179,10 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 
 	})
 	if (verbose) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n\n")
+	writeLines('ok', file.path(rq1d$TMPDIR, rq1d$cluster_status_file))
 
-	if (verbose) cat("Do quantification ... \n")
-	if (verbose && CR) cat("\n")
+	if (progress) cat("Do quantification ... \n")
+	if (progress && CR) cat("\n")
 
 	# For each samples
 	rownames(SAMPLES) <<- 1:nrow(SAMPLES)
@@ -230,14 +204,14 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 			expno <- slist[k,3]
 			RDataFile <- paste0(RDATADIR, '/',samplename,'-',expno,'.RData')
 			if (file.exists(RDataFile)) { totcnt <- totcnt - 1; next }
-			if (verbose) cat(sprintf("%3d out of %3d - ", cnt, length(samplelist)))
-			if (verbose) cat(sprintf("%20s expno = %2s ...",samplename, expno));
+			if (progress) cat(sprintf("%3d out of %3d - ", cnt, length(samplelist)))
+			if (progress) cat(sprintf("%20s expno = %2s ...",samplename, expno));
 			LogFile <- paste0(TMPDIR, '/output_',samplename,'_',expno,'.txt')
 			t <- system.time({
 				# Compute the (absolute) quantification matrix (metabolites X repetitions)
 				sink(file = LogFile, append = FALSE, type = c("output", "message"), split = FALSE)
 				# Deconvolution / Quantification
-				if (verbose)  cat("\n\n================================================\n\n")
+				if (progress)  cat("\n\n================================================\n\n")
 				out <- sampleQuantification(samplename, expno, zones, ncpu=ncpu, verbose=1)
 				quantMat <- out$quantMat
 				SNR <- out$SNR
@@ -257,9 +231,9 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 			})
 			tottime <- tottime + t[3]
 			remaintime <- (totcnt-cnt)*tottime/cnt
-			if (verbose) cat(sprintf("OK - duration = %2.2f, remaining time = %4d sec - Ended at %-30s\n",
+			if (progress) cat(sprintf("OK - duration = %2.2f, remaining time = %4d sec - Ended at %-30s\n",
 									round(t[3],2),round(remaintime), as.character(Sys.time()+remaintime)))
-			if (verbose && CR) cat("\n")
+			if (progress && CR) cat("\n")
 			quantParams <- list(samplename=samplename, expno=expno, type=TYPE, field=FIELD, sampleidx=spec$sampleidx,
 								cmpdlist=cmpdlist, zones=zones)
 			save(quantParams, quantMat, absQuantMat, SNR, spec, file = RDataFile)
@@ -405,7 +379,7 @@ internalClass$set("public", "get_spectra_data", function()
 	}
 })
 
-internalClass$set("public", "save_Results", function(file, filelist=NULL)
+internalClass$set("public", "save_Results", function(file, results=NULL, filelist=NULL)
 {
 	# Styles
 	styBH <- openxlsx::createStyle(fgFill = "#0070C0", halign = "CENTER", textDecoration = "Bold", border = "Bottom", fontColour = "white")
@@ -424,8 +398,9 @@ internalClass$set("public", "save_Results", function(file, filelist=NULL)
 	# Create Workbook
 	wb <- openxlsx::createWorkbook()
 
-	# Get all result tables
-	results <- get_output_results()
+	# Retrieve all results tables if they have not yet been provided.
+	if (is.null(results))
+		results <- get_output_results()
 
 	# Create tabs
 	tabs <- c( "Samples", "Integrals", "SNR", "Quantifications", "Calibration", "Profile", "About")
@@ -507,7 +482,7 @@ internalClass$set("public", "save_Results", function(file, filelist=NULL)
 		c("Processing Profile",ifelse(is.list(filelist) && !is.null(filelist$PROFILE), filelist$PROFILE,'-')),
 		c("Calibration Profile",ifelse(is.list(filelist) && !is.null(filelist$CALIBRATION), filelist$CALIBRATION,'-')),
 		c("Instrument Field",FIELD),
-		c("Wine Type",TYPE),
+		c("Sample Type",TYPE),
 		c("Pulse Sequence",SEQUENCE),
 		c("",""),
 		c("",""),

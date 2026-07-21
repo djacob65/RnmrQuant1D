@@ -365,7 +365,7 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 #=====================================================================
 
 # View spectra along with models & compounds
-internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE)
+internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, legendtop=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE)
 {
 	if (! res$proctype %in% c('integration', 'quantification') || length(specList)==0)
 		stop_quietly(paste0("ERROR : Integrals or quantification must be computed before !\n"))
@@ -468,20 +468,26 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 			p <- plotly::layout(p, shapes=lshapes)
 		}
 
-		if (tags %in% c('id','name','auto') && nrow(cmpdlist)>0 && nrow(PL)>0) {
+		if (tags %in% c('id','name','auto','peak') && nrow(cmpdlist)>0 && nrow(PL)>0) {
 			if (tags=='auto')
-				tags <- ifelse( (ppmview[2]-ppmview[1])>1.5, 'id', 'name' )
+				tags <- ifelse( (ppmview[2]-ppmview[1])>1.5, 'peak', 'name' )
 			M <- NULL
 			for (k in 1:nrow(PL)) {
 				pid <- rownames(PL)[k]
 				V <- simplify2array(lapply(1:nrow(cmpdlist),
 						function(i) { which(pid %in% as.numeric(unlist(strsplit(cmpdlist[i,2],",")))) }))
-				M <- rbind(M, c(PL[k,2],1.05*PL[k,3], cmpdlist[which(as.numeric(V)==1),1]))
+				M <- rbind(M, c(PL[k,2], 1.05*PL[k,3], cmpdlist[which(as.numeric(V)==1),1], pid))
 			}
-			data <- data.frame(lab=M[,3], x=M[,1], y=M[,2], tags=sapply(1:nrow(M), function(k) {which(unique(M[,3]) == M[k,3])}))
+			data <- data.frame(lab=M[,3], x=M[,1], y=M[,2], pkid=M[,4],
+						tags=sapply(1:nrow(M), function(k) {which(unique(M[,3]) == M[k,3])}))
 			if (tags=='name')
 				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$lab),
 					showarrow = TRUE, arrowcolor='red', textangle=-30,
+					font = list(color = 'black', family = 'sans serif', size = 12))
+			if (tags=='peak')
+				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$pkid),
+					showarrow = TRUE, arrowcolor='red', hovertext=data$lab,
+					hoverlabel=list(font = list(color = 'blue', family = 'sans serif', size = 18)),
 					font = list(color = 'black', family = 'sans serif', size = 12))
 			if (tags=='id')
 				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$tags),
@@ -492,7 +498,8 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	}
 
 	if (legendhoriz)
-		p <- p |> plotly::layout(legend = list(orientation = 'h', xanchor = "center",  x = 0.5))
+		p <- p |> plotly::layout(legend = list(orientation = 'h', xanchor = "center",
+				x = 0.5, y=ifelse(legendtop, 1.1, -0.2)))
 	if (!showgrid)
 		p <- p |> plotly::layout(xaxis = list(showgrid = F), yaxis = list(showgrid = F))
 

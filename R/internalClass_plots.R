@@ -15,6 +15,7 @@ internalClass$set("private", "def_plot_settings", list(
 	tags = 'none',
 	showgrid = TRUE,
 	legendhoriz = TRUE,
+	legendtop = FALSE,
 	showlegend = TRUE,
 	yaxis = TRUE,
 	ylabel = '', # 'Intensity (a.u)'
@@ -85,7 +86,7 @@ internalClass$set("public", "plotZones", function(ID, zones, params=NULL)
 	fig <- view_spectra(ID, plotmodel=g$plotmodel, plotTrueSpec=g$plotTrueSpec,
 				plotresidus=g$plotresidus, plotzones=g$plotzones,
 				tags=g$tags, lw=g$lw, showlegend=g$showlegend,
-				legendhoriz=g$legendhoriz, showgrid=g$showgrid, 
+				legendhoriz=g$legendhoriz,  legendtop=g$legendtop, showgrid=g$showgrid, 
 				title=g$title, colspecs=g$colspecs, colcpmds=g$colcpmds,
 				opacity=g$opacity, verbose=g$verbose)
     plotFinish(fig, g)
@@ -105,7 +106,7 @@ internalClass$set("public", "plotCmpds", function(ID, cpmd, params=NULL)
 
 	fig <- plot_spectra(ID, cpmd, plotmodel=g$plotmodel, plotTrueSpec=g$plotTrueSpec, 
 						plotresidus=g$plotresidus, plotzones=g$plotzones,
-						tags=g$tags, lw=g$lw, showlegend=g$showlegend, legendhoriz=g$legendhoriz,
+						tags=g$tags, lw=g$lw, showlegend=g$showlegend, legendhoriz=g$legendhoriz, legendtop=g$legendtop,
 						showgrid=g$showgrid, title=g$title, colspecs=g$colspecs, colcpmds=g$colcpmds,
 						verbose=g$verbose)
     plotFinish(fig, g)

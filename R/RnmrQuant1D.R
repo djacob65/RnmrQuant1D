@@ -224,10 +224,11 @@ public = list(
 #' @param self The RnmrQuant1D instance 
 #' @param zones The selected zones for integration.
 #' @param ncpu The number of processors (cores) used for parallel computing.
+#' @param progress if TRUE, display messages as as progressing information
 #' @param verbose if TRUE, some messages are displayed
 #' @return The result will be stored in the RnmrQuant1D instance.
-	proc_Integrals = function(zones, ncpu=2, verbose=1) {
-		super$proc_Integrals(zones, ncpu, verbose)
+	proc_Integrals = function(zones, ncpu=2, progress=TRUE, verbose=1) {
+		super$proc_Integrals(zones, ncpu, progress, verbose)
 	},
 
 #' @description
@@ -284,7 +285,8 @@ public = list(
 #' @param tags add an arrow annotation on each peak resulting from the deconvolution. Among the possible values: 1) 'id' adds the number of the compound to which the peak belongs, 2) 'name' adds the name of the compound to which the peak belongs, 'auto' adds either the number if multiple zones, or the name of the compound, 3) 'none' adds no arrow annotation.
 #' @param lw line width in pixels
 #' @param showlegend If TRUE, show the legend
-#' @param legendhoriz Put the legend at the bottom (TRUE) or at the left (FALSE) of the graph
+#' @param legendhoriz Put the legend at the top/bottom (TRUE) or at the left (FALSE) of the graph
+#' @param legendtop If legendhoriz equal to TRUE, put the legend at the top (TRUE) or at the bottom (FALSE) of the graph
 #' @param showgrid If TRUE, show the grid on the background
 #' @param title If NULL, the title will be the sample code. Otherwise, it will be the specified string. If you don't want a title, enter an empty string.
 #' @param colspecs specifies the array of colors for the original spectrum and the model. Only the two first colors will be used.
@@ -292,8 +294,8 @@ public = list(
 #' @param opacity specifies the opacity of compound colors (default 0.7))
 #' @param verbose If TRUE, The peak list will be displayed
 #' @return a \href{https://plotly.com/r/}{plotly} graph
-	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE) {
-		super$view_spectra(id, plotmodel, plotTrueSpec, plotresidus, plotzones, tags, lw, showlegend, legendhoriz, showgrid, title, colspecs, colcpmds, opacity, verbose)
+	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, legendtop=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE) {
+		super$view_spectra(id, plotmodel, plotTrueSpec, plotresidus, plotzones, tags, lw, showlegend, legendhoriz, legendtop, showgrid, title, colspecs, colcpmds, opacity, verbose)
 	},
 
 #' @description
@@ -316,11 +318,12 @@ public = list(
 #' @param zones In case the list of targeted compounds is null, then the targeted compounds will be defined by the patterns included in the indicated zones. If the list of zones is null, as well as that of the targeted compounds (cmpdlist), then takes into consideration all the zones defined in the quantification profile.
 #' @param ncpu The number of processors (cores) used for parallel computing.
 #' @param reset Indicates whether to delete all existing RData files or to proceed by accumulation. In this latter case, if some samples had already been processed then they will not be processed again.
+#' @param progress if TRUE, display messages as as progressing information
 #' @param CR Indicates whether to add a Carriage Return for a more presentable display (case with Jupyter notebooks)
 #' @param verbose if TRUE, some messages are displayed
 #' @return The results will be stored under the \code{"RDATADIR"} directory as RData files.
-	proc_Quantification = function(cmpdlist=NULL, zones=NULL, ncpu=2, reset=FALSE, CR=FALSE, verbose=1) {
-		super$proc_Quantification(cmpdlist, zones, ncpu, reset, CR, verbose)
+	proc_Quantification = function(cmpdlist=NULL, zones=NULL, ncpu=2, reset=FALSE, progress=TRUE, CR=FALSE, verbose=1) {
+		super$proc_Quantification(cmpdlist, zones, ncpu, reset, progress, CR, verbose)
 	},
 
 #' @description
@@ -343,10 +346,11 @@ public = list(
 #' Saves the result tables (samples, integration, SNR, quantifications) computed by \href{#method-RnmrQuant1D-proc_Quantification}{\code{proc_Quantification()}} and other information for tracing (calibration profile, quantification profile, R environment, ...) into a workbook (\href{https://docs.fileformat.com/spreadsheet/xlsx/}{XLSX format}).
 #' @param self The RnmrQuant1D instance
 #' @param file the path to the output file
+#' @param results list of results provided by the \href{#method-RnmrQuant1D-get_output_results}{\code{get_output_results()}} method. The latter will be called if "results" is NULL.
 #' @param filelist a simple list containing three elements, just for tracing : 1) SAMPLEFILE, the path to the sample file, 2) PROFILE, the path to the quantification profile, 3) CALIBRATION, the path to the calibration profile
 #' @return nothing
-	save_Results = function(file, filelist=NULL) {
-		super$save_Results(file, filelist)
+	save_Results = function(file, results=NULL, filelist=NULL) {
+		super$save_Results(file, results, filelist)
 	},
 
 #' @description
