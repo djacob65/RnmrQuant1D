@@ -55,10 +55,12 @@ internalClass$set("private", "get_list_dirs", function(DIR)
 	if (DIR != RAWDIR || is.null(RAWDIR_SLIST)) {
 		if (procParams$VENDOR=='jeol') {
 			pfile <- "*.jdf$"
-			LIST <- unique(list.files(path = DIR, pattern = pfile, all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE))
+			LIST <- unique(list.files(path = DIR, pattern = pfile, all.files = FALSE,
+				full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE))
 		} else {
 			pfile <- ifelse( procParams$VENDOR=='bruker', "audita.txt$", "procpar$")
-			LIST <- unique(dirname(list.files(path = DIR, pattern = pfile, all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
+			LIST <- unique(dirname(list.files(path = DIR, pattern = pfile, all.files = FALSE,
+				full.names = TRUE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)))
 		}
 	} else {
 		LIST <- RAWDIR_SLIST
@@ -183,7 +185,7 @@ internalClass$set("private", "get_spectralist_by_SAMPLES", function(Slist)
 # Some functions about spectral information
 #=====================================================================
 
-internalClass$set("private", "get_negRatio", function(spec, ppmrange, dppm=0.1)
+internalClass$set("private", "get_negRatio", function(spec, ppmrange)
 {
 	is <- getseq(spec,ppmrange)
 	S <- spec$int
@@ -193,10 +195,7 @@ internalClass$set("private", "get_negRatio", function(spec, ppmrange, dppm=0.1)
 	x0 <- spec$ppm[k]
 	Y0 <- 0.9*(a*x0 + b)
 	Ymin <- S[k]
-	is <- getseq(spec,c(x0-dppm,x0+dppm))
-	Ymax <- S[which(S[is]==max(S[is]))+is[1]]
-	ifelse( (Ymax/abs(Ymin))>10, 100*(Y0-Ymin)/(Ymax-Y0), 0 )
-
+	(Y0-Ymin)/spec$B
 })
 
 internalClass$set("private", "get_TSP_width", function(spec)

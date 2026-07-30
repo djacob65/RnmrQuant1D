@@ -7,6 +7,8 @@ internalClass$set("private", "applyReadSpectrum", function(ACQDIR, verbose=1)
 	# Retrieve preprocessing parameters using the profile file (PROFILE)
 	procParams <<- get_procParams(PROFILE)
 
+	if (verbose) cat("\n=======================\nProcessing\n=======================\n\n")
+
 	# Read the NMR spectrum from the acquisition directory (ACQDIR)
 	# - Uses the processing parameters (procParams)
 	spec <- Rnmr1D::readSpectrum(ACQDIR, procParams, PPM_NOISE, NULL, SCALE_INT, verbose=verbose)
@@ -25,6 +27,7 @@ internalClass$set("private", "applyReadSpectrum", function(ACQDIR, verbose=1)
 		CALIB <- PROFILE$preprocess$CALIB
 		iseq <- getseq(spec,as.numeric(CALIB[1:2]))
 		Y <- spec$int[iseq]
+		if (verbose) cat("\n")
 		if (CALIB[4]=='d') {
 			if (verbose) cat('Calibration based on a doublet :', CALIB[1:3], "\n")
 			DMIN <- round(10*spec$size/65535)
@@ -273,6 +276,7 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 {
 	# Print default parameters if verbosity is enabled
 	if (verbose) {
+		cat("\n\n=======================\nPeak Fitting\n=======================\n\n")
 		cat("-------------------\n")
 		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,
 			', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
@@ -293,8 +297,8 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 	}
 
 	# Constants for baseline correction and peak fitting
-	BLSIG <- 10             # Baseline significance threshold
-	WS <- 0                 # Window Size for smoothing (before=5)
+	BLSIG <- 10             # Baseline significance threshold for qNMR method
+	WS <- 0                 # Window Size for smoothing for qNMR method (previously: 5)
 	Order <- 2              # BL parameter for airPLS method
 
 	# Function to merge peak fitting results from parallel computations
@@ -476,9 +480,11 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 	peaks <- spec$fit$peaks
 	if (!is.null(peaks) && nrow(peaks)>0) rownames(peaks) <- 1:nrow(peaks)
 
+	if (verbose) cat("\n=======================\nPeak Identification\n=======================\n\n")
+
 	# Compute the noise level (Vnoise) for peak intensity thresholding
 	Vnoise <- get_Vnoise(spec, PPM_NOISE)
-	if (verbose) cat("\nVnoise =",Vnoise,"\nB      =",spec$B,"\n\n")
+#	if (verbose) cat("\nVnoise =",Vnoise,"\nB      =",spec$B,"\n\n")
 
 	# Initialize storage for quantification results
 	quantification <- NULL
@@ -576,7 +582,7 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 		}
 		if (!is.na(SNR) && SNR<mean(ZQ$snrmin)) {
 			ISUM <- NA
-			if (verbose) cat("\t\tIntensities lower than the minimum SNR (",round(mean(ZQ$snrmin)),")\n")
+			if (verbose) cat("\t\tSNR (",SNR,") lower than the minimum required (",round(mean(ZQ$snrmin)),")\n", sep="")
 		} else {
 			PKlist <- paste0(PKZQ, collapse=',')
 		}

@@ -29,20 +29,23 @@ internalClass$set("public", "get_samples_table", function(sequence=NULL, infos=F
 internalClass$set("public", "get_response_factors", function(sampletype,  samplename, thresfP=5, deconv=TRUE, qbl=FALSE, verbose=1)
 {
 	L2 <- get_list_samples(QSDIR)
-	samplelist <- L2[ grep(pattern=paste0('^',samplename), L2, value=FALSE) ]
+	if (length(samplename)==1) {
+		samplelist <- L2[ grep(pattern=paste0('^',samplename), L2, value=FALSE) ]
+	} else {
+		samplelist <- samplename
+	}
 	if (is.null(get_list_spectrum(QSDIR, samplelist)))
-		stop_quietly("Error: ",samplename,"is not a valid spectrum name.\n")
+		stop_quietly("Error: ",paste(samplename,collapse=','),"is(are) not a valid spectrum(spectra) name(s).\n")
 
 	if (!sampletype %in% c(QCtype, QStype))
 		stop_quietly("Error: sampletype must be either",QCtype,"or",QStype,".\n")
 
-	if (sampletype == QCtype) check_calibration(QC=samplename, sequence=SEQUENCE, verbose=(verbose>1))
-	if (sampletype == QStype) check_calibration(QS=samplename, sequence=SEQUENCE, verbose=(verbose>1))
-	
+	check_calibration(sequence=SEQUENCE, verbose=(verbose>1))
+
 	if (verbose) cat(samplename, "/",SEQUENCE,"...\n");
 	stds_profil_sub <- CALIBRATION[ CALIBRATION$Type==sampletype, , drop=F]
 
-	out <- standardQuantification(stds_profil_sub, samplename, thresfP, deconv, qbl=qbl, verbose=(verbose>1))
+	out <- standardQuantification(stds_profil_sub, samplelist, thresfP, deconv, qbl=qbl, verbose=(verbose>1))
 	V <- apply(out$fP,1,mean)
 	fP_CV <- sd(V)/mean(V)
 	fPUL <- list(mean=mean(V), CV=round(100*fP_CV,2))
@@ -273,6 +276,8 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 	styBH <- openxlsx::createStyle(fgFill = "#0070C0", halign = "CENTER", textDecoration = "Bold", border = "Bottom", fontColour = "white")
 	styBOLD2 <- openxlsx::createStyle(textDecoration = "Bold")
 	styWrap <- openxlsx::createStyle(wrapText = TRUE)
+	centerStyle <- openxlsx::createStyle(halign = "center")
+	styWarn <- openxlsx::createStyle(fontColour = "#FFFFFF", bgFill = "#FF0000")
 
 	if (res$proctype != 'integration')
 		stop_quietly(paste0("ERROR : Integrals must be computed with the proc_Integrals() method before !\n"))
@@ -284,11 +289,26 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 	wb <- openxlsx::createWorkbook()
 
 	# Create tabs
-	tabs <- c( "Integrals", "SNR", "Infos", "About")
+	tabs <- c( "Samples", "Integrals", "SNR", "Profile", "Infos", "About")
 	for (i in 1:length(tabs))  openxlsx::addWorksheet(wb = wb, sheetName = tabs[i], gridLines = TRUE)
 
-	# Write Integration
+	# Write Samples
 	Tid <- 1
+	samples <- SAMPLES[which(SAMPLES[,2] %in% rownames(results$Int)), ]
+	infos <- t(sapply(1:length(specList), function(x) {
+		spec <- specList[[x]]
+		c(spec$TSPwidth, spec$acq$PULSEWIDTH, spec$acq$NUMBEROFSCANS, spec$acq$SW, spec$proc$SI)
+	}))
+	colnames(infos) <- c('TSPwidth', 'PULSEWIDTH', 'NUMBEROFSCANS', 'SW', 'SI' )
+	samples <- cbind(samples, infos)
+	openxlsx::writeData(wb, Tid, x = samples, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
+	openxlsx::addStyle(wb, Tid, style = styBH, rows = 1, cols = c(1:ncol(samples)), gridExpand = TRUE)
+	openxlsx::conditionalFormatting(wb, Tid, rows = c(2:(nrow(samples)+1)), cols = which(colnames(samples)=='TSPwidth'),
+						rule=paste0(">",TSPwidthMax), style = styWarn)
+	openxlsx::setColWidths(wb, Tid, cols=1, widths=30,  ignoreMergedCells = FALSE)
+
+	# Write Integration
+	Tid <- Tid + 1
 	M <- cbind(rownames(results$Int), results$Int)
 	colnames(M)[1] <- 'Samplecode'
 	openxlsx::writeData(wb, Tid, x = M, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
@@ -300,6 +320,29 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 	colnames(M)[1] <- 'Samplecode'
 	openxlsx::writeData(wb, Tid, x = M, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
 	openxlsx::addStyle(wb, Tid, style = styBH, rows = 1, cols = c(1:ncol(M)), gridExpand = TRUE)
+
+	# Write Quantification profile
+	Tid <- Tid + 1
+	# Preprocess
+	startRow <- 1
+	preprocess <- t(PROFILE$preprocess)
+	openxlsx::writeData(wb, Tid, x = preprocess, startRow=startRow, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
+	openxlsx::addStyle(wb, Tid, style = styBH, rows = startRow, cols = c(1:ncol(preprocess)), gridExpand = TRUE)
+	# fitting
+	startRow <- 5
+	fitting <- PROFILE$fitting[PROFILE$fitting$zone %in% res$zones, ]
+	fitting$obl <- as.numeric(fitting$obl)
+	openxlsx::writeData(wb, Tid, x = fitting, startRow=startRow, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
+	openxlsx::addStyle(wb, Tid, style = styBH, rows = startRow, cols = c(1:ncol(fitting)), gridExpand = TRUE)
+	# quantif
+	startRow <- startRow + nrow(fitting) + 3
+	quantif <- as.data.frame(PROFILE$quantif[PROFILE$quantif$zone %in% res$zones, ])
+	openxlsx::writeData(wb, Tid, x = quantif, startRow=startRow, colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
+	SR <- startRow; ER <- startRow+nrow(quantif)
+	openxlsx::addStyle(wb, Tid, style = centerStyle, rows = c(SR:ER), cols = c(2:10), gridExpand = TRUE)
+	openxlsx::addStyle(wb, Tid, style = styBH, rows = startRow, cols = c(1:ncol(quantif)), gridExpand = TRUE)
+	openxlsx::setColWidths(wb, Tid, cols=1, widths=25,  ignoreMergedCells = FALSE)
+	openxlsx::setColWidths(wb, Tid, cols=5:6, widths=17, ignoreMergedCells = FALSE)
 
 	# Write Infos
 	Tid <- Tid + 1
@@ -480,10 +523,6 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 			}
 			data <- data.frame(lab=M[,3], x=M[,1], y=M[,2], pkid=M[,4],
 						tags=sapply(1:nrow(M), function(k) {which(unique(M[,3]) == M[k,3])}))
-			if (tags=='name')
-				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$lab),
-					showarrow = TRUE, arrowcolor='red', textangle=-30,
-					font = list(color = 'black', family = 'sans serif', size = 12))
 			if (tags=='peak')
 				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$pkid),
 					showarrow = TRUE, arrowcolor='red', hovertext=data$lab,
@@ -494,6 +533,18 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 					showarrow = TRUE, arrowcolor='red', hovertext=data$lab,
 					hoverlabel=list(font = list(color = 'blue', family = 'sans serif', size = 18)),
 					font = list(color = 'black', family = 'sans serif', size = 12))
+			if (tags=='name') {
+				L <- lapply(unique(M[,3]), function(m){
+					M0 <- M[ M[,3]==m, , drop=F]; 
+					M0[which(as.numeric(M0[,2])==max(as.numeric(M0[,2]))), , drop=F]
+				})
+				M2 <- NULL
+				for(k in 1:length(L)) M2 <- rbind(M2, L[[k]])
+				data <- data.frame(lab=M2[,3], x=M2[,1], y=M2[,2])
+				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$lab),
+					showarrow = TRUE, arrowcolor='red', textangle=-30,
+					font = list(color = 'black', family = 'sans serif', size = 12))
+			}
 		}
 	}
 

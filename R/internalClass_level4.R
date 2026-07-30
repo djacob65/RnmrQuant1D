@@ -110,16 +110,22 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=T
 internalClass$set("public", "proc_fPULCON", function(QSname, thresfP=5, deconv=FALSE, qbl=FALSE, verbose=1)
 {
 	if (verbose) cat("Compute the PULCON factor ...\n")
-	check_calibration(QS=QSname)
 
-	LogFile <- paste0(TMPDIR,'/stds_',QSname,'-',SEQUENCE,'.txt')
+	L2 <- get_list_samples(QSDIR)
+	if (length(QSname)==1) {
+		samplelist <- L2[ grep(pattern=paste0('^',QSname), L2, value=FALSE) ]
+	} else {
+		samplelist <- QSname
+	}
+
+	LogFile <- paste0(TMPDIR,'/stds_',samplelist[1],'-',SEQUENCE,'.txt')
 	stds <- CALIBRATION
 	stds <- stds[ stds$Type==QStype, , drop=F]
 	stds <- stds[! stds$Compound %in% calib_cmpd_names, , drop=F]
 	unlink(LogFile)
 	t <- system.time({
 		sink(LogFile)
-		calib <- standardQuantification(stds, QSname, thresfP, deconv, qbl, verbose=verbose)
+		calib <- standardQuantification(stds, samplelist, thresfP, deconv, qbl, verbose=verbose)
 		if (is.nan(calib$fPUL$mean)) {
 			fP <<- list()
 			stop_quietly(paste0("Error: the spectrum '",QSname,"' does not appear to contain the correct quantification standards."))
@@ -362,8 +368,9 @@ internalClass$set("public", "get_spectra_data", function()
 	Rdata <- stringr::str_replace_all(list.files(path = RDATADIR, pattern = "*.RData"), setNames('','.RData'))
 	if (length(Rdata)>1) for (sample in Rdata) {
 		DIR <- file.path(RAWDIR,gsub('-[0-9]+$','', sample))
-		if (sample == 'RQ1D' || !dir.exists(DIR)) next
-		load(file = paste0(file.path(RDATADIR,sample),'.RData'))
+		Rdata.file <- paste0(file.path(RDATADIR,sample),'.RData')
+		if (sample == 'RQ1D' || !file.exists(Rdata.file)) next
+		load(file = Rdata.file)
 		PL <- spec$peaklist
 		if (!is.null(quantParams$cmpdlist)) PL <- PL[PL[,1] %in% quantParams$cmpdlist, , drop=F]
 		n <- nrow(PL)

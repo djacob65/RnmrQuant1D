@@ -14,12 +14,11 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	ratioPN <- 1800
 
 	# limit of the ratio of negative intensities (percent) to positive intensities on the interest zone
-	thresRneg <- 0.2
+	thresRneg <- 25
 
 	# Retrieve preprocessing parameters from PROFILE and disable MVPZTSP correction
-	procPars <- get_procParams(PROFILE)
+	procPars <- procParams
 	procPars$TSP <- TRUE
-	procPars$DHZPZRANGE <- 330
 
 	# Initialize variables
 	BLSIG <- 10             # Baseline significance threshold
@@ -37,7 +36,11 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 
 	# Retrieve spectra names for the given samplename
 	L2 <- get_list_samples(QSDIR)
-	samplelist <- L2[ grep(pattern=paste0('^',samplename), L2, value=FALSE) ]
+	if (length(samplename)==1) {
+		samplelist <- L2[ grep(pattern=paste0('^',samplename), L2, value=FALSE) ]
+	} else {
+		samplelist <- samplename
+	}
 	spectra <- get_list_spectrum(QSDIR, samplelist)
 	spectra <- spectra[ spectra$sequence==SEQUENCE, , drop=F]
 
@@ -48,7 +51,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	P <- nrow(stds_loc) # Nb standards
 	N <- nrow(spectra)  # N spectra
 	fPl <- fR <- Mint <- matrix(rep(0,N*P), nrow=N)
-	fK <- 0
+	fK <- NULL
 	bad_rows <- NULL
 	expno_list <- NULL
 
@@ -61,6 +64,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 		if (verbose) cat(spectra[k,1],', expno=',expno,', sequence =',SEQUENCE,': ')
 		ACQDIR <- spectra[k,]$path
 		spec <- Rnmr1D::readSpectrum(ACQDIR, procPars, PPM_NOISE, NULL, SCALE_INT, verbose= (verbose>1))
+
 	# Display information if verbose
 		if (verbose) cat("Path:", ACQDIR,"\n")
 		if (verbose) cat("Sequence:",spec$acq$PULSE,"\n")
@@ -88,7 +92,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 		Peaks <- NULL
 		K1 <- spec$acq$SW/spec$proc$SI
 		K2 <- spec$acq$PULSEWIDTH/spec$acq$NUMBEROFSCANS
-		fK <- fK + K2
+		fK <- c(fK, K2)
 		for(i in 1:nrow(stds_loc)) {
 			C <- as.vector(stds_loc[i, ])
 			cmpd <- C$Compound
@@ -166,7 +170,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	# Compute final statistics
 	V <- apply(fPl,1,mean)
 	fP_CV <- sd(V)/mean(V)
-	fK <- fK/N
+	fK <- mean(fK)
 	fPUL <- list(mean=mean(V), CV=round(100*fP_CV,2))
 	if (verbose) cat("f_PULCON mean:", mean(V),"\n")
 	if (verbose) cat("f_PULCON CV:",round(100*fP_CV,2),"\n")
@@ -202,10 +206,11 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 	spec <- applyBLcorrection(spec, verbose=verbose)
 
 	# Calculate TSP width and check if it's within acceptable limits
-	spec$TSPwidth <- get_TSP_width(spec)
-	if (verbose) cat("TSP width:", spec$TSPwidth,"Hz\n")
-	if (spec$TSPwidth>TSPwidthMax && verbose)
-		cat("ERROR : TSP width too large\n")
+	if (procParams$TSP) {
+		if (verbose) cat("TSP width:", spec$TSPwidth,"Hz\n")
+		if (spec$TSPwidth>TSPwidthMax && verbose)
+			cat("ERROR : TSP width too large\n")
+	}
 
 	# Peak fitting: Identify peaks in the spectrum
 	opars.loc <- opars

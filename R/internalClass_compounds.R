@@ -604,7 +604,7 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 			J1 <- distHz(c(min(gn),min(gn)+1),1,2)
 			J2 <- distHz(c(max(gn)-1,max(gn)),1,2)
 			if (J1>facJ*J) { gn <- g1;  next }
-			if (J2>facJ$J) { gn <- g2;  next }
+			if (J2>facJ*J) { gn <- g2;  next }
 			if (d1>Dmin && (d1>d2 || a1>a2)) { gn <- g1;  next }
 			if (d2>Dmin && (d2>d1 || a2>a1)) { gn <- g2;  next }
 			break
@@ -742,7 +742,7 @@ internalClass$set("private", "snr_pattern", function(spec, idpeaks, pattern)
 	peaks <- spec$fit$peaks
 	rownames(peaks) <- 1:nrow(peaks)
 	P <- peaks[rownames(peaks)[idpeaks], ]
-	round(mean(P$amp)/(2*Vnoise))
+	round(max(P$amp)/(2*Vnoise))
 })
 
 # Find the list of compounds in the request zones
