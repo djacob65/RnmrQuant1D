@@ -67,6 +67,8 @@ internalClass$set("public", "get_factor_table", function(QS)
     stds_loc <- stds_loc[ stds_loc$Type==QS$sampletype, , drop=F]
     compounds <- stds_loc[, 2]
 	fPl <- QS$fP
+	if (is.null(fPl))
+		stop_quietly(paste("Error: all QS spectra appear to have failed.\n"))
     M <- cbind(fPl, apply(fPl,1,mean), 100*apply(fPl,1,sd)/apply(fPl,1,mean))
     colnames(M) <- c(compounds, 'Mean', 'CV%')
     rownames(M) <- rownames(fPl)

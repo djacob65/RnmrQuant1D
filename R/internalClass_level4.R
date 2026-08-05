@@ -37,13 +37,13 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=T
 			cl <- parallel::makeCluster(ncpu, type="PSOCK", outfile=LOGFILE)
 			doSNOW::registerDoSNOW(cl)
 			parallel::clusterExport(cl=cl, varlist=c("rq1d"), envir=globalenv())
-			on.exit({ parallel::stopCluster(cl); rm(cl) })
+			on.exit({ parallel::stopCluster(cl); rm(cl) }, add = TRUE)
 		} else if (ncpu==1) {
 			foreach::registerDoSEQ()
 		}
 	})
 	if (verbose>1) cat('Time taken to initialise the cluster (s) =', round(t[3], 2), "\n")
-	writeLines('ok', file.path(rq1d$TMPDIR, rq1d$cluster_status_file))
+	writeLines(as.character(t[3]), file.path(rq1d$TMPDIR, rq1d$cluster_status_file))
 
 	# Results proc-process
 	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
@@ -185,7 +185,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 
 	})
 	if (verbose) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n\n")
-	writeLines('ok', file.path(rq1d$TMPDIR, rq1d$cluster_status_file))
+	writeLines(as.character(t[3]), file.path(rq1d$TMPDIR, rq1d$cluster_status_file))
 
 	if (progress) cat("Do quantification ... \n")
 	if (progress && CR) cat("\n")
@@ -327,7 +327,8 @@ internalClass$set("public", "get_output_results", function()
 	out$quantif <- get_NumMat(out$quantif, rownames=FALSE)
 
 	# Samples
-	M <- cbind(SAMPLES[,c(1:3)], SAMPLES[, ncol(SAMPLES)], out$sampletypes, out$sampleinfos)
+	ncolfdil <- which(colnames(SAMPLES)==FDILfield)
+	M <- cbind(SAMPLES[,c(1:3)], SAMPLES[, ncolfdil], out$sampleinfos)
 	colnames(M)[4] <- FDILfield
 	out$samples <- M
 	out$sampleinfos <- out$sampletypes <- NULL

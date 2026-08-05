@@ -265,7 +265,9 @@ internalClass$set("private", "absSampleQuantification", function(spec, fP, quant
 
 	# Reference factor for absolute quantification
 	Kref <- fP$mean*fP$fK
-	if (verbose) cat("PULCON_Factor =",Kref,", SW/SI =",K1,", PW/NS =",K2,", Fdilution =",fdil,"\n")
+	if (verbose) cat("QS: PW/NS =",fP$fK, "\n")
+	if (verbose) cat("Sample: PW/NS =",K2, ", SW/SI =",K1, "\n")
+	if (verbose) cat("PULCON_Factor =",fP$mean, ", Fdilution =",fdil, "\n")
 
 	# Compute the absolute quantification for each compound
 	for (k in 1:nrow(quantMat)) {
