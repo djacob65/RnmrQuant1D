@@ -33,7 +33,6 @@ Visit the [Wiki](https://github.com/djacob65/RnmrQuant1D/wiki/home/) page for a 
   if (!require("devtools"))
     install.packages("devtools", repos="https://cran.rstudio.com")
   devtools::install_github("djacob65/RnmrQuant1D", dependencies = TRUE)
-
   ```
 
 * See installation test performed on [Google Colab](https://colab.research.google.com/drive/10HnEXK5Y1EU5kpaFyaSm6rmhou6diivU)

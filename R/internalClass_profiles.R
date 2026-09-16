@@ -228,26 +228,30 @@ internalClass$set("public", "reorderProfile", function()
 # Save the current quantification profile in an external file
 internalClass$set("public", "saveProfile", function(PROFILENAME)
 {
-	V <- cbind('preprocess', t(PROFILE$preprocess))
-	colnames(V)[1] <- '#TYPE'
-	write.table(V, PROFILENAME, append = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
-	
-	V <- "\n\n"
-	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+	preprocess <- PROFILE$preprocess
+	TSPPHC <- ifelse(preprocess$TSP==1, paste0(preprocess$MVPZTSP,',',preprocess$DHZPZRANGE), 0)
+	CALIB <- paste(preprocess$CALIB, collapse=",")
+	M <- t(as.matrix(c("preprocess",preprocess$LB, preprocess$ZFFAC, TSPPHC, CALIB), 1, 5, byrow=TRUE))
+	colnames(M) <- c("#TYPE","LB","ZFFAC","TSPPHC","CALIBRATION")
+	if (!is.null(preprocess$ADDPARAMS)) {
+		M <- cbind(M, paste(simplify2array(preprocess$ADDPARAMS), collapse=','))
+		colnames(M)[6] <- "PARAMS"
+	}
+	write.table(M, PROFILENAME, append = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+
+	write.table("\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
 	V <- cbind(rep('fitting',nrow(PROFILE$fitting)), PROFILE$fitting)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 
-	V <- "\n\n"
-	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+	write.table("\n\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
 	V <- cbind(rep('quantif',nrow(PROFILE$quantif)), PROFILE$quantif)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
 
-	V <- "\n\n"
-	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+	write.table("\n\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
 	V <- cbind(rep('compound',nrow(PROFILE$compound)), PROFILE$compound)
 	colnames(V)[1] <- '#TYPE'
