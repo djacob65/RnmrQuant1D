@@ -228,6 +228,7 @@ internalClass$set("public", "reorderProfile", function()
 # Save the current quantification profile in an external file
 internalClass$set("public", "saveProfile", function(PROFILENAME)
 {
+	# preprocess section
 	preprocess <- PROFILE$preprocess
 	TSPPHC <- ifelse(preprocess$TSP==1, paste0(preprocess$MVPZTSP,',',preprocess$DHZPZRANGE), 0)
 	CALIB <- paste(preprocess$CALIB, collapse=",")
@@ -238,25 +239,32 @@ internalClass$set("public", "saveProfile", function(PROFILENAME)
 		colnames(M)[6] <- "PARAMS"
 	}
 	write.table(M, PROFILENAME, append = FALSE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
-
 	write.table("\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
+	# baseline section
+	if (!is.null(PROFILE$baseline)) {
+		V <- cbind(rep('baseline',nrow(PROFILE$baseline)), PROFILE$baseline)
+		colnames(V)[1] <- '#TYPE'
+		write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+		write.table("\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
+	}
+
+	# fitting section
 	V <- cbind(rep('fitting',nrow(PROFILE$fitting)), PROFILE$fitting)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+	write.table("\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
-	write.table("\n\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
-
+	# quantif section
 	V <- cbind(rep('quantif',nrow(PROFILE$quantif)), PROFILE$quantif)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
+	write.table("\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
-	write.table("\n\n", PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = FALSE, quote=FALSE)
-
+	# compound section
 	V <- cbind(rep('compound',nrow(PROFILE$compound)), PROFILE$compound)
 	colnames(V)[1] <- '#TYPE'
 	write.table(V, PROFILENAME, append = TRUE, sep = "\t", dec = ".", row.names = FALSE, col.names = TRUE, quote=FALSE)
-
 })
 
 # Get quantif parameters as a list for a given zone
