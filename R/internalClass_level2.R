@@ -127,7 +127,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 			Mint[k,i] <- Iref
 			fR[k,i] <- factor
 			fPl[k,i] <- round(factor/C$MC,4)
-			if (verbose) cat("fPUL =",round(factor/C$MC,4),"\n")
+			if (verbose) cat("fPUL =",fPl[k,i],"\n")
 			if (verbose) cat("PW/NS =",round(K2,4),"\n")
 		}
 		if (verbose) cat("-------------------\n")
@@ -172,10 +172,12 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	fP_CV <- sd(V)/mean(V)
 	fK <- mean(fK)
 	fPUL <- list(mean=mean(V), CV=round(100*fP_CV,2))
-	if (verbose) cat("f_PULCON mean:", mean(V),"\n")
-	if (verbose) cat("f_PULCON CV:",round(100*fP_CV,2),"\n")
-	if (verbose) cat("PW/NS:",round(fK,4),"\n")
-	if (verbose) cat("-------------------\n")
+	if (N>1) {
+		if (verbose) cat("f_PULCON mean:", mean(V),"\n")
+		if (verbose) cat("f_PULCON CV:",round(100*fP_CV,2),"\n")
+		if (verbose) cat("PW/NS:",round(fK,4),"\n")
+		if (verbose) cat("-------------------\n")
+	}
 	colnames(Mint) <- stds_loc[,2]
 	MC <- stds_loc[,5]
 
