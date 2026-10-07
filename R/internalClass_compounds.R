@@ -644,10 +644,10 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 		}
 
 		# Pattern validation
-		if (nbpeaks>2) {
-			n <- length(gn)
-			if (mean(peaks$amp[gn[2:(n-1)]])<mean(peaks$amp[gn[c(1,n)]])) break
-		}
+		#if (nbpeaks>2) {
+		#	n <- length(gn)
+		#	if (mean(peaks$amp[gn[2:(n-1)]])<mean(peaks$amp[gn[c(1,n)]])) break
+		#}
 
 		gn <- (min(gn):max(gn))
 		groups <- as.character(gn)

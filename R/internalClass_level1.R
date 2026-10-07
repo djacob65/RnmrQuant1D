@@ -160,7 +160,10 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 		opars.loc$qbl <- pkfit$qbl[k]
 
 		# Select appropriate filter set based on the filter parameter
-		filters <- filtersets[[min(length(filtersets), round(abs(pkfit$filters[k])))]]
+		if (round(abs(pkfit$filters[k]))==0)
+			filters <- rq1d$filtersets[[max(length(rq1d$filtersets))]]
+		else
+			filters <- rq1d$filtersets[[min(length(rq1d$filtersets), round(abs(pkfit$filters[k])))]]
 
 		# Convert "obl" (optimized baseline correction i.e integrated into the model) values from string to integer
 		if (grepl(',', pkfit$obl[k])) {
@@ -338,7 +341,10 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		opars.loc$qbl <- pkfit$qbl[k]
 
 	# Extract filter set for peak fitting
-		filters <- rq1d$filtersets[[min(length(rq1d$filtersets), round(abs(pkfit$filters[k])))]]
+		if (round(abs(pkfit$filters[k]))==0)
+			filters <- rq1d$filtersets[[max(length(rq1d$filtersets))]]
+		else
+			filters <- rq1d$filtersets[[min(length(rq1d$filtersets), round(abs(pkfit$filters[k])))]]
 
 	# Parse obl (baseline correction integrated into the model)
 		if (grepl(',',pkfit$obl[k])) {

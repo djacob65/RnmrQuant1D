@@ -106,10 +106,11 @@ internalClass <- R6Class("internalClass",
 				procParams$REVPPM <<- TRUE
 
 			# Filters
+			filters0 <- list(main=c('none'), others=c())
 			filters1 <- list(main=c('daub8'), others=c('symlet8', 'smooth1'))
 			filters2 <- list(main=c('smooth0'), others=c('smooth1'))
 			filters3 <- list(main=c('smooth1'), others=c('smooth2', 'smooth3'))
-			filtersets <<- list(filters1,filters2,filters3)
+			filtersets <<- list(filters1,filters2,filters3,filters0)
 			filters  <<- filters1
 
 			# Default Fitting Parameters

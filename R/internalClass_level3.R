@@ -430,15 +430,19 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	ppmview <- ppm_range
 	ppm <- spec$ppm
 
+	# Select the spectrum with or without baseline correction
 	if (plotTrueSpec) {
 		ycurves <- cbind(spec$int, spec$fit$Ymodel)
 	} else {
 		ycurves <- cbind(spec$fit$Y, spec$fit$Ymodel)
 	}
+
+	# Color with a different color if TSPwith > TSPwidthMax
 	if (is.null(colspecs) || length(colspecs)<2)
 		colspecs <- c('grey60',ifelse(spec$TSPwidth>TSPwidthMax,'violetred','lightslateblue'));
 	ynames <- c( S, 'model' )
 
+	# Add residus if selected
 	if (plotresidus) {
 		ycurves <- cbind(ycurves, spec$fit$Y - spec$fit$Ymodel)
 		ynames <- c(ynames, 'residus')
@@ -448,6 +452,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 		colspecs <- colspecs[1:2]
 	}
 
+    # Plot spectrum & model
 	names(colspecs) <- ynames
 	if (is.null(title)) title <- S
 	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=colspecs, lw=lw, title=title)
@@ -477,6 +482,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	if (verbose && ! is.null(cmpdlist) && nrow(cmpdlist)>0) { print(cmpdlist); cat("\n") }
 	if (verbose && ! is.null(PL) && nrow(PL)>0) { print(PL); cat("\n") }
 
+	# Plot compounds / zones
 	if (sok && nrow(fit)>0 && (plotmodel||plotzones)) {
 
 		if (plotmodel) {
@@ -512,10 +518,17 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 			}
 			p <- plotly::layout(p, shapes=lshapes)
 		}
+	}
 
-		if (tags %in% c('id','name','auto','peak') && nrow(cmpdlist)>0 && nrow(PL)>0) {
-			if (tags=='auto')
-				tags <- ifelse( (ppmview[2]-ppmview[1])>1.5, 'peak', 'name' )
+	# Add Tags based on selection
+	repeat {
+		if (tags=='auto')
+			tags <- ifelse( (ppmview[2]-ppmview[1])>1.5, 'peak', 'name' )
+
+		if (tags %in% c('id','name','peak') && !sok)
+			break
+
+		if (tags %in% c('id','peak','name')) {
 			M <- NULL
 			for (k in 1:nrow(PL)) {
 				pid <- rownames(PL)[k]
@@ -525,37 +538,50 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 			}
 			data <- data.frame(lab=M[,3], x=M[,1], y=M[,2], pkid=M[,4],
 						tags=sapply(1:nrow(M), function(k) {which(unique(M[,3]) == M[k,3])}))
-			if (tags=='peak')
-				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$pkid),
-					showarrow = TRUE, arrowcolor='red', hovertext=data$lab,
-					hoverlabel=list(font = list(color = 'blue', family = 'sans serif', size = 18)),
-					font = list(color = 'black', family = 'sans serif', size = 12))
-			if (tags=='id')
-				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$tags),
-					showarrow = TRUE, arrowcolor='red', hovertext=data$lab,
-					hoverlabel=list(font = list(color = 'blue', family = 'sans serif', size = 18)),
-					font = list(color = 'black', family = 'sans serif', size = 12))
-			if (tags=='name') {
-				L <- lapply(unique(M[,3]), function(m){
-					M0 <- M[ M[,3]==m, , drop=F]; 
-					M0[which(as.numeric(M0[,2])==max(as.numeric(M0[,2]))), , drop=F]
-				})
-				M2 <- NULL
-				for(k in 1:length(L)) M2 <- rbind(M2, L[[k]])
-				data <- data.frame(lab=M2[,3], x=M2[,1], y=M2[,2])
-				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$lab),
-					showarrow = TRUE, arrowcolor='red', textangle=-30,
-					font = list(color = 'black', family = 'sans serif', size = 12))
-			}
 		}
+
+		if (tags=='allpeaks') {
+			PL <- spec$fit$peaks[ spec$fit$peaks$ppm>=ppmview[1] & spec$fit$peaks$ppm<=ppmview[2], , drop=F]
+			data <- data.frame(x=PL[,2], y=1.05*PL[,3], pkid=rownames(PL))
+		}
+
+		if (tags %in% c('peak','allpeaks'))
+			p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$pkid),
+				showarrow = TRUE, arrowcolor='red', hovertext=data$lab,
+				hoverlabel=list(font = list(color = 'blue', family = 'sans serif', size = 18)),
+				font = list(color = 'black', family = 'sans serif', size = 12))
+
+		if (tags=='id')
+				p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$tags),
+				showarrow = TRUE, arrowcolor='red', hovertext=data$lab,
+				hoverlabel=list(font = list(color = 'blue', family = 'sans serif', size = 18)),
+				font = list(color = 'black', family = 'sans serif', size = 12))
+
+		if (tags=='name') {
+			L <- lapply(unique(M[,3]), function(m){
+				M0 <- M[ M[,3]==m, , drop=F]; 
+				M0[which(as.numeric(M0[,2])==max(as.numeric(M0[,2]))), , drop=F]
+			})
+			M2 <- NULL
+			for(k in 1:length(L)) M2 <- rbind(M2, L[[k]])
+			data <- data.frame(lab=M2[,3], x=M2[,1], y=M2[,2])
+			p <- p |> plotly::add_annotations(x = data$x, y = data$y, text = as.character(data$lab),
+				showarrow = TRUE, arrowcolor='red', textangle=-30,
+				font = list(color = 'black', family = 'sans serif', size = 12))
+		}
+
+		break
 	}
 
+	# legend position
 	if (legendhoriz)
 		p <- p |> plotly::layout(legend = list(orientation = 'h', xanchor = "center",
 				x = 0.5, y=ifelse(legendtop, 1.1, -0.2)))
+	# Show / hide grid
 	if (!showgrid)
 		p <- p |> plotly::layout(xaxis = list(showgrid = F), yaxis = list(showgrid = F))
 
+	# Final plot
 	p <- p |> plotly::layout(colorway = arrColors, showlegend=showlegend)
 	p
 })
