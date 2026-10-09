@@ -408,7 +408,7 @@ internalClass$set("private", "find_peaks_rule_r1", function(spec, peaks, ppm1, p
 	groups
 })
 
-# Rule r2:  Among the peaks having a S/N greater than 25 (default), take the first peak which is distant at least Jmin Hz but not more than Jmax Hz from the first peak of the selected ppm interval. If Jmin is positive, consider the first peak from the smallest ppm, otherwise from the largest ppm. Jmax will have automatically the same sign that Jmin.
+# Rule r2:  Among the peaks with a signal-to-noise ratio greater than 25 (default value), select the first peak located at a distance between Jmin Hz and Jmax Hz from one of the boundaries of the selected interval [ppm1, ppm2] serving as a ppm reference. If Jmin is positive, use ppm2 as the reference ppm; otherwise, use ppm1. Jmax will automatically have the same sign as Jmin.
 internalClass$set("private", "find_peaks_rule_r2", function(spec, peaks, ppm1, ppm2, Jmin, Jmax=4, ratioPN=25)
 {
 	groups <- NULL
@@ -418,15 +418,16 @@ internalClass$set("private", "find_peaks_rule_r2", function(spec, peaks, ppm1, p
 		pk <- Rnmr1D::peakFiltering(spec, P1, ratioPN)        # take peaks only with S/N above ratioPN
 		if (is.null(pk) || nrow(pk)<2) break                  # break if not enough peaks
 		rownames(pk) <- which( peaks$pos %in% pk$pos)         # # Get the right indexes
-		if (Jmin<0) pk <- pk[order(pk$ppm, decreasing=T), ]   # order peaks by decreasing ppm if Jmin<0
-		n <- ifelse( pk$amp[1]>pk$amp[2], 2, min(3,nrow(pk)))
-		for (k in n:nrow(pk)) {                               # foreach peak after the first one
-			J <- abs(pk$ppm[k]-pk$ppm[n-1])*spec$acq$SFO1       # Distant in Hz between this peak and the first peak
-			if (J>abs(Jmin) && J<abs(Jmax) ) {                # takes this peak if between Jmin and Jmax Hz from the first peak of the interval
-				groups <- rownames(pk[k,])                    # retrieve the peak based on its index
-				break
-			}
+		pk <- pk[order(pk$ppm, decreasing=(Jmin<0)), ]        # order peaks depending on the Jmin sign
+		ppmref <- ifelse(Jmin<0, ppm2, ppm1)                  # ppm reference depending on the Jmin sign
+		idx <- 0
+		for (k in 1:nrow(pk)) {                               # foreach peak before/after the ppm reference
+			J <- abs(pk$ppm[k]-ppmref)*spec$acq$SFO1          # Distant in Hz between this peak and the ppm reference
+			if (J<abs(Jmin) || J>abs(Jmax)) next              # J not in the [Jmin,Jmax] range
+			if (idx==0 || (idx>0 && pk$amp[k]>pk$amp[idx]))   # takes this highest peak if between Jmin and Jmax Hz
+				idx <- k
 		}
+		if (idx>0) groups <- rownames(pk[idx,])
 		break
 	}
 	groups

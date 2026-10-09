@@ -420,11 +420,14 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	spec <- specList[[idx]]
 	peaklist <- res$peaklist
 
-	# Compound colors - see https://derekogle.com/NCGraphing/resources/colors
-	if (is.null(colcpmds))
-		colcpmds <- c('mediumorchid1','palegreen4','deepskyblue3','lightsalmon2','steelblue4',
+	# default colors - see https://derekogle.com/NCGraphing/resources/colors
+	defcols <- c('mediumorchid1','palegreen4','deepskyblue3','lightsalmon2','steelblue4',
 					'lightpink3','purple','blue','magenta','green','chocolate','chartreuse',
 					'bisque3','firebrick3','slateblue2')
+
+	# Compound colors - see https://derekogle.com/NCGraphing/resources/colors
+	if (is.null(colcpmds))
+		colcpmds <- defcols
 	colcpmds <- c( colcpmds, colcpmds, colcpmds )
 
 	ppmview <- ppm_range
@@ -483,6 +486,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	if (verbose && ! is.null(PL) && nrow(PL)>0) { print(PL); cat("\n") }
 
 	# Plot compounds / zones
+	pkcmpds <- NULL
 	if (sok && nrow(fit)>0 && (plotmodel||plotzones)) {
 
 		if (plotmodel) {
@@ -491,6 +495,7 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 				idpeaks <- sort(as.numeric(unlist(strsplit(strlist,","))))
 				PLk <- spec$fit$peaks[idpeaks, , drop=F]
 				if (nrow(PLk)==0) next
+				pkcmpds <- c(pkcmpds, idpeaks)
 				M <- PROFILE$fitting[PROFILE$fitting$zone %in% fit$zone, 1:2]
 				ppm_zone <- c(min(M[,1]), max(M[,2]))
 				iseq <- getseq(spec, ppm_zone)
@@ -520,13 +525,26 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 		}
 	}
 
-	# Add Tags based on selection
-	repeat {
-		if (tags=='auto')
-			tags <- ifelse( (ppmview[2]-ppmview[1])>1.5, 'peak', 'name' )
+	if (tags == 'allpeaks') {
+		M <- PROFILE$fitting[PROFILE$fitting$zone %in% fit$zone, 1:2]
+		ppm_zone <- c(min(M[,1]), max(M[,2]))
+		iseq <- getseq(spec, ppm_zone)
+		PLall <- spec$fit$peaks[ spec$fit$peaks$ppm>=ppmview[1] & spec$fit$peaks$ppm<=ppmview[2], , drop=F]
+		for (k in 1:nrow(PLall)) {
+			if (!is.null(pkcmpds) && rownames(PLall[k,]) %in% pkcmpds) next
+			V <- Rnmr1D::PVoigt(ppm[iseq], PLall$amp[k], PLall$ppm[k], PLall$sigma[k], PLall$asym[k], PLall$eta[k])
+			df <- data.frame(x=ppm[iseq], y=V)
+			ic <- k %% length(defcols) + 1
+			fcol <- paste0('rgba(',paste(c(as.vector(col2rgb(defcols[ic])), opacity), collapse=','),')')
+			p <- plotly::add_trace(p, data=df, x = ~x, y = ~y, mode = 'lines', fill = 'tozeroy', fillcolor = fcol, showlegend = FALSE)
+		}
+	}
 
-		if (tags %in% c('id','name','peak') && !sok)
-			break
+	# Add Tags based on selection
+	if (tags=='auto')
+		tags <- ifelse( (ppmview[2]-ppmview[1])>1.5, 'peak', 'name' )
+
+	if (tags == 'allpeaks' || (tags %in% c('id','name','peak') && !is.null(PL) && nrow(PL)>0)) {
 
 		if (tags %in% c('id','peak','name')) {
 			M <- NULL
@@ -570,7 +588,6 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 				font = list(color = 'black', family = 'sans serif', size = 12))
 		}
 
-		break
 	}
 
 	# legend position
