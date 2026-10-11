@@ -119,6 +119,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 {
 	# If verbose mode is enabled, print the default parameters and peak fitting method
 	if (verbose) {
+		cat("\n\n=======================\nPeak Fitting\n=======================\n\n")
 		cat("\n-------------------\n")
 		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,
 		    ', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
@@ -144,6 +145,7 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 	BLSIG <- 10             # Baseline significance threshold
 	WS <- 0                 # Window Size for smoothing (before=5)
 	Order <- 2              # BL parameter for airPLS method
+	cat("BL order =",Order,"\n")
 
 	# Loop through each peak fitting range
 	for (k in 1:nrow(pkfit)) {
@@ -277,12 +279,18 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 # Similar to applyPeakFitting1, but introducing parallel processing to handle peak fitting in multiple zones simultaneously.
 internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NULL, ncpu=2, verbose=1)
 {
+	# Constants for baseline correction and peak fitting
+	BLSIG <- 10             # Baseline significance threshold for qNMR method
+	WS <- 0                 # Window Size for smoothing for qNMR method (previously: 5)
+	Order <- 2              # BL parameter for airPLS method
+
 	# Print default parameters if verbosity is enabled
 	if (verbose) {
 		cat("\n\n=======================\nPeak Fitting\n=======================\n\n")
 		cat("-------------------\n")
 		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,
 			', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
+		cat("BL order =",Order,"\n")
 		cat("NCPU =",ncpu,"\n")
 		cat("-------------------\n")
 	}
@@ -298,11 +306,6 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		cat("Error: There is no zone corresponding to those given as input")
 		return(spec)
 	}
-
-	# Constants for baseline correction and peak fitting
-	BLSIG <- 10             # Baseline significance threshold for qNMR method
-	WS <- 0                 # Window Size for smoothing for qNMR method (previously: 5)
-	Order <- 2              # BL parameter for airPLS method
 
 	# Function to merge peak fitting results from parallel computations
 	combine_list <- function(LL1, LL2) {
@@ -352,7 +355,7 @@ internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NU
 		} else {
 			obl <- strtoi(pkfit$obl[k])
 		}
-		
+
 	# Print fitting parameters for this zone if verbose
 		if (verbose) cat('Parameters: addPeaks =',opars.loc$addPeaks,', qbl =',opars.loc$qbl,', oblset =',pkfit$obl[k], "\n")
 		if (verbose) cat('Parameters: asymmax =',opars.loc$asymmax,', etamin =',opars.loc$etamin, "\n")

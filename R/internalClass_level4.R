@@ -30,7 +30,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=T
 	t <- system.time({
 		# Start Cluster
 		rq1d <<- self
-		ncpu <- min(nrow(SAMPLES), max(ncpu,2))
+		ncpu <- min(nrow(SAMPLES), max(ncpu,1))
 		if (ncpu>1) {
 			LOGFILE <- file.path(TMPDIR,"proc_Integrals_par.log")
 			if (file.exists(LOGFILE)) unlink(LOGFILE)
