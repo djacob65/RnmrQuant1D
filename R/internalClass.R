@@ -27,6 +27,7 @@ internalClass <- R6Class("internalClass",
 		PPM_NOISE    = c(10.2,10.5), # ppm range corresponding to noise, and this, for all spectra
 		TSPwidthMax  = 1,
 		oblset       = 0,
+		ADJUST_IDENT = TRUE,
 
 	# Graphical parameters
 		OUTTYPE      = "html",
@@ -136,7 +137,7 @@ internalClass <- R6Class("internalClass",
 				'm2' = c(0, 1.1, 0.3),           # criterion, ratioA, dJ
 				'r1' = c(1, 25),                 # rank, ratioPN
 				'r2' = c(2, 4, 25),              # Jmin, Jmax, ratioPN
-				'r3' = c(1.4),                   # ratioA
+				'r3' = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
 				'r4' = c(0,1.4,0.3),             # criterion, ratioA, dJ
 				'r5' = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
 				'r6' = c(2, 2),                  # nbpeaks, dist

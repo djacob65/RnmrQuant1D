@@ -501,7 +501,11 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 
 	# Loop through each compound to quantify its concentration
 	for (cmpd in cmpds) {
+
 		ZQ <- pkcmpd[pkcmpd$compound==cmpd, , drop=FALSE]
+		# if compound not in the fitted zones, proceed to the next one
+		#if (nrow(peaks[peaks$ppm >= min(ZQ$ppm1) & peaks$ppm <= max(ZQ$ppm2), , drop=F])<1) next
+
 		if (verbose) cat("Compound :",cmpd,"\n")
 		ISUM <- 0
 		ppmrange <- c(999,-999)
@@ -560,6 +564,21 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				PK <- find_compounds(spec, peaks, list('C1'=c(Pattern, ZQ$P1[i], P2, P3)), P4)
 			}
 
+		# In the case of a doublet, determine whether an adjustment is needed, based solely on whether the dS value is >= dSmax.
+		dSmax <- 65
+		adjust_ident <- ADJUST_IDENT
+		if (adjust_ident && Pattern %in% c('d','r3','r5')) {
+			adjust_ident <- FALSE
+			L <- ifelse(Pattern=='r5', 6, 4)
+			if (length(P3)>=L && as.numeric(P3[L])>=dSmax)
+				adjust_ident <- TRUE
+		}
+
+		# Adjustment after identification
+			if (adjust_ident && !is.null(PK)) {
+				peaks <- post_identification_adjustment(spec, peaks, Pattern, as.numeric(PK$C1), verbose)
+			}
+
 		# If peaks are found, compute the integral sum
 			if (!is.null(PK)) {
 				if (verbose) cat("\t\tPeaks = ", paste(PK, collapse=","), "\n")
@@ -607,8 +626,8 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 	quantification <- numformat( data.frame(quantification), c(2:5) )
 	colnames(quantification) <- c('Compound','From','To','Integral', 'SNR')
 	rownames(quantification) <- 1:nrow(quantification)
-	
+
 	# Return the final quantification results and peak list
-	list(quantification=quantification, peaklist=peaklist)
+	list(quantification=quantification, peaklist=peaklist, peaks=peaks)
 })
 

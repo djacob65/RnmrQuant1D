@@ -235,6 +235,8 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 		print(Q$peaklist); cat("\n")
 
 		# Store quantification results in the spectrum object
+		spec$fit$peaks <- Q$peaks
+		Q$peaks <- NULL
 		spec$Q <- Q
 
 		# Organize and format quantification results

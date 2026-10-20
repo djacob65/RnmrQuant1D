@@ -81,6 +81,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=T
 		# Identification / Integratgion
 		if (verbose) { print(spec$fit$infos); cat("\n") }
 		Q <- priv$applyQuantification(spec, fullPattern=TRUE, verbose=verbose)
+		spec$fit$peaks <- Q$peaks
 		print(Q$quantification); cat("\n")
 		print(Q$peaklist); cat("\n")
 
@@ -172,6 +173,7 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	t <- system.time({
 		# Start Cluster
 		rq1d <<- self
+		ncpu <- min(nrow(SAMPLES), max(ncpu,1))
 		if (ncpu>1) {
 			LOGFILE <- file.path(TMPDIR,"proc_Quantif_par.log")
 			if (file.exists(LOGFILE)) unlink(LOGFILE)

@@ -47,12 +47,12 @@ internalClass$set("private", "get_quantif_ppmrange", function(spec=NULL, profil=
 })
 
 # Get the ppm shift so that the maximum intensity in a ppm zone (pzone1, pzone2) corresponds to the p0 value
-internalClass$set("private", "get_ppm_shift", function(spec, pzone1, pzone2, p0, type='s', Jmin=1.7)
+internalClass$set("private", "get_ppm_shift", function(spec, pzone1, pzone2, p0, type='s')
 {
 	iseq <- getseq(spec,c(pzone1,pzone2))
 	Y <- spec$int[iseq]
 	if (type=='d') {
-		DMIN <- round((Jmin/(spec$dppm*spec$acq$SFO1)+1.5)*spec$size/65535)
+		DMIN <- round(10*spec$size/65535)
 		V <- order(Y, decreasing=T)
 		k <- 2; while(abs(V[k]-V[k-1])<DMIN) k <- k+1
 		i0 <- round(0.5*(V[1]+V[k]))
@@ -282,10 +282,11 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 		} else {
 			groups <- L
 		}
+		if (length(L)<4) break
 		# Criterion on amplitude (1, 3, 3, 1)
 		pAM <- peaks$amp[L[order(L)][2:3]]
 		pAm <- peaks$amp[L[order(L)][c(1,4)]]
-		if (length(L)==4 && (mean(pAM)<1.5*mean(pAm) || (max(pAM)/min(pAM))>2.5))
+		if ( mean(pAM)<1.5*mean(pAm) ) # || (max(pAM)/min(pAM))>2.5 )
 			groups <- NULL
 
 		break
@@ -434,11 +435,11 @@ internalClass$set("private", "find_peaks_rule_r2", function(spec, peaks, ppm1, p
 })
 
 # Rule r3 : Among doublets that have a ratio between intensities lower or equal to ratio, take one which has the greatest intensity
-internalClass$set("private", "find_peaks_rule_r3", function(spec, peaks, ppm0, J, ratio)
+internalClass$set("private", "find_peaks_rule_r3", function(spec, peaks, ppm0, J, sel=0, ratio=1.4, dJ=0.3, dS=65)
 {
 	groups <- NULL
 	dppm0 <- 0.666*J/spec$acq$SFO1
-	g <- unique( find_pattern_d (spec, peaks, ppm0, J, 0, ratio, full=T) )
+	g <- unique( find_pattern_d (spec, peaks, ppm0, J, sel=sel, ratio=ratio, dJ=dJ, dS=dS, full=T) )
 	if (!is.null(g)) {
 		if (nrow(g)>0)
 			g <- g[ as.numeric(g[,4])>(ppm0-dppm0) | as.numeric(g[,4])<(ppm0+dppm0), , drop=F]
@@ -712,7 +713,7 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds, 
 					'b' = { find_peaks_range(spec, peaks, params[1], params[2], p1, p2) },
 					'r1'= { find_peaks_rule_r1(spec, peaks, params[1], params[2], p1, p2) },
 					'r2'= { find_peaks_rule_r2(spec, peaks, params[1], params[2], p1, p2, p3) },
-					'r3'= { find_peaks_rule_r3(spec, peaks, params[1], params[2], p1) },
+					'r3'= { find_peaks_rule_r3(spec, peaks, params[1], params[2], p1, p2, p3, p4) },
 					'r4'= { find_peaks_rule_r4(spec, peaks, params[1], params[2], p1, p2, p3) },
 					'r5'= { find_peaks_rule_r5(spec, peaks, params[1], params[2], params[3], params[4], p1, p2, p3, p4) },
 					'r6'= { find_peaks_rule_r6(spec, peaks, params[1], params[2], p1, p2) },
@@ -790,4 +791,74 @@ internalClass$set("private", "find_compounds_by_zone", function(spec, peaks, zon
 		if (length(groups)==0) groups <- NULL
 	}
 	groups
+})
+
+
+#=====================================================================
+# Adjustment after identification
+#=====================================================================
+internalClass$set("private", "post_identification_adjustment", function(spec, peaks, pattern, pk, verbose=TRUE)
+{
+	DSmax <- 20
+	Rmax <- 4.25
+	fields <- c('amp', 'sigma', 'asym', 'eta', 'integral')
+
+	adjust_peaks <- function(P1, i, j, equalizes=TRUE) {
+		DS <- 200*abs(P1[j,4]-P1[i,4])/(P1[j,4]+P1[i,4])
+		V <- as.numeric(c( rownames(P1)[i], rownames(P1)[j] ))
+		p1 <- V[1]; p2 <- V[2];
+		Y <- spec$fit$Ymodel
+		if (DS>DSmax) {
+			R <- (Y[peaks[p2,1]]-peaks[p2,3])/(Y[peaks[p1,1]]-peaks[p1,3])
+#if (verbose) print(paste('R =',round(R,2),', DS =',round(DS,2)))
+			if ( R>Rmax || peaks[p1,4]<peaks[p2,4]) { p1 <- V[2]; p2 <- V[1]; }
+			if (verbose)
+				print(paste0('===> Adjustment after identification : Replace peak ',p1,' by peak ',p2))
+			peaks[p1, fields] <- peaks[p2, fields]
+		}
+		if (equalizes) {
+			A <- 0.5*(peaks[p1,3] + peaks[p2,3]); peaks[p1,3] <- peaks[p2,3] <- A
+			S <- 0.5*(peaks[p1,4] + peaks[p2,4]); peaks[p1,4] <- peaks[p2,4] <- S
+			I <- 0.5*(peaks[p1,7] + peaks[p2,7]); peaks[p1,7] <- peaks[p2,7] <- I
+		}
+		peaks
+	}
+
+	P1 <- peaks[rownames(peaks) %in% pk, , drop=F]
+#if (verbose) print(P1)
+
+	repeat {
+		if (nrow(P1)<2)
+			break
+
+		# doublet
+		if (pattern %in% c('d','r3','r5')) {
+			peaks <- adjust_peaks(P1, 1, 2)
+			break
+		}
+
+		# triplet
+		if (pattern %in% c('t')) {
+			peaks <- adjust_peaks(P1, 1, 3)
+			break
+		}
+
+		# quadruplet
+		if (pattern %in% c('q')) {
+			peaks <- adjust_peaks(P1, 1, 4)
+			peaks <- adjust_peaks(P1, 2, 3)
+			break
+		}
+
+		# quintet
+		if (pattern %in% c('m')) {
+			peaks <- adjust_peaks(P1, 1, 5)
+			peaks <- adjust_peaks(P1, 2, 4)
+			break
+		}
+
+		break
+
+	}
+	peaks
 })
