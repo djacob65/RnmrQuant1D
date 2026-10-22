@@ -565,18 +565,19 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 			}
 
 		# In the case of a doublet, determine whether an adjustment is needed, based solely on whether the dS value is >= dSmax.
-		dSmax <- 65
-		adjust_ident <- ADJUST_IDENT
-		if (adjust_ident && Pattern %in% c('d','r3','r5')) {
-			adjust_ident <- FALSE
-			L <- ifelse(Pattern=='r5', 6, 4)
-			if (length(P3)>=L && as.numeric(P3[L])>=dSmax)
-				adjust_ident <- TRUE
-		}
+			dSmax <- 65
+			adjust_ident <- ADJUST_IDENT
+			if (adjust_ident && Pattern %in% c('d','r3','r5')) {
+				adjust_ident <- FALSE
+				L <- ifelse(Pattern=='r5', 6, 4)
+				if (length(P3)>=L && as.numeric(P3[L])>=dSmax)
+					adjust_ident <- TRUE
+			}
 
 		# Adjustment after identification
 			if (adjust_ident && !is.null(PK)) {
-				peaks <- post_identification_adjustment(spec, peaks, Pattern, as.numeric(PK$C1), verbose)
+				L <- post_identification_adjustment(spec, peaks, Pattern, sort(as.numeric(PK$C1)), verbose)
+				if (L$ok) peaks <- L$peaks
 			}
 
 		# If peaks are found, compute the integral sum

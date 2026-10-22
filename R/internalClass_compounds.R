@@ -227,31 +227,38 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 			}
 		}
 		G <- NULL; k <- 0
-		for (j in 1:length(L))
+		for (j in 1:length(L)) {
 			if (length(L[[j]])==4) {
 				V <- as.numeric(L[[j]])
 				if (mean(peaks$amp[V[order(V)][2:3]])>mean(peaks$amp[V[order(V)][c(1,4)]])) { k<-k+1; G[[k]] <- V }
 			}
+			if (length(L[[j]])==5) {
+				V <- as.numeric(L[[j]])
+				k<-k+1; G[[k]] <- V[2:4]
+			}
+		}
 		if (is.null(G) && length(L)>2) {
 			for (j in 1:length(L)) {
 				if (length(L[[j]]) != 3) { G <- c(G,99999); next }
 				V <- as.numeric(L[[j]]); V <- V[order(V)]
 				G <- c(G, 0.5*(abs(abs(peaks$ppm[V[1]]-peaks$ppm[V[2]])*spec$acq$SFO1-J) + abs(abs(peaks$ppm[V[2]]-peaks$ppm[V[3]])*spec$acq$SFO1-J)))
 			}
-			if (!is.null(G)) L <- list(L[[which(G==min(G))]]) else L <- NULL
+			if (!is.null(G)) L <- list(L[[which(G==min(G))[1]]]) else L <- NULL
 		} else if (!is.null(G)) {
 			L <- G
 		}
 		# In case we missed a peak
-		if(length(L)==1 && length(L[[1]])==3) {
+		if(length(L)>=1 && length(L[[1]])==3) {
 			P1 <- peaks[L[[1]], ]
 			P1 <- P1[order(P1$ppm), ]
 			if (P1$amp[2]>1.5*P1$amp[3]) {
 				P2 <- peaks[peaks$ppm<(P1$ppm[1]-0.8*J/spec$acq$SFO1) & peaks$ppm>(P1$ppm[1]-1.2*J/spec$acq$SFO1), , drop=F]
-				if (nrow(P2)>1) P2 <- P2[which( abs((P1$ppm[1]-P2$ppm)*spec$acq$SFO1-J)==min(abs((P1$ppm[1]-P2$ppm)*spec$acq$SFO1-J))), , drop=F]
+				if (nrow(P2)>1)
+					P2 <- P2[which( abs((P1$ppm[1]-P2$ppm)*spec$acq$SFO1-J)==min(abs((P1$ppm[1]-P2$ppm)*spec$acq$SFO1-J))), , drop=F]
 			} else {
 				P2 <- peaks[peaks$ppm>(P1$ppm[3]+0.8*J/spec$acq$SFO1) & peaks$ppm<(P1$ppm[3]+1.2*J/spec$acq$SFO1), , drop=F]
-				if (nrow(P2)>1) P2 <- P2[which( abs((P1$ppm[3]-P2$ppm)*spec$acq$SFO1-J)==min(abs((P1$ppm[3]-P2$ppm)*spec$acq$SFO1-J))), , drop=F]
+				if (nrow(P2)>1)
+					P2 <- P2[which( abs((P1$ppm[3]-P2$ppm)*spec$acq$SFO1-J)==min(abs((P1$ppm[3]-P2$ppm)*spec$acq$SFO1-J))), , drop=F]
 			}
 			if (nrow(P2)==1) L[[1]] <- c(L[[1]], rownames(P2))
 		}
@@ -826,7 +833,7 @@ internalClass$set("private", "post_identification_adjustment", function(spec, pe
 
 	P1 <- peaks[rownames(peaks) %in% pk, , drop=F]
 #if (verbose) print(P1)
-
+	ret <- 0
 	repeat {
 		if (nrow(P1)<2)
 			break
@@ -834,12 +841,15 @@ internalClass$set("private", "post_identification_adjustment", function(spec, pe
 		# doublet
 		if (pattern %in% c('d','r3','r5')) {
 			peaks <- adjust_peaks(P1, 1, 2)
+			ret <- 1
 			break
 		}
 
 		# triplet
 		if (pattern %in% c('t')) {
 			peaks <- adjust_peaks(P1, 1, 3)
+			if (peaks$amp[pk[1]]<peaks$amp[pk[2]])
+				ret <- 1
 			break
 		}
 
@@ -847,6 +857,8 @@ internalClass$set("private", "post_identification_adjustment", function(spec, pe
 		if (pattern %in% c('q')) {
 			peaks <- adjust_peaks(P1, 1, 4)
 			peaks <- adjust_peaks(P1, 2, 3)
+			if (peaks$amp[pk[1]]<peaks$amp[pk[2]])
+				ret <- 1
 			break
 		}
 
@@ -854,11 +866,12 @@ internalClass$set("private", "post_identification_adjustment", function(spec, pe
 		if (pattern %in% c('m')) {
 			peaks <- adjust_peaks(P1, 1, 5)
 			peaks <- adjust_peaks(P1, 2, 4)
+			ret <- 1
 			break
 		}
 
 		break
 
 	}
-	peaks
+	list(peaks=peaks, ok=ret)
 })
