@@ -136,10 +136,10 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 })
 
 # triplet (t) : central ppm, J
-internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, sel=0, Ramp2=1.3, dJ=0.35)
+internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, sel=0, Ramp=3.5, dJ=0.35)
 {
 	# Tolerance settings
-	Ramp <- 3.5
+	Ramp2 <- 1.2
 	dppm <- J/(2*spec$acq$SFO1)
 
 	groups <- NULL
@@ -171,14 +171,19 @@ internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, se
 		L2 <- NULL; k <- 0
 		for (j in 1:length(L)) {
 			if (length(L[[j]])==3) { k<-k+1; L2[[k]] <- L[[j]] }
-			if (length(L[[j]])==4) { k<-k+1; L2[[k]] <- L[[j]][-length(L[[j]])]; k<-k+1; L2[[k]] <- L[[j]][-1] }
+			if (length(L[[j]])==4) {
+				k<-k+1; L2[[k]] <- L[[j]][-length(L[[j]])]
+				k<-k+1; L2[[k]] <- L[[j]][-1]
+				k<-k+1; L2[[k]] <- L[[j]][c(1,2,4)]
+				k<-k+1; L2[[k]] <- L[[j]][c(1,3,4)]
+			}
 		}
 		if (is.null(L2)) break
 	# Criterion on amplitude
 		L <- NULL; k <- 0
 		for (j in 1:length(L2)) {
 			L3 <- sort(as.numeric(unique(L2[[j]])))
-			v <- peaks[L3,]$amp
+			v <- peaks[rownames(peaks) %in% L3,]$amp
 			if ( (2*v[2]/(v[1]+v[3]))>Ramp2 ) { k<-k+1; L[[k]] <- L3 }
 		}
 		if (is.null(L)) break
@@ -186,13 +191,13 @@ internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, se
 		L2 <- NULL; k <- 0
 		for (i in 1:length(L)) {
 			v <- L[[i]]
-			J1 <- round(abs(peaks$ppm[v[2]]-peaks$ppm[v[1]])*spec$acq$SFO1,2)
-			J2 <- round(abs(peaks$ppm[v[3]]-peaks$ppm[v[2]])*spec$acq$SFO1,2)
+			J1 <- round(abs(peaks$ppm[rownames(peaks)==v[2]]-peaks$ppm[rownames(peaks)==v[1]])*spec$acq$SFO1,2)
+			J2 <- round(abs(peaks$ppm[rownames(peaks)==v[3]]-peaks$ppm[rownames(peaks)==v[2]])*spec$acq$SFO1,2)
 			if (J1>(J-dJ) && J1<(J+dJ) && J2>(J-dJ) && J2<(J+dJ)) { k<-k+1; L2[[k]] <- v }
 		}
 		if (is.null(L2)) break
 		v <- NULL
-		for (i in 1:length(L2)) v <-c(v, peaks$amp[ L2[[i]][2] ])
+		for (i in 1:length(L2)) v <-c(v, peaks$amp[ rownames(peaks)==L2[[i]][2] ])
 		groups <- L2[[which(v==max(v))]]
 		break
 	}
@@ -247,7 +252,7 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 		} else if (!is.null(G)) {
 			L <- G
 		}
-		# In case we missed a peak
+	# In case we missed a peak
 		if(length(L)>=1 && length(L[[1]])==3) {
 			P1 <- peaks[L[[1]], ]
 			P1 <- P1[order(P1$ppm), ]
@@ -290,7 +295,7 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 			groups <- L
 		}
 		if (length(L)<4) break
-		# Criterion on amplitude (1, 3, 3, 1)
+	# Criterion on amplitude (1, 3, 3, 1)
 		pAM <- peaks$amp[L[order(L)][2:3]]
 		pAm <- peaks$amp[L[order(L)][c(1,4)]]
 		if ( mean(pAM)<1.5*mean(pAm) ) # || (max(pAM)/min(pAM))>2.5 )

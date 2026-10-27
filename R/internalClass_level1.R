@@ -568,10 +568,8 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 			dSmax <- 65
 			adjust_ident <- ADJUST_IDENT
 			if (adjust_ident && Pattern %in% c('d','r3','r5')) {
-				adjust_ident <- FALSE
 				L <- ifelse(Pattern=='r5', 6, 4)
-				if (length(P3)>=L && as.numeric(P3[L])>=dSmax)
-					adjust_ident <- TRUE
+				adjust_ident <- length(P3)>=L && as.numeric(P3[L])>=dSmax
 			}
 
 		# Adjustment after identification
@@ -580,24 +578,19 @@ internalClass$set("private", "applyQuantification", function(spec, fullPattern=T
 				if (L$ok) peaks <- L$peaks
 			}
 
-		# If peaks are found, compute the integral sum
+		# If peaks are found, compute the integral sum, then store identified peaks
 			if (!is.null(PK)) {
 				if (verbose) cat("\t\tPeaks = ", paste(PK, collapse=","), "\n")
 				PK <- as.numeric(PK$C1)
 				if (!is.na(ISUM)) for (k in 1:length(PK))
 					ISUM <- ISUM + ZQ$factor[i]*peaks[PK[k],idxint]
-			} else {
-				ISUM <- NA # Mark as missing if no peaks found
-				if (verbose) cat("\t\tPattern not found\n")
-			}
-
-		# Store identified peaks if found
-			if (!is.null(PK)) {
 				PKZQ <- c(PKZQ, PK)
-				P1 <- peaks[ rownames(peaks)[PK], ]
-				if (verbose) print(P1)
+				if (verbose) print(peaks[ rownames(peaks)[PK], ])
 			} else {
-		# If fullPattern mode is on, all peaks must be found, otherwise, mark the compound as not found
+		# Else mark as missing if no peaks found
+				ISUM <- NA
+				if (verbose) cat("\t\tPattern not found\n")
+				# If fullPattern mode is on, mark the compound as not found
 				if (fullPattern) break
 			}
 		}
