@@ -88,7 +88,7 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 {
 	# Tolerance settings
 	dppm0 <- 5/spec$acq$SFO1
-	dppm <- dppm0 +0.5*J/spec$acq$SFO1
+	dppm <- dppm0 +0.7*J/spec$acq$SFO1 # 0.5 previously
 
 	# Find the doublet
 	P2 <- peaks[peaks$ppm>(ppm0-dppm) & peaks$ppm<(ppm0+dppm), , drop=F]
@@ -119,7 +119,7 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 		if (is.null(JL)) break
 		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,6]))<ratio, , drop=F] # criterion based on the ratio
 		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,7]))<dS, , drop=F] # criterion based on dSigma
-		if (nrow(JL)>0) JL <- JL[abs(as.numeric(JL[,4])-ppm0)<dppm0, , drop=F] # criterion based on ppm0
+		if (nrow(JL)>1) JL <- JL[abs(as.numeric(JL[,4])-ppm0)<dppm0, , drop=F] # criterion based on ppm0
 		if (nrow(JL)>1 && sel %in% c(0,1,3)) JL <- JL[order(as.numeric(JL[,8])), ] # order by increasing criterion
 		if (nrow(JL)>1 && sel == 2) JL <- JL[order(as.numeric(JL[,5]), decreasing=T), ] # order by decreasing intensities
 		if (nrow(JL)<1) { JL <- NULL; break }
@@ -563,7 +563,7 @@ internalClass$set("private", "find_peaks_rule_r8", function(spec, peaks, ppm1, p
 {
 	Dmax <- 1.02*(nbpeaks-1)*J
 	Dmin <- 0.9*(nbpeaks-1)*J
-	facJ <- 1.05
+	facJ <- 1.086
 
 	distHz <- function(gn, n1, n2) { (peaks$ppm[gn[n2]] - peaks$ppm[gn[n1]])*spec$acq$SFO1 }
 	is_snr <- function(n) { (peaks$amp[n]/spec$Noise)<ratioPN }
