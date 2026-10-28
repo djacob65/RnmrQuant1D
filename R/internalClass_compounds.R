@@ -139,7 +139,7 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, sel=0, Ramp=3.5, dJ=0.35)
 {
 	# Tolerance settings
-	Ramp2 <- 1.2
+	Ramp2 <- 0.75
 	dppm <- J/(2*spec$acq$SFO1)
 
 	groups <- NULL
@@ -307,7 +307,7 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 })
 
 # multiplet (m1) : central ppm, J (quintet/pentet)
-internalClass$set("private", "find_pattern_m", function(spec, peaks, ppm0, J, sel=0, Ramp=1.1, dJ=0.3)
+internalClass$set("private", "find_pattern_m", function(spec, peaks, ppm0, J, sel=0, Ramp=3, dJ=0.3)
 {
 	groups <- find_pattern_t(spec, peaks, ppm0, J, sel, Ramp, dJ)
 	if (!is.null(groups)) {
@@ -323,7 +323,7 @@ internalClass$set("private", "find_pattern_m", function(spec, peaks, ppm0, J, se
 })
 
 # multiplet (m2) : central ppm, J (septet)
-internalClass$set("private", "find_pattern_m2", function(spec, peaks, ppm0, J, sel=0, Ramp=1.1, dJ=0.3)
+internalClass$set("private", "find_pattern_m2", function(spec, peaks, ppm0, J, sel=0, Ramp=5, dJ=0.3)
 {
 	groups <- find_pattern_m(spec, peaks, ppm0, J, sel, Ramp, dJ)
 	if (!is.null(groups)) {

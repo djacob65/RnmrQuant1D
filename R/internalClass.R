@@ -133,8 +133,8 @@ internalClass <- R6Class("internalClass",
 				't'  = c(0, 3.5, 0.35),          # criterion, ratioA, dJ
 				'q'  = c(0, 3, 0.3),             # criterion, ratioA, dJ
 				'dd' = c(0, 2.2, 0.18),          # criterion, ratioA, dJ2
-				'm'  = c(0, 1.1, 0.3),           # criterion, ratioA, dJ
-				'm2' = c(0, 1.1, 0.3),           # criterion, ratioA, dJ
+				'm'  = c(0, 3, 0.3),             # criterion, ratioA, dJ
+				'm2' = c(0, 5, 0.3),             # criterion, ratioA, dJ
 				'r1' = c(1, 25),                 # rank, ratioPN
 				'r2' = c(2, 4, 25),              # Jmin, Jmax, ratioPN
 				'r3' = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
