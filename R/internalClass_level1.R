@@ -11,7 +11,11 @@ internalClass$set("private", "applyReadSpectrum", function(ACQDIR, verbose=1)
 
 	# Read the NMR spectrum from the acquisition directory (ACQDIR)
 	# - Uses the processing parameters (procParams)
-	spec <- Rnmr1D::readSpectrum(ACQDIR, procParams, PPM_NOISE, NULL, SCALE_INT, verbose=verbose)
+	spec <- tryCatch({
+		Rnmr1D::readSpectrum(ACQDIR, procParams, PPM_NOISE, NULL, SCALE_INT, verbose=verbose)
+	},  error = function(e) {
+		stop_quietly(paste0("Error: ", conditionMessage(e), "\nACQDIR =",ACQDIR))
+	})
 
 	# TSP width
 	spec$TSPwidth <- 0
@@ -96,26 +100,7 @@ internalClass$set("private", "applyBLcorrection", function(spec, verbose=1)
 	spec
 })
 
-internalClass$set("private", "applyPeakFitting", function(spec, opars=NULL, zones=NULL, ncpu=2, verbose=1)
-{
-	# If no fitting parameters are provided, use the default ones stored in 'self$opars'
-	if (is.null(opars)) opars <- self$opars
-
-	# Initialize the variable to store the peak fitting result
-	specfit <- NULL
-
-	# Apply peak fitting depending on the number of available CPU
-	if (ncpu>1) {
-		# Use multi-threaded peak fitting for faster performance
-		specfit <- applyPeakFitting2(spec, opars, zones, ncpu=ncpu, verbose=verbose)
-	} else {
-		# Use single-threaded peak fitting if only one CPU is available
-		specfit <- applyPeakFitting1(spec, opars, zones, verbose=verbose)
-	}
-	specfit
-})
-
-internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NULL, verbose=1)
+internalClass$set("private", "applyPeakFitting", function(spec, opars=NULL, zones=NULL, verbose=1)
 {
 	# If verbose mode is enabled, print the default parameters and peak fitting method
 	if (verbose) {
@@ -220,7 +205,9 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 						if (verbose) cat('elapsed time =', round(t[3], 2), ', Ended at ', format(Sys.time(), "%m/%d/%Y - %X"), "\n\n")
 					})
 			}
-		}, error=function(e){})
+		}, error=function(e){
+			message("Error : ", conditionMessage(e))
+		})
 
 		# If no peaks were found, store default info and continue to the next range
 		if (is.null(model) || nrow(model$peaks) == 0) {
@@ -270,203 +257,6 @@ internalClass$set("private", "applyPeakFitting1", function(spec, opars, zones=NU
 	}
 
 	# Construct the final fitting object
-	ppmrange <- c(min(pkfit[,1]), max(pkfit[,2]))
-	fit <- list(Y=Y, Ymodel=Ymodel, peaks=Peaks, infos=infos, ppmrange=ppmrange)
-	spec$fit <- fit
-	spec
-})
-
-# Similar to applyPeakFitting1, but introducing parallel processing to handle peak fitting in multiple zones simultaneously.
-internalClass$set("private", "applyPeakFitting2", function(spec, opars, zones=NULL, ncpu=2, verbose=1)
-{
-	# Constants for baseline correction and peak fitting
-	BLSIG <- 10             # Baseline significance threshold for qNMR method
-	WS <- 0                 # Window Size for smoothing for qNMR method (previously: 5)
-	Order <- 2              # BL parameter for airPLS method
-
-	# Print default parameters if verbosity is enabled
-	if (verbose) {
-		cat("\n\n=======================\nPeak Fitting\n=======================\n\n")
-		cat("-------------------\n")
-		cat('Default Parameters: ratioPN =', opars$ratioPN,', asymetric =',opars$oasym,
-			', lowPeaks =',opars$lowPeaks,', addPeaks =',opars$addPeaks,', sndpass =',opars$sndpass, "\n")
-		cat("BL order =",Order,"\n")
-		cat("NCPU =",ncpu,"\n")
-		cat("-------------------\n")
-	}
-
-	# Retrieve peak fitting profile
-	pkfit <- PROFILE$fitting
-
-	# Filter peak fitting data based on specified zones
-	if (!is.null(zones)) pkfit <- pkfit[ pkfit$zone %in% zones, , drop=F]
-
-	# If no matching zones, return the original spectrum
-	if (nrow(pkfit)==0) {
-		cat("Error: There is no zone corresponding to those given as input")
-		return(spec)
-	}
-
-	# Function to merge peak fitting results from parallel computations
-	combine_list <- function(LL1, LL2) {
-		getList <- function(L) { list(id=L$id, spec=L$spec, LB=L$LB, Ymodel=L$Ymodel, peaks=L$peaks,  infos=L$infos) }
-		mylist <- list()
-		for ( i in 1:length(LL1) ) mylist[[LL1[[i]]$id]] <- getList(LL1[[i]])
-		for ( i in 1:length(LL2) ) mylist[[LL2[[i]]$id]] <- getList(LL2[[i]])
-		return(mylist)
-	}
-
-	# Process all peak fitting zones in parallel
-	rq1d <- self
-	out <- foreach::foreach(k=1:nrow(pkfit),
-		.combine=combine_list,
-		.packages=c('Rnmr1D','RnmrQuant1D'),
-		.export=ls(globalenv())) %dopar%
-	{
-		priv <- rq1d$.__enclos_env__$private
-
-	# Initialize variables for peak fitting
-		Y <- spec$int <- spec$intcorr
-		LB <- Ymodel <- rep(0,length(spec$int))
-		Peaks <- infos <- NULL
-
-	# Define the PPM range for peak fitting
-		ppmrange <- c(pkfit[k,1],pkfit[k,2])
-		if (verbose) cat("PPM range = [", pkfit[k,1],',',pkfit[k,2],"]","\n")
-
-	# Extract and adjust peak fitting parameters
-		opars.loc <- opars
-		opars.loc$oasym <- ifelse(pkfit$asym[k]>0, 1, 0)
-		opars.loc$asymmax <- pkfit$asym[k]
-		opars.loc$pvoigt <- ifelse(pkfit$etamin[k]<1, 1, 0)
-		opars.loc$etamin <- pkfit$etamin[k]
-		opars.loc$addPeaks <- pkfit$addpeaks[k]
-		opars.loc$qbl <- pkfit$qbl[k]
-
-	# Extract filter set for peak fitting
-		if (round(abs(pkfit$filters[k]))==0)
-			filters <- rq1d$filtersets[[max(length(rq1d$filtersets))]]
-		else
-			filters <- rq1d$filtersets[[min(length(rq1d$filtersets), round(abs(pkfit$filters[k])))]]
-
-	# Parse obl (baseline correction integrated into the model)
-		if (grepl(',',pkfit$obl[k])) {
-			obl <- strtoi(simplify2array(strsplit(pkfit$obl[k],',')))
-		} else {
-			obl <- strtoi(pkfit$obl[k])
-		}
-
-	# Print fitting parameters for this zone if verbose
-		if (verbose) cat('Parameters: addPeaks =',opars.loc$addPeaks,', qbl =',opars.loc$qbl,', oblset =',pkfit$obl[k], "\n")
-		if (verbose) cat('Parameters: asymmax =',opars.loc$asymmax,', etamin =',opars.loc$etamin, "\n")
-		if (verbose) cat('filter =',paste(filters$main,collapse=','),"\n")
-
-	# Apply baseline correction (qbl) if necessary
-		if (opars.loc$qbl  != 0) {
-			if (opars.loc$qbl == 1) {
-				BL <- priv$qnmrbc(spec, ppmrange, BLSIG, WS) 
-				cat('BL Parameters: Method: qNMR, BLSIG =', BLSIG,', WS =', WS, "\n")
-			} else { 
-				BL <- priv$getBLexternal(spec, opars.loc$qbl, Order, ppmrange) 
-				cat('BL Parameters: Method: airPLS, lambda =', opars.loc$qbl,', Order =', Order, "\n")
-			}
-			cat("\n")
-			spec$int <- spec$int - BL
-			Y <- Y - BL
-			LB <- BL
-		}
-
-	# Perform peak fitting using the selected filters
-		model <- NULL
-		tryCatch({
-			opars.save <- opars.loc  # Save parameters before running peak fitting
-			t <- system.time({
-				model <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, filters$main, obl, verbose = verbose)
-			})
-			if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
-
-	# In case R2 was under R2limit, proceed peak fitting based on the alternative filters
-			opars.loc <- opars.save
-			if (is.null(model) || (!is.null(model) && model$R2<opars.loc$R2limit)) {
-				opars.loc$peaks <- NULL
-				others_filters <- filters$others[! filters$others %in% filters$main]
-				if (length(others_filters))
-					t<-system.time({
-						model2 <- Rnmr1D::LSDeconv(spec, ppmrange, opars.loc, others_filters, obl, verbose = verbose)
-						# Choose the best model (if model2 has a better R², use it)
-						if ( (is.null(model) && !is.null(model2)) || (!is.null(model) && !is.null(model2) && model2$R2>model$R2) )
-							model <- model2
-						if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n")
-					})
-			}
-		}, error=function(e){})
-
-		if (!is.null(model) && nrow(model$peaks)>0) {
-			# Accumulating fitting results
-			if (k>1 && pkfit[k,1]>=pkfit[k-1,2]) {
-				Peaks <- model$peaks[model$peaks$ppm>pkfit[k-1,2] & model$peaks$amp>0, ]
-				Ymodel <- Rnmr1D::specModel(spec, c(pkfit[k,1], pkfit[k,2]), Peaks)
-				iseq <- priv$getseq(spec, c(pkfit[k-1,2], pkfit[k,2]))
-				LB[iseq] <- LB[iseq] + model$LB[iseq]
-				Y[iseq] <- Y[iseq] - model$LB[iseq]
-			} else {
-				Peaks <- model$peaks[model$peaks$amp>0, ]
-				Ymodel <- model$model
-				LB <- LB + model$LB
-				Y <- Y - model$LB
-			}
-			residus <- Y - Ymodel
-			# Accumulating fitting infos
-			iseq <- model$iseq
-			Imodel <- (Ymodel[iseq[1]]+Ymodel[iseq[length(iseq)]])/2 + sum(Ymodel[iseq])
-			Ispec <- (Y[iseq[1]]+Y[iseq[length(iseq)]])/2 + sum(Y[iseq])
-			Idiff <- round(100*(Imodel-Ispec)/Ispec,4)
-			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
-			infos <- c(spec$expno, pkfit[k,9], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2,4), Idiff, round(t[3],2))
-		} else  {
-			Peaks <- NULL
-			asym <- ifelse(opars.loc$oasym>0, opars.loc$asymmax, 0)
-			infos <- c(spec$expno, pkfit[k,9], pkfit[k,1:2], 0, opars.loc$addPeaks, asym, 0, opars.loc$qbl, 0, 100)
-			infos <- data.frame(infos[,1:ncol(infos)])
-			colnames(infos) <- c('expno', 'zone', 'ppm1', 'ppm2', 'nbpeaks', 'addpeaks', 'asym', 'obl', 'qbl', 'R2', 'Int. Diff. %')
-		}
-		if (verbose) cat("-------------------\n")
-
-	# Store fitting results in a list
-		mylist <- list()
-		mylist[[paste0('S',k)]] <- list( id=paste0('S',k), spec=spec, LB=LB, Ymodel=Ymodel, peaks=Peaks, infos=infos )
-		return(mylist)
-	}
-
-	# Stop parallel cluster
-	invisible(gc())
-	#parallel::stopCluster(cl)
-
-	# Merge results from parallel processing
-	Y <- spec$int <- spec$intcorr
-	Ymodel <- rep(0,length(spec$int))
-	Peaks <- infos <- NULL
-	for(k in 1:length(out)) {
-		Y <- Y - out[[k]]$LB
-		Ymodel <- Ymodel + out[[k]]$Ymodel
-		Peaks <- rbind(Peaks, out[[k]]$peaks)
-		infos <- rbind(infos, out[[k]]$infos)
-	}
-
-	# Clean up the final spectrum object
-	spec$fid <- NULL
-	spec$intcorr <- NULL
-	spec$BL <- NULL
-
-	infos <- data.frame(infos[,1:ncol(infos)])
-	colnames(infos) <- c('expno', 'zone', 'ppm1', 'ppm2', 'nbpeaks', 'addpeaks', 'asym', 'obl', 'qbl', 'R2', 'Int. Diff. %', 'Time')
-
-
-	# Format the peak fitting information table
-	if (!is.null(Peaks))
-		rownames(Peaks) <- NULL
-
-	# Store the final fitted spectrum in the output object
 	ppmrange <- c(min(pkfit[,1]), max(pkfit[,2]))
 	fit <- list(Y=Y, Ymodel=Ymodel, peaks=Peaks, infos=infos, ppmrange=ppmrange)
 	spec$fit <- fit

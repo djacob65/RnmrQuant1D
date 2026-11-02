@@ -187,7 +187,7 @@ internalClass$set("private", "standardQuantification", function(stds_loc, sample
 	obj
 })
 
-internalClass$set("private", "sampleQuantification", function(samplename, expno, zones=NULL, ncpu=2, verbose=1)
+internalClass$set("private", "sampleQuantification", function(samplename, expno, zones=NULL, verbose=1)
 {
 	# If no specific quantification zones are provided, use the default ones from PROFILE
 	if (is.null(zones)) zones <- unique(PROFILE$quantif$zone)
@@ -218,7 +218,7 @@ internalClass$set("private", "sampleQuantification", function(samplename, expno,
 	opars.loc <- opars
 	opars.loc$peaks <- NULL
 	t <- system.time({
-		spec <- applyPeakFitting(spec, opars=opars.loc, zones=zones, ncpu=ncpu, verbose=verbose)
+		spec <- applyPeakFitting(spec, opars=opars.loc, zones=zones, verbose=verbose)
 	})
 	if (verbose) cat('elapsed time =', round(t[3],2),', Ended at ',format(Sys.time(), "%m/%d/%Y - %X"),"\n\n")
 

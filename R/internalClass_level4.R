@@ -27,9 +27,8 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=T
 	if (verbose>1) cat('Time taken to obtain the sample list (s) =', round(t[3], 2), "\n")
 
 	# Initialise the cluster for parallel processing
+	rq1d <- self
 	t <- system.time({
-		# Start Cluster
-		rq1d <<- self
 		ncpu <- min(nrow(SAMPLES), max(ncpu,1))
 		if (ncpu>1) {
 			LOGFILE <- file.path(TMPDIR,"proc_Integrals_par.log")
@@ -49,8 +48,21 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=T
 	res <<- list(allquantifs=NULL, peaklist=NULL, infos=NULL, zones=zones, ncpu=ncpu, proctype='integration')
 	specList <<- list()
 
+	# Function to merge peak fitting results from parallel computations
+	combine_list <- function(LL1, LL2) {
+		getList <- function(L) { list(id=L$id, spec=L$spec, allquantifs=L$allquantifs, peaklist=L$peaklist, infos=L$infos) }
+		mylist <- list()
+		for ( i in 1:length(LL1) ) mylist[[LL1[[i]]$id]] <- getList(LL1[[i]])
+		for ( i in 1:length(LL2) ) mylist[[LL2[[i]]$id]] <- getList(LL2[[i]])
+		return(mylist)
+	}
+
 	# Process all samples in parallel
-	for( ID in 1:nrow(Slist)) {
+	out <- foreach::foreach(ID=1:nrow(Slist),
+		.combine=combine_list,
+		.packages=c('Rnmr1D','RnmrQuant1D'),
+		.export=ls(globalenv())) %dopar%
+	{
 		priv <- rq1d$.__enclos_env__$private
 
 		# Directory of the raw spectrum
@@ -76,7 +88,7 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=T
 		# Peak fitting
 		Opars <- rq1d$opars
 		Opars$peaks <- NULL
-		spec <- priv$applyPeakFitting(spec, Opars, zones=zones, ncpu=ncpu, verbose=verbose)
+		spec <- priv$applyPeakFitting(spec, Opars, zones=zones, verbose=verbose)
 
 		# Identification / Integratgion
 		if (verbose) { print(spec$fit$infos); cat("\n") }
@@ -92,14 +104,28 @@ internalClass$set("public", "proc_Integrals", function(zones, ncpu=2, progress=T
 		colnames(Tinfos)[1] <- 'Samplecode'
 		colnames(Tinfos)[length(Tinfos)] <- 'TSPwidth'
 
+		allquantifs <- peaklist <- infos <- NULL
 		if (!is.null(Q$quantification)) {
 			M <- matrix(rep('.',nrow(Q$quantification)*2), ncol=2)
 			M[,1] <- spec$samplename; M[,2] <- spec$samplecode
-			res$allquantifs <<- rbind(res$allquantifs, cbind(M, Q$quantification))
-			res$peaklist <<- rbind(res$peaklist, cbind(M, Q$peaklist))
-			res$infos <<- rbind(res$infos, Tinfos)
+			allquantifs <- cbind(M, Q$quantification)
+			peaklist <- cbind(M, Q$peaklist)
+			infos <- Tinfos
 		}
-		specList[[ID]] <<- spec
+
+		# Store fitting results in a list
+		mylist <- list()
+		mylist[[paste0('S',ID)]] <- list( id=paste0('S',ID), spec=spec, allquantifs=allquantifs, peaklist=peaklist, infos=infos )
+		return(mylist)
+	}
+	invisible(gc())
+
+	# Merge results from parallel processing
+	for(ID in 1:length(out)) {
+		specList[[ID]] <<- out[[ID]]$spec
+		res$allquantifs <<- rbind(res$allquantifs, out[[ID]]$allquantifs)
+		res$peaklist <<- rbind(res$peaklist, out[[ID]]$peaklist)
+		res$infos <<- rbind(res$infos, out[[ID]]$infos)
 	}
 })
 
@@ -170,9 +196,8 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 	}
 
 	# Initialise the cluster for parallel processing
+	rq1d <- self
 	t <- system.time({
-		# Start Cluster
-		rq1d <<- self
 		ncpu <- min(nrow(SAMPLES), max(ncpu,1))
 		if (ncpu>1) {
 			LOGFILE <- file.path(TMPDIR,"proc_Quantif_par.log")
@@ -187,68 +212,54 @@ internalClass$set("public", "proc_Quantification", function(cmpdlist=NULL, zones
 
 	})
 	if (verbose) cat('Time taken to start the cluster (s) =', round(t[3], 2), "\n\n")
-	writeLines(as.character(t[3]), file.path(rq1d$TMPDIR, rq1d$cluster_status_file))
+	writeLines(as.character(t[3]), file.path(TMPDIR, cluster_status_file))
 
 	if (progress) cat("Do quantification ... \n")
 	if (progress && CR) cat("\n")
 
-	# For each samples
+	# Process all samples in parallel
 	rownames(SAMPLES) <<- 1:nrow(SAMPLES)
 	samplelist <- SAMPLES[,1]
-	cnt <- 0
-	tottime <- 0
-	totcnt <- length(samplelist)
-	for (samplename in unique(samplelist))
+	t <- system.time({ foreach::foreach(i=1:length(unique(samplelist)),
+		.packages=c('Rnmr1D','RnmrQuant1D'), .export=ls(globalenv())) %dopar%
 	{
-		slist <- get_list_spectrum(RAWDIR, samplename, sequence=SEQUENCE)
+		priv <- rq1d$.__enclos_env__$private
+		samplename <- unique(samplelist)[i]
+		slist <- priv$get_list_spectrum(rq1d$RAWDIR, samplename, sequence=rq1d$SEQUENCE)
 		if (nrow(slist)==0) next
-		slist <- get_spectralist_by_SAMPLES(slist)
+		slist <- priv$get_spectralist_by_SAMPLES(slist)
 		sampleid <- which(samplename==samplelist)
-		fdil <- SAMPLES[FDILfield][sampleid,1]
-		# # Process all expno in parallel
-		for (k in 1:nrow(slist))
-		{
-			cnt <- cnt + 1
+		fdil <- rq1d$SAMPLES[rq1d$FDILfield][sampleid,1]
+		for (k in 1:nrow(slist)) { # for each expno
 			expno <- slist[k,3]
-			RDataFile <- paste0(RDATADIR, '/',samplename,'-',expno,'.RData')
-			if (file.exists(RDataFile)) { totcnt <- totcnt - 1; next }
-			if (progress) cat(sprintf("%3d out of %3d - ", cnt, length(samplelist)))
-			if (progress) cat(sprintf("%20s expno = %2s ...",samplename, expno));
-			LogFile <- paste0(TMPDIR, '/output_',samplename,'_',expno,'.txt')
-			t <- system.time({
-				# Compute the (absolute) quantification matrix (metabolites X repetitions)
-				sink(file = LogFile, append = FALSE, type = c("output", "message"), split = FALSE)
-				# Deconvolution / Quantification
-				if (progress)  cat("\n\n================================================\n\n")
-				out <- sampleQuantification(samplename, expno, zones, ncpu=ncpu, verbose=1)
-				quantMat <- out$quantMat
-				SNR <- out$SNR
-				spec <- out$spec
-				spec$sampleidx <- sampleid[k]
-				spec$samplecode <- get_samplecode_by_ID(slist, k)
-				spec$peaklist <- spec$Q$peaklist
-				spec$Q <- NULL
-				absQuantMat <- NULL
-				if (!is.null(quantMat)) {
-					if (!is.null(cmpdlist)) quantMat <- quantMat[rownames(quantMat) %in% cmpdlist,,drop=F]
-					if (!is.null(cmpdlist)) SNR <- SNR[rownames(SNR) %in% cmpdlist,,drop=F]
-					absQuantMat <- absSampleQuantification(spec, fP, quantMat, fdil=fdil[k], verbose=1)
-				}
-				rm(out)
-				sink()
-			})
-			tottime <- tottime + t[3]
-			remaintime <- (totcnt-cnt)*tottime/cnt
-			if (progress) cat(sprintf("OK - duration = %2.2f, remaining time = %4d sec - Ended at %-30s\n",
-									round(t[3],2),round(remaintime), as.character(Sys.time()+remaintime)))
-			if (progress && CR) cat("\n")
-			quantParams <- list(samplename=samplename, expno=expno, type=TYPE, field=FIELD, sampleidx=spec$sampleidx,
+			RDataFile <- paste0(rq1d$RDATADIR, '/',samplename,'-',expno,'.RData')
+			if (file.exists(RDataFile)) next
+			LogFile <- paste0(rq1d$TMPDIR, '/output_',samplename,'_',expno,'.txt')
+			sink(file = LogFile, append = FALSE, type = c("output", "message"), split = FALSE)
+			if (progress)  cat("\n\n================================================\n\n")
+			out <- priv$sampleQuantification(samplename, expno, zones, verbose=1)
+			quantMat <- out$quantMat
+			SNR <- out$SNR
+			spec <- out$spec
+			spec$sampleidx <- sampleid[k]
+			spec$samplecode <- priv$get_samplecode_by_ID(slist, k)
+			spec$peaklist <- spec$Q$peaklist
+			spec$Q <- NULL
+			absQuantMat <- NULL
+			if (!is.null(quantMat)) {
+				if (!is.null(cmpdlist)) quantMat <- quantMat[rownames(quantMat) %in% cmpdlist,,drop=F]
+				if (!is.null(cmpdlist)) SNR <- SNR[rownames(SNR) %in% cmpdlist,,drop=F]
+				absQuantMat <- priv$absSampleQuantification(spec, rq1d$fP, quantMat, fdil=fdil[k], verbose=1)
+			}
+			rm(out)
+			sink()
+			quantParams <- list(samplename=samplename, expno=expno, type=rq1d$TYPE, field=rq1d$FIELD, sampleidx=spec$sampleidx,
 								cmpdlist=cmpdlist, zones=zones)
 			save(quantParams, quantMat, absQuantMat, SNR, spec, file = RDataFile)
 		}
-	}
+	}})
 
-	quantpars <<- list(cmpdlist=cmpdlist, zones=zones, tottime=as.numeric(tottime), ncpu=ncpu)
+	quantpars <<- list(cmpdlist=cmpdlist, zones=zones, tottime=t[3], ncpu=ncpu)
 	res$proctype <<- 'quantification'
 })
 
@@ -533,7 +544,7 @@ internalClass$set("public", "save_Results", function(file, results=NULL, filelis
 		c("Locale", gsub(';',', ', V$locale)),
 		c("Base Packages", paste(V$basePkgs, collapse=', ')),
 		c("Loarded Packages", paste(packages, collapse=', ')),
-		c("Others Packages", paste(others, collapse=', ')) )
+		c("Main Packages", paste(others, collapse=', ')) )
 	colnames(infos) <- c("Label","Value")
 	Tid <- Tid + 1
 	openxlsx::writeData(wb, Tid, x = infos,  colNames=TRUE, rowNames=FALSE, withFilter = FALSE)
@@ -546,25 +557,3 @@ internalClass$set("public", "save_Results", function(file, results=NULL, filelis
 	# Save Workbook
 	openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
 })
-
-#=====================================================================
-# User functions for Spectra visualisation
-#=====================================================================
-
-internalClass$set("public", "plot_spectra", function(id, compound, ...)
-{
-	if (sum(compound %in% PROFILE$compound$name)==0)
-		stop_quietly(paste("Error:",compound,"not known as a compound"))
-
-	if (!res$proctype %in% c('quantification','integration'))
-		stop_quietly(paste0("ERROR : Quantifications must be computed with the proc_Quantification() method before !\n"))
-
-	if (is.null(res$peaklist))
-		stop_quietly(paste0("ERROR : Spectra must be retrieved in the RnmrQuant1D instance with the get_spectra_data() method before !\n"))
-
-	zones <- unique(PROFILE$quantif[ PROFILE$quantif$compound %in% compound, ]$zone)
-	pkfit <- PROFILE$fitting[PROFILE$fitting$zone %in% zones, ]
-	ppm_range <<- c( min(pkfit$ppm1), max(pkfit$ppm2))
-	view_spectra(id, ...)
-})
-

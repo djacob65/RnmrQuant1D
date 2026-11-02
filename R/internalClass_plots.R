@@ -227,6 +227,26 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 	p
 })
 
+#=====================================================================
+# User functions for Spectra visualisation
+#=====================================================================
+
+internalClass$set("public", "plot_spectra", function(id, compound, ...)
+{
+	if (sum(compound %in% PROFILE$compound$name)==0)
+		stop_quietly(paste("Error:",compound,"not known as a compound"))
+
+	if (!res$proctype %in% c('quantification','integration'))
+		stop_quietly(paste0("ERROR : Quantifications must be computed with the proc_Quantification() method before !\n"))
+
+	if (is.null(res$peaklist))
+		stop_quietly(paste0("ERROR : Spectra must be retrieved in the RnmrQuant1D instance with the get_spectra_data() method before !\n"))
+
+	zones <- unique(PROFILE$quantif[ PROFILE$quantif$compound %in% compound, ]$zone)
+	pkfit <- PROFILE$fitting[PROFILE$fitting$zone %in% zones, ]
+	ppm_range <<- c( min(pkfit$ppm1), max(pkfit$ppm2))
+	view_spectra(id, ...)
+})
 
 #=====================================================================
 # Wrappers for plotting functions

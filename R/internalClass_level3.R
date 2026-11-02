@@ -390,8 +390,8 @@ internalClass$set("public", "save_Matrices", function(file, filelist=NULL)
 		c("Lapack", V$LAPACK),
 		c("Locale", gsub(';',', ', V$locale)),
 		c("Base Packages", paste(V$basePkgs, collapse=', ')),
-		c("Loarded Packages", paste(packages, collapse=', ')),
-		c("Others Packages", paste(others, collapse=', ')) )
+		c("Loaded Packages", paste(packages, collapse=', ')),
+		c("Main Packages", paste(others, collapse=', ')) )
 	colnames(infos) <- c("Label","Value")
 	Tid <- Tid + 1
 	openxlsx::writeData(wb, Tid, x = infos,  colNames=TRUE, rowNames=FALSE, withFilter = FALSE)

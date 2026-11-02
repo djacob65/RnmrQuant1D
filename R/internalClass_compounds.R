@@ -391,9 +391,8 @@ internalClass$set("private", "find_peaks_range", function(spec, peaks, ppm1, ppm
 	repeat {
 		P1 <- peaks[peaks$ppm>ppm1 & peaks$ppm<ppm2, , drop=F]
 		if (is.null(P1) || nrow(P1)<1) break
-		P2 <- Rnmr1D::peakFiltering(spec, P1, ratioPN)
+		P2 <- P1[(P1$amp/spec$B)>ratioPN, , drop=F]
 		if (is.null(P2) || nrow(P2)<1) break
-		rownames(P2) <- rownames(P1)[which( P1$pos %in% P2$pos)]
 		if (nbpeaks>0)
 			P2 <- P2[which(P2$amp %in% sort(P2$amp, decreasing=T)[1:nbpeaks]), ]
 		if (is.null(P2) || (nbpeaks>0 && nrow(P2)<nbpeaks)) break
