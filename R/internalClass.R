@@ -130,10 +130,10 @@ internalClass <- R6Class("internalClass",
 				'b'  = c(0, 5),                  # nbpeaks, ratioPN
 				's'  = c(1),                     # rank
 				'd'  = c(0, 1.4, 0.3, 65),       # criterion, ratioA, dJ, dS
-				't'  = c(0, 3.5, 0.35),          # criterion, ratioA, dJ
-				'q'  = c(0, 3, 0.3),             # criterion, ratioA, dJ
+				't'  = c(0, 3.5, 0.35, 65),      # criterion, ratioA, dJ, dS
+				'q'  = c(0, 3, 0.3, 65),         # criterion, ratioA, dJ, dS
 				'dd' = c(0, 2.2, 0.18),          # criterion, ratioA, dJ2
-				'm'  = c(0, 3, 0.3),             # criterion, ratioA, dJ
+				'm'  = c(0, 3, 0.3, 65),         # criterion, ratioA, dJ, dS
 				'm2' = c(0, 5, 0.3),             # criterion, ratioA, dJ
 				'r1' = c(1, 25),                 # rank, ratioPN
 				'r2' = c(2, 4, 25),              # Jmin, Jmax, ratioPN

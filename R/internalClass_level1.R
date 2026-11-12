@@ -130,6 +130,7 @@ internalClass$set("private", "applyPeakFitting", function(spec, opars=NULL, zone
 	BLSIG <- 10             # Baseline significance threshold
 	WS <- 0                 # Window Size for smoothing (before=5)
 	Order <- 2              # BL parameter for airPLS method
+
 	cat("BL order =",Order,"\n")
 
 	# Loop through each peak fitting range
@@ -170,13 +171,13 @@ internalClass$set("private", "applyPeakFitting", function(spec, opars=NULL, zone
 		if (opars.loc$qbl != 0) {
 			spec$int <- spec$intcorr
 			if (opars.loc$qbl == 1) {
-				BL <- qnmrbc(spec, ppmrange, BLSIG, WS) 
-				cat('BL Parameters: Method: qNMR, BLSIG =', BLSIG,', WS =', WS, "\n")
+				BL <- qnmrbc(spec, ppmrange, BLSIG, WS)
+				if (verbose) cat('BL Parameters: Method: qNMR, BLSIG =', BLSIG,', WS =', WS, "\n")
 			} else { 
 				BL <- getBLexternal(spec, opars.loc$qbl, Order, ppmrange, WS) 
-				cat('BL Parameters: Method: airPLS, blset =', opars.loc$qbl,', Order =', Order,', WS =', WS, "\n")
+				if (verbose) cat('BL Parameters: Method: airPLS, blset =', opars.loc$qbl,', Order =', Order,', WS =', WS, "\n")
 			}
-			cat("\n")
+			if (verbose) cat("\n")
 			spec$int <- spec$int - BL
 			Y <- Y - BL
 		}
@@ -221,11 +222,13 @@ internalClass$set("private", "applyPeakFitting", function(spec, opars=NULL, zone
 		# Store fitting results
 		if (k > 1 && pkfit[k,1] >= pkfit[k-1,2]) {
 			subsetPeaks <- model$peaks[model$peaks$ppm > pkfit[k-1,2], , drop=F]
+			nbpeaks <- nrow(subsetPeaks[subsetPeaks$amp>0, ])
 			Peaks <- rbind(Peaks, subsetPeaks[subsetPeaks$amp>0, ])
 			Ymodel <- Ymodel + Rnmr1D::specModel(spec, c(pkfit[k,1], pkfit[k,2]), subsetPeaks)
 			iseq <- getseq(spec, c(pkfit[k-1,2], pkfit[k,2]))
 			Y[iseq] <- Y[iseq] - model$LB[iseq]
 		} else {
+			nbpeaks <- nrow(model$peaks[model$peaks$amp>0, ])
 			Peaks <- rbind(Peaks, model$peaks[model$peaks$amp>0, ])
 			Ymodel <- model$model
 			Y <- Y - model$LB
@@ -238,7 +241,7 @@ internalClass$set("private", "applyPeakFitting", function(spec, opars=NULL, zone
 		Ispec <- (Y[iseq[1]] + Y[iseq[length(iseq)]]) / 2 + sum(Y[iseq])
 		Idiff <- round(100 * (Imodel - Ispec) / Ispec, 4)
 		asym <- ifelse(opars.loc$oasym > 0, opars.loc$asymmax, 0)
-		infos <- rbind(infos, c(spec$expno, pkfit[k,9], pkfit[k,1:2], nrow(Peaks), opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2, 4), Idiff))
+		infos <- rbind(infos, c(spec$expno, pkfit[k,9], pkfit[k,1:2], nbpeaks, opars.loc$addPeaks, asym, model$params$obl, opars.loc$qbl, round(model$R2, 4), Idiff))
 
 		if (verbose) cat("-------------------\n\n")
 	}

@@ -281,6 +281,7 @@ public = list(
 #' @param plotmodel If TRUE, plot the model based on the deconvolution.
 #' @param plotTrueSpec  If TRUE, plot the original spectrum without local baseline corrections.
 #' @param plotresidus  If TRUE, plot the residus i.e the difference between the spectrum and the model.
+#' @param plotBL  If TRUE, plot the baseline only if plotTrueSpec is also TRUE
 #' @param plotzones If TRUE, add a semi-transparent rectangle superimposed on each fit zone.
 #' @param tags add an arrow annotation on each peak resulting from the deconvolution. Among the possible values: 1) 'id' adds the number of the compound to which the peak belongs, 2) 'name' adds the name of the compound to which the peak belongs, 'auto' adds either the number if multiple zones, or the name of the compound, 3) 'none' adds no arrow annotation.
 #' @param lw line width in pixels
@@ -294,8 +295,8 @@ public = list(
 #' @param opacity specifies the opacity of compound colors (default 0.7))
 #' @param verbose If TRUE, The peak list will be displayed
 #' @return a \href{https://plotly.com/r/}{plotly} graph
-	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, legendtop=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE) {
-		super$view_spectra(id, plotmodel, plotTrueSpec, plotresidus, plotzones, tags, lw, showlegend, legendhoriz, legendtop, showgrid, title, colspecs, colcpmds, opacity, verbose)
+	view_spectra = function(id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotBL=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, legendtop=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE) {
+		super$view_spectra(id, plotmodel, plotTrueSpec, plotresidus, plotBL, plotzones, tags, lw, showlegend, legendhoriz, legendtop, showgrid, title, colspecs, colcpmds, opacity, verbose)
 	},
 
 #' @description

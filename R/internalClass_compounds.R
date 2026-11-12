@@ -136,15 +136,15 @@ internalClass$set("private", "find_pattern_d", function(spec, peaks, ppm0, J, se
 })
 
 # triplet (t) : central ppm, J
-internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, sel=0, Ramp=3.5, dJ=0.35)
+internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, sel=0, Ramp=3.5, dJ=0.35, dS=65)
 {
 	# Tolerance settings
 	Ramp2 <- 0.75
 	dppm <- J/(2*spec$acq$SFO1)
 
 	groups <- NULL
-	g <- unique(rbind(find_pattern_d(spec, peaks, ppm0-dppm, J, sel, Ramp, dJ, full=T),
-					  find_pattern_d(spec, peaks, ppm0+dppm, J, sel, Ramp, dJ, full=T)))
+	g <- unique(rbind(find_pattern_d(spec, peaks, ppm0-dppm, J, sel, Ramp, dJ, dS, full=T),
+					  find_pattern_d(spec, peaks, ppm0+dppm, J, sel, Ramp, dJ, dS, full=T)))
 	repeat {
 		if (! c('matrix') %in% class(g)) break
 		if (is.null(g) || is.null(nrow(g)) || nrow(g)<2) break
@@ -205,15 +205,15 @@ internalClass$set("private", "find_pattern_t", function(spec, peaks, ppm0, J, se
 })
 
 # quadruplet (q) : central ppm, J
-internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, sel=0, Ramp=3, dJ=0.3)
+internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, sel=0, Ramp=3, dJ=0.3, dS=65)
 {
 	# Tolerance settings
 	dppm <- J/spec$acq$SFO1
 
 	groups <- NULL
-	g <- rbind( find_pattern_d(spec, peaks, ppm0, J, sel, Ramp, full=T),
-				find_pattern_d(spec, peaks, ppm0-dppm, J, sel, Ramp, full=T),
-				find_pattern_d(spec, peaks, ppm0+dppm, J, sel, Ramp, full=T) )
+	g <- rbind( find_pattern_d(spec, peaks, ppm0, J, sel, Ramp, dJ, dS, full=T),
+				find_pattern_d(spec, peaks, ppm0-dppm, J, sel, Ramp, dJ, dS, full=T),
+				find_pattern_d(spec, peaks, ppm0+dppm, J, sel, Ramp, dJ, dS, full=T) )
 	g <- unique(g)
 	repeat {
 		if (! c('matrix') %in% class(g)) break
@@ -252,6 +252,7 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 		} else if (!is.null(G)) {
 			L <- G
 		}
+
 	# In case we missed a peak
 		if(length(L)>=1 && length(L[[1]])==3) {
 			P1 <- peaks[L[[1]], ]
@@ -271,45 +272,61 @@ internalClass$set("private", "find_pattern_q", function(spec, peaks, ppm0, J, se
 		for (j in 1:length(L)) if (length(L[[j]])==4) { k<-k+1; G[[k]] <- L[[j]] }
 		if (is.null(G)) break
 		G <- unique(G)
-	## In case there are 2 or more peak lists, take the one with the highest sum of amplitudes
-		v <- sapply(1:length(G), function(k) sum(peaks[as.numeric(G[[k]]), ]$amp))
-		L <- sort(as.numeric(G[[which(v==max(v))]]))
-		if (length(L)<4) break
-		if (length(L)>4) {
+
 	# Criterion on J (J +/- dJ)
-			M <- matrix(rep(0,length(L)*length(L)), nrow=length(L), byrow=T)
-			colnames(M) <- rownames(M) <- L
-			for (i in 1:length(L)) for (j in 1:length(L)) {
+		L <- NULL; k <- 0
+		for (j in 1:length(G)) {
+			V <- as.numeric(G[[j]])
+			if (length(V)<4) next
+			if (length(V)==4) { k <- k + 1; L[[k]] <- V; next }
+			M <- matrix(rep(0,length(V)*length(V)), nrow=length(V), byrow=T)
+			colnames(M) <- rownames(M) <- V
+			for (i in 1:length(V)) for (j in 1:length(V)) {
 				if (i==j) next
-				Jij <- round(abs(peaks$ppm[L[i]]-peaks$ppm[L[j]])*spec$acq$SFO1,2)
+				Jij <- round(abs(peaks$ppm[V[i]]-peaks$ppm[V[j]])*spec$acq$SFO1,2)
 				if (Jij>(J-dJ) && Jij<(J+dJ) )  M[i,j] <- Jij
 			}
 			idx <- which(apply(M,1,sum)>0)
-			if (length(idx)<4) break
-			L <- L[ idx ]
+			if (length(idx)<4) next
+			V <- V[ idx ]
 			M <- M[idx,idx]
 			idx <- which(apply(M,2,sum)>0)
-			if (length(idx)<4) break
-			groups <- L[ idx ]
-		} else {
-			groups <- L
+			if (length(idx)<4) next
+			k <- k + 1; L[[k]] <- V[ idx ]
 		}
-		if (length(L)<4) break
-	# Criterion on amplitude (1, 3, 3, 1)
-		pAM <- peaks$amp[L[order(L)][2:3]]
-		pAm <- peaks$amp[L[order(L)][c(1,4)]]
-		if ( mean(pAM)<1.5*mean(pAm) ) # || (max(pAM)/min(pAM))>2.5 )
-			groups <- NULL
+		G <- L
 
+	# Criterion on amplitude (1, 3, 3, 1)
+		L <- NULL; k <- 0
+		for (j in 1:length(G)) {
+			V <- as.numeric(G[[j]])
+			if (length(V)<4) next
+			pAM <- peaks$amp[V[order(V)][2:3]]
+			pAm <- peaks$amp[V[order(V)][c(1,4)]]
+			if ( mean(pAM)>1.5*mean(pAm) ) {
+				k <- k + 1 ; L[[k]] <- V
+			}
+		}
+		if (is.null(L)) break
+		G <- L
+
+	# In case there are 2 or more peak lists, take the one with the highest sum of amplitudes
+		if (length(G)>1) {
+			v <- sapply(1:length(G), function(k) sum(peaks[as.numeric(G[[k]]), ]$amp))
+			L <- sort(as.numeric(G[[which(v==max(v))]]))
+		} else {
+			L <- G[[1]]
+		}
+		groups <- L
 		break
 	}
 	groups
 })
 
 # multiplet (m1) : central ppm, J (quintet/pentet)
-internalClass$set("private", "find_pattern_m", function(spec, peaks, ppm0, J, sel=0, Ramp=3, dJ=0.3)
+internalClass$set("private", "find_pattern_m", function(spec, peaks, ppm0, J, sel=0, Ramp=3, dJ=0.3, dS=65)
 {
-	groups <- find_pattern_t(spec, peaks, ppm0, J, sel, Ramp, dJ)
+	groups <- find_pattern_t(spec, peaks, ppm0, J, sel, Ramp, dJ, dS)
 	if (!is.null(groups)) {
 		dp0 <- mean(peaks[groups, ]$sigma)
 		p1 <- peaks[as.numeric(groups[1]), ]$ppm - J/spec$acq$SFO1
@@ -716,9 +733,9 @@ internalClass$set("private", "find_compounds", function(spec, peaks, compounds, 
 				switch(pattern,
 					's' = { find_pattern_s(spec, peaks, params[1], params[2], p1) },
 					'd' = { find_pattern_d(spec, peaks, params[1], params[2], p1, p2, p3, p4) },
-					't' = { find_pattern_t(spec, peaks, params[1], params[2], p1, p2, p3) },
-					'q' = { find_pattern_q(spec, peaks, params[1], params[2], p1, p2, p3) },
-					'm' = { find_pattern_m(spec, peaks, params[1], params[2], p1, p2, p3) },
+					't' = { find_pattern_t(spec, peaks, params[1], params[2], p1, p2, p3, p4) },
+					'q' = { find_pattern_q(spec, peaks, params[1], params[2], p1, p2, p3, p4) },
+					'm' = { find_pattern_m(spec, peaks, params[1], params[2], p1, p2, p3, p4) },
 					'dd'= { find_pattern_dd(spec, peaks, params[1], params[2], params[3], p1, p2, p3) },
 					'm2'= { find_pattern_m2(spec, peaks, params[1], params[2], p1, p2, p3) },
 					'b' = { find_peaks_range(spec, peaks, params[1], params[2], p1, p2) },

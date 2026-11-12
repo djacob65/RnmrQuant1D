@@ -34,7 +34,7 @@ internalClass$set("private", "def_plot_settings", list(
 #=====================================================================
 
 # View spectra along with models & compounds
-internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, legendtop=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE)
+internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTrueSpec=TRUE, plotresidus=FALSE, plotBL=FALSE, plotzones=TRUE, tags='none', lw=2, showlegend=TRUE, legendhoriz=FALSE, legendtop=FALSE, showgrid=TRUE, title=NULL, colspecs=NULL, colcpmds=NULL, opacity=0.7, verbose=FALSE)
 {
 	if (! res$proctype %in% c('integration', 'quantification') || length(specList)==0)
 		stop_quietly(paste0("ERROR : Integrals or quantification must be computed before !\n"))
@@ -74,23 +74,29 @@ internalClass$set("public", "view_spectra", function (id, plotmodel=TRUE, plotTr
 		ycurves <- cbind(ycurves, spec$fit$Y - spec$fit$Ymodel)
 		ynames <- c(ynames, 'residus')
 		if (length(colspecs)<3) colspecs <- c(colspecs, 'pink')
-		colspecs <- colspecs[1:3]
-	} else {
-		colspecs <- colspecs[1:2]
 	}
 
-    # Plot spectrum & model
+	# Add baseline if this option and orignial spectrum are both selected
+	if (plotBL && plotTrueSpec) {
+		ycurves <- cbind(ycurves, spec$int - spec$fit$Y)
+		ynames <- c(ynames, 'Baseline')
+		if (length(colspecs)<length(ynames)) colspecs <- c(colspecs, 'violetred')
+	}
+
+
+	# Plot spectrum & model
+	colspecs <- colspecs[1:length(ynames)]
 	names(colspecs) <- ynames
 	if (is.null(title)) title <- S
 	p <- Rnmr1D::plotSpec(ppmview, ppm, ycurves,  ynames, ycolors=colspecs, lw=lw, title=title)
 	arrColors <- colspecs
 
-  # Get the fitting zones
+	# Get the fitting zones
 	fit <- PROFILE$fitting
 	fit <- fit[ fit$ppm1>=ppmview[1], ]
 	fit <- fit[ fit$ppm2<=ppmview[2], ]
 
-  # Get the peaklist corresponding to a quantif zone
+	# Get the peaklist corresponding to a quantif zone
 	sok <- TRUE
 	PL <- cmpdlist <- NULL
 	if (sok && (plotmodel || tags != 'none')) {
@@ -303,7 +309,7 @@ internalClass$set("public", "plotZones", function(ID, zones, params=NULL)
 	if (g$verbose) cat('ppm range =',min(ppm_range),'-',max(ppm_range),"\n")
 
 	fig <- view_spectra(ID, plotmodel=g$plotmodel, plotTrueSpec=g$plotTrueSpec,
-				plotresidus=g$plotresidus, plotzones=g$plotzones,
+				plotresidus=g$plotresidus, plotBL=g$plotBL, plotzones=g$plotzones,
 				tags=g$tags, lw=g$lw, showlegend=g$showlegend,
 				legendhoriz=g$legendhoriz,  legendtop=g$legendtop, showgrid=g$showgrid, 
 				title=g$title, colspecs=g$colspecs, colcpmds=g$colcpmds,
@@ -324,7 +330,7 @@ internalClass$set("public", "plotCmpds", function(ID, cpmd, params=NULL)
 	}
 
 	fig <- plot_spectra(ID, cpmd, plotmodel=g$plotmodel, plotTrueSpec=g$plotTrueSpec, 
-						plotresidus=g$plotresidus, plotzones=g$plotzones,
+						plotresidus=g$plotresidus, plotBL=g$plotBL, plotzones=g$plotzones,
 						tags=g$tags, lw=g$lw, showlegend=g$showlegend, legendhoriz=g$legendhoriz, legendtop=g$legendtop,
 						showgrid=g$showgrid, title=g$title, colspecs=g$colspecs, colcpmds=g$colcpmds,
 						verbose=g$verbose)
